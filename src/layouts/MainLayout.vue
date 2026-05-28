@@ -23,6 +23,16 @@
       <!-- MENU -->
       <div class="menu-list">
 
+        <!-- TRANG CHỦ -->
+        <router-link to="/trang-chu" class="item">
+
+          <i class="fa-solid fa-house"></i>
+
+          <span>Trang chủ</span>
+
+        </router-link>
+
+        <!-- BÁN HÀNG -->
         <router-link to="/" class="item">
 
           <i class="fa-solid fa-cart-shopping"></i>
@@ -31,22 +41,25 @@
 
         </router-link>
 
+        <!-- HÓA ĐƠN -->
         <router-link to="/hoa-don" class="item">
 
-          <i class="fa-solid fa-file-invoice"></i>
+          <i class="fa-solid fa-receipt"></i>
 
           <span>Hóa đơn</span>
 
         </router-link>
 
+        <!-- SẢN PHẨM -->
         <router-link to="/san-pham" class="item">
 
-          <i class="fa-solid fa-box"></i>
+          <i class="fa-solid fa-box-open"></i>
 
           <span>Sản phẩm</span>
 
         </router-link>
 
+        <!-- PHIẾU GIẢM GIÁ -->
         <router-link to="/phieu-giam-gia" class="item">
 
           <i class="fa-solid fa-ticket"></i>
@@ -55,22 +68,25 @@
 
         </router-link>
 
+        <!-- ĐỢT GIẢM GIÁ -->
         <router-link to="/dot-giam-gia" class="item">
 
-          <i class="fa-solid fa-tags"></i>
+          <i class="fa-solid fa-percent"></i>
 
           <span>Đợt giảm giá</span>
 
         </router-link>
 
+        <!-- NHÂN VIÊN -->
         <router-link to="/nhan-vien" class="item">
 
-          <i class="fa-solid fa-user"></i>
+          <i class="fa-solid fa-user-tie"></i>
 
           <span>Nhân viên</span>
 
         </router-link>
 
+        <!-- KHÁCH HÀNG -->
         <router-link to="/khach-hang" class="item">
 
           <i class="fa-solid fa-users"></i>
@@ -79,11 +95,21 @@
 
         </router-link>
 
+        <!-- THỐNG KÊ -->
+        <router-link to="/thong-ke" class="item">
+
+          <i class="fa-solid fa-chart-line"></i>
+
+          <span>Thống kê</span>
+
+        </router-link>
+
       </div>
 
       <!-- BOTTOM -->
       <div class="bottom-menu">
 
+        <!-- CÀI ĐẶT -->
         <div class="bottom-item">
 
           <i class="fa-solid fa-gear"></i>
@@ -92,6 +118,7 @@
 
         </div>
 
+        <!-- ĐĂNG XUẤT -->
         <div class="bottom-item logout">
 
           <i class="fa-solid fa-right-from-bracket"></i>
@@ -125,7 +152,9 @@
           >
 
             <div class="avatar">
+
               <i class="fa-solid fa-user"></i>
+
             </div>
 
             <div class="user-info">
@@ -205,6 +234,8 @@ const showMenu = ref(false)
 
 *{
   box-sizing:border-box;
+  margin:0;
+  padding:0;
 }
 
 /* LAYOUT */
@@ -219,7 +250,7 @@ const showMenu = ref(false)
 /* SIDEBAR */
 
 .sidebar{
-  width:250px;
+  width:260px;
   background:white;
   padding:20px 14px;
   border-right:1px solid #e5e5e5;
@@ -238,8 +269,8 @@ const showMenu = ref(false)
 }
 
 .logo-circle{
-  width:48px;
-  height:48px;
+  width:50px;
+  height:50px;
   border-radius:50%;
   background:#e6925e;
   color:white;
@@ -253,12 +284,10 @@ const showMenu = ref(false)
 .logo-text h2{
   color:#d87d4a;
   font-size:24px;
-  margin:0;
 }
 
 .logo-text p{
-  margin:0;
-  color:#777;
+  color:#888;
   font-size:12px;
   letter-spacing:2px;
 }
@@ -268,33 +297,35 @@ const showMenu = ref(false)
 .menu-list{
   display:flex;
   flex-direction:column;
-  gap:8px;
+  gap:6px;
 }
 
 .item{
   display:flex;
   align-items:center;
   gap:14px;
-  padding:14px;
-  border-radius:12px;
+  padding:15px 16px;
+  border-radius:14px;
   text-decoration:none;
-  color:#333;
+  color:#4b5563;
   transition:0.2s;
   font-size:15px;
+  font-weight:500;
 }
 
 .item i{
-  width:20px;
+  width:22px;
   font-size:18px;
 }
 
 .item:hover{
-  background:#f3f3f3;
+  background:#f3f4f6;
 }
 
 .item.router-link-active{
   background:#e6925e;
   color:white;
+  box-shadow:0 4px 10px rgba(230,146,94,0.3);
 }
 
 /* BOTTOM */
@@ -313,10 +344,11 @@ const showMenu = ref(false)
   border-radius:12px;
   cursor:pointer;
   transition:0.2s;
+  color:#4b5563;
 }
 
 .bottom-item:hover{
-  background:#f3f3f3;
+  background:#f3f4f6;
 }
 
 .bottom-item i{
@@ -348,7 +380,6 @@ const showMenu = ref(false)
 }
 
 .page-title h2{
-  margin:0;
   font-size:24px;
   color:#333;
 }
@@ -385,12 +416,10 @@ const showMenu = ref(false)
 }
 
 .user-info h4{
-  margin:0;
   font-size:14px;
 }
 
 .user-info p{
-  margin:0;
   color:#888;
   font-size:12px;
 }
@@ -406,9 +435,9 @@ const showMenu = ref(false)
   position:absolute;
   top:65px;
   right:0;
-  width:200px;
+  width:210px;
   background:white;
-  border-radius:12px;
+  border-radius:14px;
   box-shadow:0 4px 20px rgba(0,0,0,0.1);
   overflow:hidden;
   z-index:999;
@@ -418,7 +447,7 @@ const showMenu = ref(false)
   display:flex;
   align-items:center;
   gap:12px;
-  padding:14px 16px;
+  padding:15px 16px;
   cursor:pointer;
   transition:0.2s;
 }

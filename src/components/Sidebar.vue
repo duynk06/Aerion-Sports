@@ -28,6 +28,14 @@
 
   </router-link>
 
+  <router-link to="/thong-ke" class="item">
+
+<i class="fa-solid fa-chart-column"></i>
+
+<span>Thống kê</span>
+
+</router-link>
+
   <!-- BÁN HÀNG -->
   <router-link to="/" class="item">
 
@@ -92,13 +100,7 @@
   </router-link>
 
   <!-- THỐNG KÊ -->
-  <router-link to="/thong-ke" class="item">
 
-    <i class="fa-solid fa-chart-column"></i>
-
-    <span>Thống kê</span>
-
-  </router-link>
 
 </div>
 
