@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+import TrangChuView from '../views/TrangChuView.vue'
+import ThongKeView from '../views/ThongKeView.vue'
 import BanHang from '../views/BanHangView.vue'
 import HoaDon from '../views/HoaDonView.vue'
 import SanPham from '../views/SanPhamView.vue'
@@ -9,6 +11,8 @@ import NhanVien from '../views/NhanVienView.vue'
 import KhachHang from '../views/KhachHangView.vue'
 
 const routes = [
+  { path: '/trang-chu', component: TrangChuView },
+{ path: '/thong-ke', component: ThongKeView },
   { path: '/', component: BanHang },
   { path: '/hoa-don', component: HoaDon },
   { path: '/san-pham', component: SanPham },

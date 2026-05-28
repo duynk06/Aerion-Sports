@@ -1,0 +1,3 @@
+<template>
+    trang chu
+</template>
