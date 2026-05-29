@@ -4,7 +4,6 @@
 
     <div class="wrapper">
 
-      <!-- LEFT -->
       <div class="left">
 
         <div class="tabs">
@@ -73,7 +72,6 @@
 
       </div>
 
-      <!-- RIGHT -->
       <div class="right">
 
         <div class="type">

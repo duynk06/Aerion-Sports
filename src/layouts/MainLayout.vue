@@ -1,29 +1,22 @@
-```vue
+
 <template>
 
   <div class="layout">
 
-    <!-- SIDEBAR -->
     <div class="sidebar">
 
-      <!-- LOGO -->
-      <div class="logo">
 
-        <div class="logo-circle">
-          A
-        </div>
+<div class="logo">
 
-        <div class="logo-text">
-          <h2>AERION</h2>
-          <p>SPORTS</p>
-        </div>
+<img
+  src="../assets/logo/Logo_Da.jpg"
+  alt="logo"
+  class="logo-full"
+/>
 
-      </div>
+</div>
 
-      <!-- MENU -->
       <div class="menu-list">
-
-        <!-- TRANG CHỦ -->
         <router-link to="/trang-chu" class="item">
 
           <i class="fa-solid fa-house"></i>
@@ -32,7 +25,6 @@
 
         </router-link>
 
-           <!-- THỐNG KÊ -->
            <router-link to="/thong-ke" class="item">
 
 <i class="fa-solid fa-chart-line"></i>
@@ -41,7 +33,6 @@
 
 </router-link>
 
-        <!-- BÁN HÀNG -->
         <router-link to="/" class="item">
 
           <i class="fa-solid fa-cart-shopping"></i>
@@ -50,7 +41,6 @@
 
         </router-link>
 
-        <!-- HÓA ĐƠN -->
         <router-link to="/hoa-don" class="item">
 
           <i class="fa-solid fa-receipt"></i>
@@ -59,7 +49,6 @@
 
         </router-link>
 
-        <!-- SẢN PHẨM -->
         <router-link to="/san-pham" class="item">
 
           <i class="fa-solid fa-box-open"></i>
@@ -68,7 +57,6 @@
 
         </router-link>
 
-        <!-- PHIẾU GIẢM GIÁ -->
         <router-link to="/phieu-giam-gia" class="item">
 
           <i class="fa-solid fa-ticket"></i>
@@ -77,7 +65,6 @@
 
         </router-link>
 
-        <!-- ĐỢT GIẢM GIÁ -->
         <router-link to="/dot-giam-gia" class="item">
 
           <i class="fa-solid fa-percent"></i>
@@ -86,7 +73,6 @@
 
         </router-link>
 
-        <!-- NHÂN VIÊN -->
         <router-link to="/nhan-vien" class="item">
 
           <i class="fa-solid fa-user-tie"></i>
@@ -95,7 +81,6 @@
 
         </router-link>
 
-        <!-- KHÁCH HÀNG -->
         <router-link to="/khach-hang" class="item">
 
           <i class="fa-solid fa-users"></i>
@@ -108,19 +93,8 @@
 
       </div>
 
-      <!-- BOTTOM -->
       <div class="bottom-menu">
 
-        <!-- CÀI ĐẶT -->
-        <div class="bottom-item">
-
-          <i class="fa-solid fa-gear"></i>
-
-          <span>Cài đặt</span>
-
-        </div>
-
-        <!-- ĐĂNG XUẤT -->
         <div class="bottom-item logout">
 
           <i class="fa-solid fa-right-from-bracket"></i>
@@ -133,10 +107,8 @@
 
     </div>
 
-    <!-- MAIN -->
     <div class="main">
 
-      <!-- HEADER -->
       <div class="header">
 
         <div class="page-title">
@@ -145,7 +117,6 @@
 
         </div>
 
-        <!-- USER -->
         <div class="user-wrapper">
 
           <div
@@ -171,7 +142,6 @@
 
           </div>
 
-          <!-- DROPDOWN -->
           <div
             v-if="showMenu"
             class="dropdown"
@@ -207,7 +177,6 @@
 
       </div>
 
-      <!-- CONTENT -->
       <div class="content">
 
         <slot />
@@ -240,8 +209,6 @@ const showMenu = ref(false)
   padding:0;
 }
 
-/* LAYOUT */
-
 .layout{
   display:flex;
   min-height:100vh;
@@ -249,7 +216,6 @@ const showMenu = ref(false)
   font-family:Arial, Helvetica, sans-serif;
 }
 
-/* SIDEBAR */
 
 .sidebar{
   width:260px;
@@ -260,7 +226,6 @@ const showMenu = ref(false)
   flex-direction:column;
 }
 
-/* LOGO */
 
 .logo{
   display:flex;
@@ -293,8 +258,6 @@ const showMenu = ref(false)
   font-size:12px;
   letter-spacing:2px;
 }
-
-/* MENU */
 
 .menu-list{
   display:flex;
@@ -330,8 +293,6 @@ const showMenu = ref(false)
   box-shadow:0 4px 10px rgba(230,146,94,0.3);
 }
 
-/* BOTTOM */
-
 .bottom-menu{
   margin-top:auto;
   border-top:1px solid #eee;
@@ -361,7 +322,6 @@ const showMenu = ref(false)
   color:red;
 }
 
-/* MAIN */
 
 .main{
   flex:1;
@@ -369,7 +329,6 @@ const showMenu = ref(false)
   flex-direction:column;
 }
 
-/* HEADER */
 
 .header{
   height:75px;
@@ -385,8 +344,6 @@ const showMenu = ref(false)
   font-size:24px;
   color:#333;
 }
-
-/* USER */
 
 .user-wrapper{
   position:relative;
@@ -431,7 +388,6 @@ const showMenu = ref(false)
   color:#777;
 }
 
-/* DROPDOWN */
 
 .dropdown{
   position:absolute;
@@ -466,7 +422,6 @@ const showMenu = ref(false)
   color:red;
 }
 
-/* CONTENT */
 
 .content{
   flex:1;

@@ -3,6 +3,7 @@
 <div class="sidebar">
 
 <!-- LOGO -->
+<!-- LOGO -->
 <div class="logo">
 
 <img
