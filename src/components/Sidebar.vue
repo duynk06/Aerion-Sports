@@ -5,14 +5,11 @@
 <!-- LOGO -->
 <div class="logo">
 
-  <div class="logo-circle">
-    A
-  </div>
-
-  <div class="logo-text">
-    <h2>AERION</h2>
-    <p>SPORTS</p>
-  </div>
+<img
+  src="../assets/logo/Logo_Da.jpg"
+  alt="logo"
+  class="logo-full"
+/>
 
 </div>
 
