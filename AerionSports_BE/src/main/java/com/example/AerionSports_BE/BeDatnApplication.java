@@ -1,4 +1,4 @@
-package com.example;
+package com.example.AerionSports_BE;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
