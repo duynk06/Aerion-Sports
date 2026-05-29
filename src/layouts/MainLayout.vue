@@ -218,7 +218,7 @@ const showMenu = ref(false)
 
 
 .sidebar{
-  width:260px;
+  width:220px;
   background:white;
   padding:20px 14px;
   border-right:1px solid #e5e5e5;
@@ -268,31 +268,29 @@ const showMenu = ref(false)
 .item{
   display:flex;
   align-items:center;
-  gap:14px;
-  padding:15px 16px;
-  border-radius:14px;
+  gap:12px;
+  padding:10px 14px;
+  border-radius:12px;
   text-decoration:none;
   color:#4b5563;
   transition:0.2s;
-  font-size:15px;
+  font-size:13px;
   font-weight:500;
 }
-
 .item i{
-  width:22px;
-  font-size:18px;
+  width:20px;
+  font-size:15px;
 }
 
 .item:hover{
-  background:#f3f4f6;
+  background:#fff8f3;
 }
 
 .item.router-link-active{
-  background:#e6925e;
-  color:white;
-  box-shadow:0 4px 10px rgba(230,146,94,0.3);
+  background:#fff4ed;
+  color:#d87d4a;
+  box-shadow:none;
 }
-
 .bottom-menu{
   margin-top:auto;
   border-top:1px solid #eee;
