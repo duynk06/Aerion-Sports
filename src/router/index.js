@@ -4,6 +4,7 @@ import TrangChuView from '../views/TrangChuView.vue'
 import ThongKeView from '../views/ThongKeView.vue'
 import BanHang from '../views/BanHangView.vue'
 import HoaDon from '../views/HoaDonView.vue'
+import HoaDonDetail from '../views/ChiTietHoaDon.vue'
 import SanPham from '../views/SanPhamView.vue'
 import PhieuGiamGia from '../views/PhieuGiamGiaView.vue'
 import DotGiamGia from '../views/DotGiamGiaView.vue'
@@ -19,6 +20,8 @@ const routes = [
   { path: '/ban-hang', component: BanHang },
 
   { path: '/hoa-don', component: HoaDon },
+  { path: '/hoa-don/:id', component: HoaDonDetail },
+
   { path: '/san-pham', component: SanPham },
   { path: '/phieu-giam-gia', component: PhieuGiamGia },
   { path: '/dot-giam-gia', component: DotGiamGia },

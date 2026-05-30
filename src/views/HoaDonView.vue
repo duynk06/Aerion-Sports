@@ -14,18 +14,20 @@
         <div>
           <label>Tìm kiếm</label>
           <input
-            type="text"
-            placeholder="Nhập mã hóa đơn / tên khách / SDT..."
-          >
+  v-model="keyword"
+  type="text"
+  placeholder="Nhập mã hóa đơn / tên khách / SDT..."
+  @keyup.enter="handleSearch"
+/>
         </div>
 
         <div>
           <label>Loại hóa đơn</label>
-          <select>
-            <option>Tất cả</option>
-            <option>Tại quầy</option>
-            <option>Online</option>
-          </select>
+          <select v-model="loaiHoaDonFilter">
+  <option value="">Tất cả</option>
+  <option value="Tại quầy">Tại quầy</option>
+  <option value="Online">Online</option>
+</select>
         </div>
 
         <div>
@@ -95,21 +97,33 @@
 </div>
 
 <table>
+  <colgroup>
+    <col style="width:5%">
+    <col style="width:10%">
+    <col style="width:14%">
+    <col style="width:12%">
+    <col style="width:10%">
+    <col style="width:10%">
+    <col style="width:10%">
+    <col style="width:12%">
+    <col style="width:9%">
+    <col style="width:8%">
+  </colgroup>
 
   <thead>
 
     <tr>
 
-      <th>STT</th>
-      <th>Mã hóa đơn</th>
-      <th>Tên nhân viên</th>
-      <th>Khách hàng</th>
-      <th>Số điện thoại</th>
-      <th>Loại hóa đơn</th>
-      <th>Tổng tiền</th>
-      <th>Ngày tạo</th>
-      <th>Trạng thái</th>
-      <th>Hành động</th>
+      <th scope="col">STT</th>
+      <th scope="col">Mã hóa đơn</th>
+      <th scope="col">Tên nhân viên</th>
+      <th scope="col">Khách hàng</th>
+      <th scope="col">Số điện thoại</th>
+      <th scope="col">Loại hóa đơn</th>
+      <th scope="col">Tổng tiền</th>
+      <th scope="col">Ngày tạo</th>
+      <th scope="col">Trạng thái</th>
+      <th scope="col">Hành động</th>
 
     </tr>
 
@@ -117,117 +131,49 @@
 
   <tbody>
 
-    <tr>
+    <tr v-for="hoaDon in filteredHoaDon" :key="hoaDon.id">
+    <td>{{ hoaDon.id }}</td>
+    <td>{{ hoaDon.maHoaDon }}</td>
+    <td>{{ hoaDon.tenNv }}</td>
+    <td>{{ hoaDon.hoTen }}</td>
+    <td>{{ hoaDon.sdt }}</td>
+    <td>
+  <span
+    class="invoice-badge"
+    :class="getLoaiHoaDonClass(hoaDon.loaiHoaDon)"
+  >
+    {{ hoaDon.loaiHoaDon }}
+  </span>
+</td>
+<td class="money">
+  {{ formatCurrency(hoaDon.tongTienThanhToan) }}
+</td>
+    <td>{{ formatDate(hoaDon.ngayTao) }}</td>
+    <td>
+  <span
+    class="status-badge"
+    :class="getStatusClass(hoaDon.trangThai)"
+  >
+    {{ getTrangThaiText(hoaDon.trangThai) }}
+  </span>
+</td>
+    <td>
+  <button
+    class="action-btn"
+    @click="viewDetail(hoaDon.id)"
+  >
+    <i class="fa-solid fa-eye"></i>
+  </button>
 
-      <td>1</td>
-
-      <td>HD2604298918</td>
-
-      <td>
-        Admin TBT
-        <br>
-        <small>NV001</small>
-      </td>
-
-      <td>Duy Quyết</td>
-
-      <td>0868219136</td>
-
-      <td>
-
-        <span class="invoice-type">
-          Tại quầy
-        </span>
-
-      </td>
-
-      <td class="money">
-        6.000.000 đ
-      </td>
-
-      <td>29/04/2026</td>
-
-      <td>
-
-        <span class="status-success">
-          Hoàn thành
-        </span>
-
-      </td>
-
-      <td>
-
-        <button class="action-btn">
-
-          <i class="fa-solid fa-eye"></i>
-
-        </button>
-
-        <button class="action-btn">
-
-          <i class="fa-solid fa-print"></i>
-
-        </button>
-
-      </td>
-
-    </tr>
-
-    <tr>
-
-      <td>2</td>
-
-      <td>HD2604295243</td>
-
-      <td>
-        Admin TBT
-        <br>
-        <small>NV001</small>
-      </td>
-
-      <td>Duy Quyết</td>
-
-      <td>0868219136</td>
-
-      <td>
-
-        <span class="invoice-type">
-          Tại quầy
-        </span>
-
-      </td>
-
-      <td class="money">
-        2.800.000 đ
-      </td>
-
-      <td>29/04/2026</td>
-
-      <td>
-
-        <span class="status-success">
-          Hoàn thành
-        </span>
-
-      </td>
-
-      <td>
-
-        <button class="action-btn">
-
-          <i class="fa-solid fa-eye"></i>
-
-        </button>
-
-        <button class="action-btn">
-
-          <i class="fa-solid fa-print"></i>
-
-        </button>
-
-      </td>
-
-    </tr>
+  <button
+    class="action-btn"
+    @click="printHoaDon(hoaDon.id)"
+  >
+    <i class="fa-solid fa-print"></i>
+  </button>
+</td>
+    
+   </tr>
 
   </tbody>
 
@@ -267,10 +213,166 @@
 </template>
 
 <script setup>
+  import { searchHoaDon } from '@/service/HoaDonService'
 import MainLayout from '../layouts/MainLayout.vue'
+import { ref, onMounted } from 'vue';
+import { fetchAllHoaDon } from '@/service/HoaDonService.js';
+import { watch } from 'vue'
+import { computed } from 'vue'
+
+const listHoaDon = ref([])
+
+const HoaDonModel = ref({
+  id: "",
+  maHoaDon: "",
+  tenNv: "",
+  hoTen: "",
+  sdt: "",
+  loaiHoaDon: "",
+  tongTienThanhToan: "",
+  ngayTao: "",
+  trangThai: ""
+})
+
+const handleFetchAllData = async () =>{
+  try{
+    listHoaDon.value = await fetchAllHoaDon();
+  }catch(error){
+    console.log(error)
+  }
+}
+onMounted(handleFetchAllData)
+
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const viewDetail = (id) => {
+  router.push(`/hoa-don/${id}`)
+}
+const formatDate = (date) => {
+  if (!date) return ''
+
+  return new Date(date).toLocaleDateString('vi-VN')
+}
+const getTrangThaiText = (status) => {
+  switch (status) {
+    case 0:
+      return 'Đã hủy'
+    case 1:
+      return 'Đã thanh toán'
+    default:
+      return 'Không xác định'
+  }
+}
+
+const getStatusClass = (status) => {
+  switch (status) {
+    case 0:
+      return 'status-cancel'
+    case 1:
+      return 'status-paid'
+    default:
+      return ''
+  }
+}
+const getLoaiHoaDonClass = (loai) => {
+  switch (loai) {
+    case 'Tại quầy':
+      return 'invoice-offline'
+
+    case 'Online':
+      return 'invoice-online'
+
+    default:
+      return ''
+  }
+}
+const formatCurrency = (value) => {
+  if (!value) return '0 đ'
+
+  return Number(value).toLocaleString('vi-VN') + ' đ'
+}
+const keyword = ref('')
+const handleSearch = async () => {
+  try {
+
+    if (!keyword.value.trim()) {
+      handleFetchAllData()
+      return
+    }
+
+    listHoaDon.value = await searchHoaDon(
+      keyword.value
+    )
+
+  } catch(error) {
+    console.log(error)
+  }
+}
+watch(keyword, async (newValue) => {
+
+if (!newValue.trim()) {
+  handleFetchAllData()
+  return
+}
+
+listHoaDon.value =
+    await searchHoaDon(newValue)
+
+})
+const loaiHoaDonFilter = ref('')
+const filteredHoaDon = computed(() => {
+  return listHoaDon.value.filter(hd => {
+
+    const matchLoaiHoaDon =
+      !loaiHoaDonFilter.value ||
+      hd.loaiHoaDon === loaiHoaDonFilter.value
+
+    return matchLoaiHoaDon
+  })
+})
 </script>
 
 <style scoped>
+  .invoice-badge{
+  display:inline-block;
+  padding:4px 12px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:600;
+}
+
+/* Tại quầy */
+.invoice-offline{
+  background:#dbeafe;
+  color:#1d4ed8;
+}
+
+/* Online */
+.invoice-online{
+  background:#f3e8ff;
+  color:#7e22ce;
+}
+  .status-badge{
+  display:inline-block;
+  padding:4px 12px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:600;
+}
+
+/* Đã thanh toán */
+.status-paid{
+  background:#dcfce7;
+  color:#15803d;
+}
+
+/* Đã hủy */
+.status-cancel{
+  background:#fee2e2;
+  color:#dc2626;
+}
 .card{
   background:#fff;
   border-radius:12px;
@@ -398,6 +500,7 @@ table{
   width:100%;
   border-collapse:collapse;
   font-size:12px;
+  table-layout: fixed;
 }
 
 thead{
@@ -405,16 +508,12 @@ thead{
   color:white;
 }
 
-th{
-  padding:10px;
-  font-size:11px;
-  font-weight:600;
-}
-
-td{
-  padding:10px;
-  text-align:center;
-  border-bottom:1px solid #eee;
+th,
+td {
+  padding: 10px;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 
 tbody tr:hover{
@@ -446,11 +545,11 @@ tbody tr:hover{
 /* ACTION */
 
 .action-btn{
-  width:28px;
-  height:28px;
+  width:32px;
+  height:32px;
+  border:1px solid #ddd;
   border-radius:6px;
-  border:1px solid #dcdcdc;
-  background:white;
+  background:#fff;
   cursor:pointer;
   margin:0 2px;
 }
