@@ -11,15 +11,19 @@ import NhanVien from '../views/NhanVienView.vue'
 import KhachHang from '../views/KhachHangView.vue'
 
 const routes = [
+  { path: '/', redirect: '/trang-chu' },
+
   { path: '/trang-chu', component: TrangChuView },
-{ path: '/thong-ke', component: ThongKeView },
-  { path: '/', component: BanHang },
+  { path: '/thong-ke', component: ThongKeView },
+
+  { path: '/ban-hang', component: BanHang },
+
   { path: '/hoa-don', component: HoaDon },
   { path: '/san-pham', component: SanPham },
   { path: '/phieu-giam-gia', component: PhieuGiamGia },
   { path: '/dot-giam-gia', component: DotGiamGia },
   { path: '/nhan-vien', component: NhanVien },
-  { path: '/khach-hang', component: KhachHang },
+  { path: '/khach-hang', component: KhachHang }
 ]
 
 export default createRouter({

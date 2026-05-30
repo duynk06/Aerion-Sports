@@ -35,7 +35,7 @@
 </router-link>
 
   <!-- BÁN HÀNG -->
-  <router-link to="/" class="item">
+  <router-link to="/ban-hang" class="item">
 
     <i class="fa-solid fa-cart-shopping"></i>
 
