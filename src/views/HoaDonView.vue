@@ -32,18 +32,27 @@
 
         <div>
           <label>Từ ngày</label>
-          <input type="date">
+          <input
+  type="date"
+  v-model="tuNgay"
+/>
         </div>
 
         <div>
           <label>Đến ngày</label>
-          <input type="date">
+          <input
+  type="date"
+  v-model="denNgay"
+/>
         </div>
 
       </div>
 
       <div class="filter-action">
-        <button class="btn-reset">
+        <button
+  class="btn-reset"
+  @click="resetFilter"
+>
   <i class="fa-solid fa-rotate-right"></i>
   Đặt lại
 </button>
@@ -211,56 +220,149 @@
 
   </MainLayout>
 </template>
-
 <script setup>
-  import { searchHoaDon } from '@/service/HoaDonService'
 import MainLayout from '../layouts/MainLayout.vue'
-import { ref, onMounted } from 'vue';
-import { fetchAllHoaDon } from '@/service/HoaDonService.js';
-import { watch } from 'vue'
-import { computed } from 'vue'
-
-const listHoaDon = ref([])
-
-const HoaDonModel = ref({
-  id: "",
-  maHoaDon: "",
-  tenNv: "",
-  hoTen: "",
-  sdt: "",
-  loaiHoaDon: "",
-  tongTienThanhToan: "",
-  ngayTao: "",
-  trangThai: ""
-})
-
-const handleFetchAllData = async () =>{
-  try{
-    listHoaDon.value = await fetchAllHoaDon();
-  }catch(error){
-    console.log(error)
-  }
-}
-onMounted(handleFetchAllData)
-
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
+
+import {
+  fetchAllHoaDon,
+  searchHoaDon
+} from '@/service/HoaDonService.js'
 
 const router = useRouter()
 
-const viewDetail = (id) => {
-  router.push(`/hoa-don/${id}`)
+// =======================
+// DATA
+// =======================
+
+const listHoaDon = ref([])
+
+const keyword = ref('')
+
+const loaiHoaDonFilter = ref('')
+
+const tuNgay = ref('')
+const denNgay = ref('')
+
+// =======================
+// LOAD DATA
+// =======================
+
+const handleFetchAllData = async () => {
+  try {
+    listHoaDon.value = await fetchAllHoaDon()
+  } catch (error) {
+    console.log(error)
+  }
 }
+
+// =======================
+// SEARCH
+// =======================
+
+const handleSearch = async () => {
+  try {
+    if (!keyword.value.trim()) {
+      await handleFetchAllData()
+      return
+    }
+
+    listHoaDon.value = await searchHoaDon(
+      keyword.value
+    )
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+// tìm kiếm realtime
+watch(keyword, async (newValue) => {
+  try {
+    if (!newValue.trim()) {
+      await handleFetchAllData()
+      return
+    }
+
+    listHoaDon.value = await searchHoaDon(newValue)
+  } catch (error) {
+    console.log(error)
+  }
+})
+
+// =======================
+// FILTER
+// =======================
+
+const filteredHoaDon = computed(() => {
+  return listHoaDon.value.filter((hd) => {
+    // lọc loại hóa đơn
+    const matchLoaiHoaDon =
+      !loaiHoaDonFilter.value ||
+      hd.loaiHoaDon === loaiHoaDonFilter.value
+
+    // xử lý ngày
+    const ngayHoaDon = hd.ngayTao
+      ? hd.ngayTao.substring(0, 10)
+      : ''
+
+    const matchTuNgay =
+      !tuNgay.value ||
+      ngayHoaDon >= tuNgay.value
+
+    const matchDenNgay =
+      !denNgay.value ||
+      ngayHoaDon <= denNgay.value
+
+    return (
+      matchLoaiHoaDon &&
+      matchTuNgay &&
+      matchDenNgay
+    )
+  })
+})
+
+// =======================
+// FORMAT
+// =======================
+
 const formatDate = (date) => {
   if (!date) return ''
 
-  return new Date(date).toLocaleDateString('vi-VN')
+  return new Date(date)
+    .toLocaleDateString('vi-VN')
 }
+
+const formatCurrency = (value) => {
+  if (!value) return '0 đ'
+
+  return (
+    Number(value).toLocaleString('vi-VN') +
+    ' đ'
+  )
+}
+
+// =======================
+// STATUS
+// =======================
+
 const getTrangThaiText = (status) => {
   switch (status) {
     case 0:
       return 'Đã hủy'
+
     case 1:
       return 'Đã thanh toán'
+
+    case 2:
+      return 'Chờ xác nhận'
+
+    case 3:
+      return 'Đang giao'
+
+    case 4:
+      return 'Hoàn thành'
+
     default:
       return 'Không xác định'
   }
@@ -270,12 +372,15 @@ const getStatusClass = (status) => {
   switch (status) {
     case 0:
       return 'status-cancel'
+
     case 1:
       return 'status-paid'
+
     default:
       return ''
   }
 }
+
 const getLoaiHoaDonClass = (loai) => {
   switch (loai) {
     case 'Tại quầy':
@@ -288,50 +393,40 @@ const getLoaiHoaDonClass = (loai) => {
       return ''
   }
 }
-const formatCurrency = (value) => {
-  if (!value) return '0 đ'
 
-  return Number(value).toLocaleString('vi-VN') + ' đ'
-}
-const keyword = ref('')
-const handleSearch = async () => {
-  try {
 
-    if (!keyword.value.trim()) {
-      handleFetchAllData()
-      return
-    }
-
-    listHoaDon.value = await searchHoaDon(
-      keyword.value
-    )
-
-  } catch(error) {
-    console.log(error)
-  }
-}
-watch(keyword, async (newValue) => {
-
-if (!newValue.trim()) {
-  handleFetchAllData()
-  return
+const viewDetail = (id) => {
+  router.push(`/hoa-don/${id}`)
 }
 
-listHoaDon.value =
-    await searchHoaDon(newValue)
+onMounted(async () => {
+  await handleFetchAllData()
 
+  // mặc định ngày hôm nay
+  const today =
+    new Date().toISOString().split('T')[0]
+
+  tuNgay.value = today
+  denNgay.value = today
 })
-const loaiHoaDonFilter = ref('')
-const filteredHoaDon = computed(() => {
-  return listHoaDon.value.filter(hd => {
+const resetFilter = async () => {
+  // Xóa tìm kiếm
+  keyword.value = ''
 
-    const matchLoaiHoaDon =
-      !loaiHoaDonFilter.value ||
-      hd.loaiHoaDon === loaiHoaDonFilter.value
+  // Loại hóa đơn về tất cả
+  loaiHoaDonFilter.value = ''
 
-    return matchLoaiHoaDon
-  })
-})
+  // Ngày về hôm nay
+  const today = new Date()
+    .toISOString()
+    .split('T')[0]
+
+  tuNgay.value = today
+  denNgay.value = today
+
+  // Load lại dữ liệu
+  await handleFetchAllData()
+}
 </script>
 
 <style scoped>
@@ -343,13 +438,11 @@ const filteredHoaDon = computed(() => {
   font-weight:600;
 }
 
-/* Tại quầy */
 .invoice-offline{
   background:#dbeafe;
   color:#1d4ed8;
 }
 
-/* Online */
 .invoice-online{
   background:#f3e8ff;
   color:#7e22ce;
@@ -362,13 +455,11 @@ const filteredHoaDon = computed(() => {
   font-weight:600;
 }
 
-/* Đã thanh toán */
 .status-paid{
   background:#dcfce7;
   color:#15803d;
 }
 
-/* Đã hủy */
 .status-cancel{
   background:#fee2e2;
   color:#dc2626;
@@ -380,8 +471,6 @@ const filteredHoaDon = computed(() => {
   margin-bottom:20px;
   border:1px solid #e5e7eb;
 }
-
-/* FILTER */
 
 .card-header{
   background:#f79b66;
@@ -439,7 +528,6 @@ const filteredHoaDon = computed(() => {
   cursor:pointer;
 }
 
-/* DANH SÁCH HÓA ĐƠN */
 
 .list-title{
   display:flex;
@@ -494,7 +582,6 @@ const filteredHoaDon = computed(() => {
   border-color:#f79b66;
 }
 
-/* TABLE */
 
 table{
   width:100%;
