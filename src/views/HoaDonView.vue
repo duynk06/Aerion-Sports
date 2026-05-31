@@ -17,7 +17,7 @@
   v-model="keyword"
   type="text"
   placeholder="Nhập mã hóa đơn / tên khách / SDT..."
-  @keyup.enter="handleSearch"
+ 
 />
         </div>
 
@@ -178,8 +178,8 @@
 
   <tbody>
 
-    <tr v-for="hoaDon in listHoaDon" :key="hoaDon.id">
-    <td>{{ hoaDon.id }}</td>
+    <tr v-for="(hoaDon, index) in listHoaDon" :key="hoaDon.id">
+      <td>{{ (page * size) + index + 1 }}</td>
     <td>{{ hoaDon.maHoaDon }}</td>
     <td>{{ hoaDon.tenNv }}</td>
     <td>{{ hoaDon.hoTen }}</td>
@@ -385,6 +385,7 @@ const handleSearch = async () => {
 
 watch(
   [
+  keyword,
     loaiHoaDonFilter,
     trangThaiFilter,
     tuNgay,
