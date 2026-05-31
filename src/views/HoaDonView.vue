@@ -57,7 +57,7 @@
   Đặt lại
 </button>
 
-<button class="btn-export">
+<button class="btn-export"  @click="exportExcel">
   <i class="fa-solid fa-file-excel"></i>
   Xuất Excel
 </button>
@@ -86,23 +86,61 @@
 </div>
 
 <div class="status-tabs">
+  <button
+  :class="{ active: trangThaiFilter === '' }"
+  @click="trangThaiFilter = ''"
+>
+  Tất cả
+</button>
 
-  <button class="active">Tất cả</button>
+<button
+  :class="{ active: trangThaiFilter === 0 }"
+  @click="trangThaiFilter = 0"
+>
+  Chờ xác nhận
+</button>
 
-  <button>Chờ xác nhận</button>
+<button
+  :class="{ active: trangThaiFilter === 1 }"
+  @click="trangThaiFilter = 1"
+>
+  Đã xác nhận
+</button>
 
-  <button>Đang giao</button>
+<button
+  :class="{ active: trangThaiFilter === 2 }"
+  @click="trangThaiFilter = 2"
+>
+  Chờ giao hàng
+</button>
 
-  <button>Đã giao</button>
+<button
+  :class="{ active: trangThaiFilter === 3 }"
+  @click="trangThaiFilter = 3"
+>
+  Đang giao hàng
+</button>
 
-  <button>Hoàn thành</button>
+<button
+  :class="{ active: trangThaiFilter === 4 }"
+  @click="trangThaiFilter = 4"
+>
+  Đã giao hàng
+</button>
 
-  <button>Đã hủy</button>
+<button
+  :class="{ active: trangThaiFilter === 5 }"
+  @click="trangThaiFilter = 5"
+>
+  Đã hoàn thành
+</button>
 
-  <button>Yêu cầu hủy</button>
-
-  <button>Đã hoàn tiền</button>
-
+<button
+  :class="{ active: trangThaiFilter === 6 }"
+  @click="trangThaiFilter = 6"
+>
+  Đã hủy
+</button>
 </div>
 
 <table>
@@ -140,7 +178,7 @@
 
   <tbody>
 
-    <tr v-for="hoaDon in filteredHoaDon" :key="hoaDon.id">
+    <tr v-for="hoaDon in listHoaDon" :key="hoaDon.id">
     <td>{{ hoaDon.id }}</td>
     <td>{{ hoaDon.maHoaDon }}</td>
     <td>{{ hoaDon.tenNv }}</td>
@@ -190,29 +228,27 @@
 
 <div class="pagination">
 
+<div class="page-center">
+
+  <button
+    @click="prevPage"
+    :disabled="page === 0"
+  >
+    <i class="fa-solid fa-chevron-left"></i>
+  </button>
+
   <span>
-    Hiển thị 1 / 4 bản ghi
+    Trang {{ page + 1 }} / {{ totalPages }}
   </span>
 
-  <div class="page-center">
+  <button
+    @click="nextPage"
+    :disabled="page + 1 >= totalPages"
+  >
+    <i class="fa-solid fa-chevron-right"></i>
+  </button>
 
-    <button>
-      <i class="fa-solid fa-chevron-left"></i>
-    </button>
-
-    <span>Trang 1</span>
-
-    <button>
-      <i class="fa-solid fa-chevron-right"></i>
-    </button>
-
-  </div>
-
-  <select>
-
-    <option>10 bản ghi / trang</option>
-
-  </select>
+</div>
 
 </div>
 
@@ -222,14 +258,11 @@
 </template>
 <script setup>
 import MainLayout from '../layouts/MainLayout.vue'
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-
-import {
-  fetchAllHoaDon,
-  searchHoaDon
-} from '@/service/HoaDonService.js'
-
+import { filterHoaDon } from '@/service/HoaDonService'
+import * as XLSX from 'xlsx'
+import { saveAs } from 'file-saver'
 const router = useRouter()
 
 // =======================
@@ -239,21 +272,101 @@ const router = useRouter()
 const listHoaDon = ref([])
 
 const keyword = ref('')
-
 const loaiHoaDonFilter = ref('')
+const trangThaiFilter = ref('')
 
 const tuNgay = ref('')
 const denNgay = ref('')
+
+const page = ref(0)
+const size = ref(5)
+const totalPages = ref(0)
 
 // =======================
 // LOAD DATA
 // =======================
 
-const handleFetchAllData = async () => {
+const loadData = async () => {
   try {
-    listHoaDon.value = await fetchAllHoaDon()
+    const response = await filterHoaDon(
+      keyword.value,
+      loaiHoaDonFilter.value,
+      trangThaiFilter.value === ''
+        ? null
+        : trangThaiFilter.value,
+      tuNgay.value,
+      denNgay.value,
+      page.value,
+      size.value
+    )
+
+    listHoaDon.value = response.content
+    totalPages.value = response.totalPages
+
   } catch (error) {
-    console.log(error)
+    console.error(error)
+  }
+}
+const exportExcel = () => {
+
+const data = listHoaDon.value.map((hd, index) => ({
+  STT: index + 1,
+  'Mã hóa đơn': hd.maHoaDon,
+  'Nhân viên': hd.tenNv,
+  'Khách hàng': hd.hoTen,
+  'Số điện thoại': hd.sdt,
+  'Loại hóa đơn': hd.loaiHoaDon,
+  'Tổng tiền': hd.tongTienThanhToan,
+  'Ngày tạo': formatDate(hd.ngayTao),
+  'Trạng thái': getTrangThaiText(hd.trangThai)
+}))
+
+const worksheet = XLSX.utils.json_to_sheet(data)
+
+const workbook = XLSX.utils.book_new()
+
+XLSX.utils.book_append_sheet(
+  workbook,
+  worksheet,
+  'HoaDon'
+)
+
+const excelBuffer = XLSX.write(
+  workbook,
+  {
+    bookType: 'xlsx',
+    type: 'array'
+  }
+)
+
+const file = new Blob(
+  [excelBuffer],
+  {
+    type:
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  }
+)
+
+saveAs(
+  file,
+  `DanhSachHoaDon_${Date.now()}.xlsx`
+)
+}
+// =======================
+// PAGINATION
+// =======================
+
+const prevPage = async () => {
+  if (page.value > 0) {
+    page.value--
+    await loadData()
+  }
+}
+
+const nextPage = async () => {
+  if (page.value < totalPages.value - 1) {
+    page.value++
+    await loadData()
   }
 }
 
@@ -262,65 +375,26 @@ const handleFetchAllData = async () => {
 // =======================
 
 const handleSearch = async () => {
-  try {
-    if (!keyword.value.trim()) {
-      await handleFetchAllData()
-      return
-    }
-
-    listHoaDon.value = await searchHoaDon(
-      keyword.value
-    )
-  } catch (error) {
-    console.log(error)
-  }
+  page.value = 0
+  await loadData()
 }
-
-// tìm kiếm realtime
-watch(keyword, async (newValue) => {
-  try {
-    if (!newValue.trim()) {
-      await handleFetchAllData()
-      return
-    }
-
-    listHoaDon.value = await searchHoaDon(newValue)
-  } catch (error) {
-    console.log(error)
-  }
-})
 
 // =======================
 // FILTER
 // =======================
 
-const filteredHoaDon = computed(() => {
-  return listHoaDon.value.filter((hd) => {
-    // lọc loại hóa đơn
-    const matchLoaiHoaDon =
-      !loaiHoaDonFilter.value ||
-      hd.loaiHoaDon === loaiHoaDonFilter.value
-
-    // xử lý ngày
-    const ngayHoaDon = hd.ngayTao
-      ? hd.ngayTao.substring(0, 10)
-      : ''
-
-    const matchTuNgay =
-      !tuNgay.value ||
-      ngayHoaDon >= tuNgay.value
-
-    const matchDenNgay =
-      !denNgay.value ||
-      ngayHoaDon <= denNgay.value
-
-    return (
-      matchLoaiHoaDon &&
-      matchTuNgay &&
-      matchDenNgay
-    )
-  })
-})
+watch(
+  [
+    loaiHoaDonFilter,
+    trangThaiFilter,
+    tuNgay,
+    denNgay
+  ],
+  async () => {
+    page.value = 0
+    await loadData()
+  }
+)
 
 // =======================
 // FORMAT
@@ -337,49 +411,44 @@ const formatCurrency = (value) => {
   if (!value) return '0 đ'
 
   return (
-    Number(value).toLocaleString('vi-VN') +
-    ' đ'
+    Number(value).toLocaleString('vi-VN')
+    + ' đ'
   )
 }
 
 // =======================
-// STATUS
+// TRẠNG THÁI
 // =======================
 
 const getTrangThaiText = (status) => {
   switch (status) {
-    case 0:
-      return 'Đã hủy'
-
-    case 1:
-      return 'Đã thanh toán'
-
-    case 2:
-      return 'Chờ xác nhận'
-
-    case 3:
-      return 'Đang giao'
-
-    case 4:
-      return 'Hoàn thành'
-
-    default:
-      return 'Không xác định'
+    case 0: return 'Chờ xác nhận'
+    case 1: return 'Đã xác nhận'
+    case 2: return 'Chờ giao hàng'
+    case 3: return 'Đang giao hàng'
+    case 4: return 'Đã giao hàng'
+    case 5: return 'Đã hoàn thành'
+    case 6: return 'Đã hủy'
+    default: return 'Không xác định'
   }
 }
 
 const getStatusClass = (status) => {
   switch (status) {
-    case 0:
-      return 'status-cancel'
-
-    case 1:
-      return 'status-paid'
-
-    default:
-      return ''
+    case 0: return 'status-wait-confirm'
+    case 1: return 'status-confirmed'
+    case 2: return 'status-wait-delivery'
+    case 3: return 'status-delivering'
+    case 4: return 'status-delivered'
+    case 5: return 'status-completed'
+    case 6: return 'status-cancel'
+    default: return ''
   }
 }
+
+// =======================
+// LOẠI HÓA ĐƠN
+// =======================
 
 const getLoaiHoaDonClass = (loai) => {
   switch (loai) {
@@ -394,39 +463,51 @@ const getLoaiHoaDonClass = (loai) => {
   }
 }
 
+// =======================
+// CHI TIẾT
+// =======================
 
 const viewDetail = (id) => {
   router.push(`/hoa-don/${id}`)
 }
 
-onMounted(async () => {
-  await handleFetchAllData()
+// =======================
+// RESET FILTER
+// =======================
 
-  // mặc định ngày hôm nay
-  const today =
-    new Date().toISOString().split('T')[0]
-
-  tuNgay.value = today
-  denNgay.value = today
-})
 const resetFilter = async () => {
-  // Xóa tìm kiếm
   keyword.value = ''
-
-  // Loại hóa đơn về tất cả
   loaiHoaDonFilter.value = ''
+  trangThaiFilter.value = ''
 
-  // Ngày về hôm nay
-  const today = new Date()
-    .toISOString()
-    .split('T')[0]
+  const today =
+    new Date()
+      .toISOString()
+      .split('T')[0]
 
   tuNgay.value = today
   denNgay.value = today
 
-  // Load lại dữ liệu
-  await handleFetchAllData()
+  page.value = 0
+
+  await loadData()
 }
+
+// =======================
+// MOUNT
+// =======================
+
+onMounted(async () => {
+  const today =
+    new Date()
+      .toISOString()
+      .split('T')[0]
+
+  tuNgay.value = today
+  denNgay.value = today
+
+  await loadData()
+})
 </script>
 
 <style scoped>
@@ -509,6 +590,40 @@ const resetFilter = async () => {
   justify-content:flex-end;
   gap:10px;
   margin-top:16px;
+}
+.status-wait-confirm{
+  background:#fef3c7;
+  color:#b45309;
+}
+
+.status-confirmed{
+  background:#dbeafe;
+  color:#1d4ed8;
+}
+
+.status-wait-delivery{
+  background:#ede9fe;
+  color:#6d28d9;
+}
+
+.status-delivering{
+  background:#cffafe;
+  color:#0e7490;
+}
+
+.status-delivered{
+  background:#dcfce7;
+  color:#15803d;
+}
+
+.status-completed{
+  background:#bbf7d0;
+  color:#166534;
+}
+
+.status-cancel{
+  background:#fee2e2;
+  color:#dc2626;
 }
 
 .btn-reset{
