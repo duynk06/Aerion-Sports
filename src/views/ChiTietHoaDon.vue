@@ -1,15 +1,124 @@
 <script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+
 import MainLayout from '@/layouts/MainLayout.vue'
-import { useRouter } from 'vue-router'
-import { ref } from 'vue'
 
-const showHistoryModal = ref(false)
+import {
+  getHoaDonById
+} from '@/service/HoaDonService'
+
+import {
+  getLichSuHoaDon
+} from '@/service/ChiTietHoaDonService'
+const formatCurrency = (value) => {
+  if (!value) return '0 đ'
+
+  return Number(value).toLocaleString('vi-VN') + ' đ'
+}
+
+const loadHoaDon = async () => {
+
+try {
+
+  const response =
+    await getHoaDonById(idHoaDon)
+
+  hoaDon.value = response
+
+  currentStatus.value =
+    response.trangThai
+
+  console.log(response)
+
+} catch (error) {
+
+  console.error(error)
+
+}
+}
+const hoaDon = ref({})
+// Router
 const router = useRouter()
+const route = useRoute()
+const isCancelled = () => currentStatus.value === 6
+// Id hóa đơn
+const idHoaDon = route.params.id
 
+// Modal lịch sử
+const showHistoryModal = ref(false)
+
+// Danh sách lịch sử
+const lichSuList = ref([])
+
+// Trạng thái hiện tại của hóa đơn
+const currentStatus = ref(0)
+
+// Danh sách các bước
+const orderSteps = [
+  {
+    value: 0,
+    label: 'Chờ xác nhận',
+    icon: 'fa-hourglass-start'
+  },
+  {
+    value: 1,
+    label: 'Đã xác nhận',
+    icon: 'fa-circle-check'
+  },
+  {
+    value: 2,
+    label: 'Chờ giao hàng',
+    icon: 'fa-box'
+  },
+  {
+    value: 3,
+    label: 'Đang giao hàng',
+    icon: 'fa-truck'
+  },
+  {
+    value: 4,
+    label: 'Đã giao hàng',
+    icon: 'fa-truck-ramp-box'
+  },
+  {
+    value: 5,
+    label: 'Đã hoàn thành',
+    icon: 'fa-flag-checkered'
+  }
+]
+
+// Quay lại
 const goBack = () => {
   router.push('/hoa-don')
-  // hoặc router.back()
 }
+
+
+// Load lịch sử hóa đơn
+const loadLichSuHoaDon = async () => {
+  try {
+
+    lichSuList.value =
+      await getLichSuHoaDon(idHoaDon)
+
+  } catch (error) {
+
+    console.error(
+      'Lỗi load lịch sử hóa đơn:',
+      error
+    )
+
+  }
+}
+
+// Mounted
+onMounted(async () => {
+
+await loadHoaDon()
+
+await loadLichSuHoaDon()
+
+})
 </script>
 <template>
   <MainLayout title="Chi tiết hóa đơn">
@@ -33,7 +142,35 @@ const goBack = () => {
 </div>
 
 <div class="order-steps">
-  ...
+  <div
+  v-for="step in orderSteps"
+  :key="step.value"
+  class="step"
+  :class="{
+    active: !isCancelled() && step.value <= currentStatus,
+    'active-line': !isCancelled() && step.value < currentStatus
+  }"
+>
+<div
+  class="step-icon"
+  :class="{
+    active: !isCancelled() && step.value <= currentStatus
+  }"
+>
+      <i :class="['fa-solid', step.icon]"></i>
+    </div>
+
+    <div
+  class="step-label"
+  :class="{
+    active:
+      !isCancelled() &&
+      step.value <= currentStatus
+  }"
+>
+      {{ step.label }}
+    </div>
+  </div>
 </div>
 
 <!-- Bọc nút vào div -->
@@ -61,27 +198,26 @@ const goBack = () => {
   </div>
 
   <div class="summary-item">
-    <span>Tổng tiền hàng</span>
-    <span>0 đ</span>
-  </div>
+  <span>Tổng tiền hàng</span>
+  <span>{{ formatCurrency(hoaDon.tongTienHang) }}</span>
+</div>
 
-  <div class="summary-item">
-    <span>Giảm giá</span>
-    <span>0 đ</span>
-  </div>
+<div class="summary-item">
+  <span>Giảm giá</span>
+  <span>{{ formatCurrency(hoaDon.tienGiam) }}</span>
+</div>
 
-  <div class="summary-item">
-    <span>Phí vận chuyển</span>
-    <span>0 đ</span>
-  </div>
+<div class="summary-item">
+  <span>Phí vận chuyển</span>
+  <span>{{ formatCurrency(hoaDon.tienVanChuyen) }}</span>
+</div>
 
-  <hr>
+<hr>
 
-  <div class="summary-total">
-    <span>Tổng thanh toán</span>
-    <span>0 đ</span>
-  </div>
-
+<div class="summary-total">
+  <span>Tổng thanh toán</span>
+  <span>{{ formatCurrency(hoaDon.tongTienThanhToan) }}</span>
+</div>
 </div>
 
 <!-- Khách hàng -->
@@ -93,20 +229,19 @@ const goBack = () => {
   </div>
 
   <div class="info-row">
-    <label>Họ tên:</label>
-    <span></span>
-  </div>
+  <label>Họ tên:</label>
+  <span>{{ hoaDon.hoTen }}</span>
+</div>
 
-  <div class="info-row">
-    <label>SĐT:</label>
-    <span></span>
-  </div>
+<div class="info-row">
+  <label>SĐT:</label>
+  <span>{{ hoaDon.sdt }}</span>
+</div>
 
-  <div class="info-row">
-    <label>Email:</label>
-    <span></span>
-  </div>
-
+<div class="info-row">
+  <label>Email:</label>
+  <span>{{ hoaDon.email }}</span>
+</div>
 </div>
 
 <!-- Giao hàng -->
@@ -116,22 +251,20 @@ const goBack = () => {
     <i class="fa-solid fa-location-dot"></i>
     <span>Thông tin giao hàng</span>
   </div>
-
   <div class="info-row">
-    <label>Địa chỉ:</label>
-    <span></span>
-  </div>
+  <label>Địa chỉ:</label>
+  <span>{{ hoaDon.diaChiNhan }}</span>
+</div>
 
-  <div class="info-row">
-    <label>Loại đơn:</label>
-    <span></span>
-  </div>
+<div class="info-row">
+  <label>Loại đơn:</label>
+  <span>{{ hoaDon.loaiHoaDon }}</span>
+</div>
 
-  <div class="info-row">
-    <label>Ghi chú:</label>
-    <span></span>
-  </div>
-
+<div class="info-row">
+  <label>Ghi chú:</label>
+  <span>{{ hoaDon.ghiChu }}</span>
+</div>
 </div>
 
 </div>
@@ -258,17 +391,25 @@ const goBack = () => {
 </thead>
 
 <tbody>
+  <tr
+    v-for="(item,index) in lichSuList"
+    :key="item.id"
+  >
+    <td>{{ index + 1 }}</td>
 
-  <!-- Để trống -->
+    <td>{{ item.tenNhanVien }}</td>
 
-  <!--
-  <tr>
-    <td colspan="5" class="empty-data">
-      Chưa có dữ liệu
+    <td>{{ item.hanhDong }}</td>
+
+    <td>{{ item.ghiChu }}</td>
+
+    <td>
+      {{
+        new Date(item.thoiGianHanhDong)
+          .toLocaleString('vi-VN')
+      }}
     </td>
   </tr>
-  -->
-
 </tbody>
 
 </table>
@@ -547,6 +688,14 @@ z-index:2;
 position:relative;
 }
 
+.step.active .step-icon {
+    background: #f79b66;
+    color: white;
+}
+
+.step.active-line:not(:last-child)::after {
+    background: #f79b66;
+}
 .step-label{
 margin-top:8px;
 font-size:13px;
@@ -720,5 +869,82 @@ td{
 
 .history-btn:hover{
   opacity:.9;
+}
+.step-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #ddd;
+  color: #888;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.3s;
+}
+
+.step-label {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #999;
+  transition: 0.3s;
+}
+
+/* trạng thái active */
+.step-icon.active {
+  background: #f79b66;
+  color: #fff;
+  transform: scale(1.1);
+  box-shadow: 0 4px 10px rgba(247, 155, 102, 0.4);
+}
+
+.step-label.active {
+  color: #f79b66;
+  font-weight: 600;
+}
+
+/* đường nối */
+.step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: 55%;
+  width: 90%;
+  height: 2px;
+  background: #ddd;
+}
+
+/* line active */
+.step.active-line:not(:last-child)::after {
+  background: #f79b66;
+}
+.info-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:16px;
+}
+
+.info-row label{
+  color:#666;
+  font-weight:500;
+}
+
+.info-row span{
+  font-weight:600;
+  text-align:right;
+}
+.summary-total{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-top:15px;
+  padding-top:15px;
+  font-size:18px;
+  font-weight:700;
+}
+
+.summary-total span:last-child{
+  color:#f79b66;
 }
 </style>
