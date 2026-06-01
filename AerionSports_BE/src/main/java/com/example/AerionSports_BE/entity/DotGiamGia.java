@@ -1,10 +1,12 @@
 package com.example.AerionSports_BE.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,6 +15,8 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -38,12 +42,6 @@ public class DotGiamGia {
     @Column(name = "gia_tri_giam", precision = 18, scale = 2)
     private BigDecimal giaTriGiam;
 
-    @Column(name = "so_luong")
-    private Integer soLuong;
-
-    @Column(name = "so_luong_da_dung")
-    private Integer soLuongDaDung = 0;
-
     @Column(name = "ngay_bat_dau")
     private LocalDateTime ngayBatDau;
 
@@ -54,11 +52,14 @@ public class DotGiamGia {
     private String moTa;
 
     @Column(name = "ngay_tao")
-    private LocalDateTime ngayTao = LocalDateTime.now();
+    private LocalDateTime ngayTao;
 
     @Column(name = "ngay_cap_nhat")
-    private LocalDateTime ngayCapNhat = LocalDateTime.now();
+    private LocalDateTime ngayCapNhat;
 
     @Column(name = "trang_thai")
     private Integer trangThai = 1;
+
+    @OneToMany(mappedBy = "dotGiamGia", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChiTietDotGiamGia> chiTietDotGiamGiaList = new ArrayList<>();
 }

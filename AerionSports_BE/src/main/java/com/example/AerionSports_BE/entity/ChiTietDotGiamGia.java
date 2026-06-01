@@ -34,7 +34,7 @@ public class ChiTietDotGiamGia {
     private DotGiamGia dotGiamGia;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_chi_tiet_san_pham", nullable = false)
+    @JoinColumn(name = "id_san_pham_chi_tiet", nullable = false)
     private ChiTietSanPham chiTietSanPham;
 
     @Column(name = "so_luong_ap_dung")
@@ -43,21 +43,15 @@ public class ChiTietDotGiamGia {
     @Column(name = "gia_tri_giam_rieng", precision = 18, scale = 2)
     private BigDecimal giaTriGiamRieng;
 
-    @Column(name = "so_ban_toi_da_giam_rieng")
-    private Integer soBanToiDaGiamRieng;
-
-    @Column(name = "trang_thai_giam")
-    private Integer trangThaiGiam;
+    @Column(name = "trang_thai")
+    private Integer trangThai = 1;
 
     @Column(name = "ghi_chu", length = 255)
     private String ghiChu;
 
     @Column(name = "ngay_tao")
-    private LocalDateTime ngayTao = LocalDateTime.now();
+    private LocalDateTime ngayTao;
 
     @Column(name = "ngay_cap_nhat")
-    private LocalDateTime ngayCapNhat = LocalDateTime.now();
-
-    @Column(name = "trang_thai")
-    private Integer trangThai = 1;
+    private LocalDateTime ngayCapNhat;
 }
