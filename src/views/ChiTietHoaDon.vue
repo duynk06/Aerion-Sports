@@ -1,7 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-
+import {
+  getLichSuThanhToan
+} from '@/service/LichSuThanhToanService'
 import MainLayout from '@/layouts/MainLayout.vue'
 
 import {
@@ -17,25 +19,42 @@ const formatCurrency = (value) => {
   return Number(value).toLocaleString('vi-VN') + ' đ'
 }
 
-const loadHoaDon = async () => {
+const lichSuThanhToan = ref([])
 
-try {
+const loadLichSuThanhToan = async () => {
+  try {
 
-  const response =
-    await getHoaDonById(idHoaDon)
+    lichSuThanhToan.value =
+      await getLichSuThanhToan(idHoaDon)
 
-  hoaDon.value = response
+    console.log(
+      "Lịch sử thanh toán:",
+      lichSuThanhToan.value
+    )
 
-  currentStatus.value =
-    response.trangThai
+  } catch (error) {
 
-  console.log(response)
+    console.error(error)
 
-} catch (error) {
-
-  console.error(error)
-
+  }
 }
+
+const loadHoaDon = async () => {
+  try {
+
+    const response =
+      await getHoaDonById(idHoaDon)
+
+    hoaDon.value = response
+
+    currentStatus.value =
+      response.trangThai
+
+  } catch (error) {
+
+    console.error(error)
+
+  }
 }
 const hoaDon = ref({})
 // Router
@@ -117,6 +136,8 @@ onMounted(async () => {
 await loadHoaDon()
 
 await loadLichSuHoaDon()
+
+await loadLichSuThanhToan()
 
 })
 </script>
@@ -270,6 +291,7 @@ await loadLichSuHoaDon()
 </div>
 
 <!-- HÀNG 3 -->
+<!-- HÀNG 3 -->
 <div class="card">
 
 <div class="card-title">
@@ -277,15 +299,47 @@ await loadLichSuHoaDon()
   <span>Lịch sử thanh toán</span>
 </div>
 
-<div class="history-item">
-  <div class="history-title">
-    Thanh toán thành công
-  </div>
+<table class="payment-table">
+  <thead>
+    <tr>
+      <th>STT</th>
+      <th>Số tiền</th>
+      <th>Thời gian</th>
+      <th>Phương thức</th>
+      <th>Ghi chú</th>
+    </tr>
+  </thead>
 
-  <div class="history-time">
-    20/06/2026 14:30
-  </div>
-</div>
+  <tbody>
+
+    <tr
+  v-for="(item,index) in lichSuThanhToan"
+  :key="item.id"
+>
+  <td>{{ index + 1 }}</td>
+
+  <td>
+    {{ formatCurrency(item.soTien) }}
+  </td>
+
+  <td>
+    {{
+      new Date(item.ngayThanhToan)
+      .toLocaleString('vi-VN')
+    }}
+  </td>
+
+  <td>
+    {{ item.phuongThucThanhToan }}
+  </td>
+
+  <td>
+    {{ item.ghiChu }}
+  </td>
+</tr>
+
+  </tbody>
+</table>
 
 </div>
 
@@ -946,5 +1000,29 @@ td{
 
 .summary-total span:last-child{
   color:#f79b66;
+}
+.payment-table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+.payment-table thead{
+  background:#f79b66;
+}
+
+.payment-table th{
+  color:white;
+  padding:12px;
+  text-align:center;
+}
+
+.payment-table td{
+  padding:12px;
+  text-align:center;
+  border-bottom:1px solid #eee;
+}
+
+.payment-table tbody tr:hover{
+  background:#fafafa;
 }
 </style>
