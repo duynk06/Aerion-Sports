@@ -1,0 +1,296 @@
+.dot-giam-gia-page .page-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dot-giam-gia-page .card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.dot-giam-gia-page .card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f79b66;
+  color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 18px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.dot-giam-gia-page .filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.dot-giam-gia-page .filter-grid label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #111111;
+}
+
+.dot-giam-gia-page .filter-grid input,
+.dot-giam-gia-page .filter-grid select {
+  width: 100%;
+  height: 38px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 12px;
+  font-size: 13px;
+  outline: none;
+  background: #ffffff;
+}
+
+.dot-giam-gia-page .filter-action {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.dot-giam-gia-page .btn-reset,
+.dot-giam-gia-page .btn-search {
+  border: none;
+  border-radius: 6px;
+  padding: 10px 18px;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot-giam-gia-page .btn-reset {
+  background: #f3f4f6;
+  color: #111111;
+}
+
+.dot-giam-gia-page .btn-search {
+  background: #d8f5eb;
+  color: #00875a;
+}
+
+.dot-giam-gia-page .list-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dot-giam-gia-page .title-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #f79b66;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.dot-giam-gia-page .list-title h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.dot-giam-gia-page .list-title span {
+  font-size: 11px;
+  color: #888888;
+}
+
+.dot-giam-gia-page .list-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.dot-giam-gia-page .btn-add {
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: #f79b66;
+  color: #ffffff;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dot-giam-gia-page .btn-add:hover {
+  opacity: 0.95;
+}
+
+.dot-giam-gia-page .status-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.dot-giam-gia-page .status-tabs button {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.dot-giam-gia-page .status-tabs .active {
+  background: #f79b66;
+  color: #ffffff;
+  border-color: #f79b66;
+}
+
+.dot-giam-gia-page .discount-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 12px;
+}
+
+.dot-giam-gia-page .discount-table thead {
+  background: #f79b66;
+  color: #ffffff;
+}
+
+.dot-giam-gia-page .discount-table th,
+.dot-giam-gia-page .discount-table td {
+  padding: 12px 10px;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.dot-giam-gia-page .discount-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.dot-giam-gia-page .state-cell {
+  padding: 18px 10px;
+  text-align: center !important;
+}
+
+.dot-giam-gia-page .error-cell {
+  color: #b00020;
+}
+
+.dot-giam-gia-page .status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dot-giam-gia-page .status-wait {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.dot-giam-gia-page .status-running {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.dot-giam-gia-page .status-end {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.dot-giam-gia-page .status-cancel {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.dot-giam-gia-page .row-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dot-giam-gia-page .action-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.dot-giam-gia-page .action-btn:hover {
+  background: #f5f5f5;
+}
+
+.dot-giam-gia-page .pagination {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.dot-giam-gia-page .page-center {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dot-giam-gia-page .page-center button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dot-giam-gia-page .page-center button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1200px) {
+  .dot-giam-gia-page .filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .dot-giam-gia-page .filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dot-giam-gia-page .filter-action {
+    justify-content: stretch;
+    flex-direction: column;
+  }
+
+  .dot-giam-gia-page .btn-reset,
+  .dot-giam-gia-page .btn-search {
+    justify-content: center;
+  }
+
+  .dot-giam-gia-page .pagination {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+}
