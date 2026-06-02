@@ -1,7 +1,7 @@
 <template>
   <MainLayout title="Quản lý hóa đơn">
 
-    <!-- FILTER -->
+  
     <div class="card">
 
       <div class="card-header">
@@ -65,8 +65,7 @@
 
     </div>
 
-    <!-- LIST -->
-    <!-- DANH SÁCH HÓA ĐƠN -->
+  
 <div class="card">
 
 <div class="list-title">
@@ -265,9 +264,7 @@ import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 const router = useRouter()
 
-// =======================
-// DATA
-// =======================
+
 
 const listHoaDon = ref([])
 
@@ -282,9 +279,7 @@ const page = ref(0)
 const size = ref(5)
 const totalPages = ref(0)
 
-// =======================
-// LOAD DATA
-// =======================
+
 
 const loadData = async () => {
   try {
@@ -352,9 +347,7 @@ saveAs(
   `DanhSachHoaDon_${Date.now()}.xlsx`
 )
 }
-// =======================
-// PAGINATION
-// =======================
+
 
 const prevPage = async () => {
   if (page.value > 0) {
@@ -370,18 +363,13 @@ const nextPage = async () => {
   }
 }
 
-// =======================
-// SEARCH
-// =======================
 
 const handleSearch = async () => {
   page.value = 0
   await loadData()
 }
 
-// =======================
-// FILTER
-// =======================
+
 
 watch(
   [
@@ -397,9 +385,7 @@ watch(
   }
 )
 
-// =======================
-// FORMAT
-// =======================
+
 
 const formatDate = (date) => {
   if (!date) return ''
@@ -417,9 +403,6 @@ const formatCurrency = (value) => {
   )
 }
 
-// =======================
-// TRẠNG THÁI
-// =======================
 
 const getTrangThaiText = (status) => {
   switch (status) {
@@ -447,9 +430,6 @@ const getStatusClass = (status) => {
   }
 }
 
-// =======================
-// LOẠI HÓA ĐƠN
-// =======================
 
 const getLoaiHoaDonClass = (loai) => {
   switch (loai) {
@@ -464,17 +444,11 @@ const getLoaiHoaDonClass = (loai) => {
   }
 }
 
-// =======================
-// CHI TIẾT
-// =======================
 
 const viewDetail = (id) => {
   router.push(`/hoa-don/${id}`)
 }
 
-// =======================
-// RESET FILTER
-// =======================
 
 const resetFilter = async () => {
   keyword.value = ''
@@ -494,9 +468,7 @@ const resetFilter = async () => {
   await loadData()
 }
 
-// =======================
-// MOUNT
-// =======================
+
 
 onMounted(async () => {
   const today =

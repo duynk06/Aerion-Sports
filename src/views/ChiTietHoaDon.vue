@@ -1,11 +1,18 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import {
+  ref,
+  onMounted,
+  computed,
+  watch
+} from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   getLichSuThanhToan
 } from '@/service/LichSuThanhToanService'
 import MainLayout from '@/layouts/MainLayout.vue'
-
+import {
+  getChiTietHoaDon
+} from '@/service/ChiTietHoaDonDetailService'
 import {
   getHoaDonById
 } from '@/service/HoaDonService'
@@ -19,8 +26,191 @@ const formatCurrency = (value) => {
   return Number(value).toLocaleString('vi-VN') + ' đ'
 }
 
-const lichSuThanhToan = ref([])
+const historyKeyword = ref('')
 
+const historyAction = ref('')
+const danhSachSanPham = ref([])
+const lichSuThanhToan = ref([])
+const searchKeyword = ref('')
+
+const selectedMauSac = ref('')
+
+const selectedTrongLuong = ref('')
+
+const currentPage = ref(1)
+
+const pageSize = 5
+const mauSacOptions = computed(() => {
+
+return [
+  ...new Set(
+    danhSachSanPham.value.map(
+      item => item.mauSac
+    )
+  )
+]
+
+})
+const filteredHistory = computed(() => {
+
+return lichSuList.value.filter(item => {
+
+  const matchName =
+
+    !historyKeyword.value ||
+
+    item.tenNhanVien
+      ?.toLowerCase()
+      .includes(
+        historyKeyword.value.toLowerCase()
+      )
+
+  const matchAction =
+
+    !historyAction.value ||
+
+    item.trangThaiMoi ==
+    historyAction.value
+
+  return (
+    matchName &&
+    matchAction
+  )
+
+})
+
+})
+const resetHistoryFilter = () => {
+
+historyKeyword.value = ''
+
+historyAction.value = ''
+
+
+}
+const trongLuongOptions = computed(() => {
+
+return [
+  ...new Set(
+    danhSachSanPham.value.map(
+      item => item.trongLuong
+    )
+  )
+]
+
+})
+const filteredProducts = computed(() => {
+
+return danhSachSanPham.value.filter(item => {
+
+  const keyword =
+    searchKeyword.value.toLowerCase()
+
+  const matchKeyword =
+
+    item.maSanPham
+      ?.toLowerCase()
+      .includes(keyword)
+
+    ||
+
+    item.tenSanPham
+      ?.toLowerCase()
+      .includes(keyword)
+
+  const matchMauSac =
+
+    !selectedMauSac.value ||
+
+    item.mauSac ===
+    selectedMauSac.value
+
+  const matchTrongLuong =
+
+    !selectedTrongLuong.value ||
+
+    item.trongLuong ===
+    selectedTrongLuong.value
+
+  return (
+    matchKeyword &&
+    matchMauSac &&
+    matchTrongLuong
+  )
+
+})
+
+})
+const totalProducts = computed(() => {
+  return filteredProducts.value.length
+})
+const totalPages = computed(() => {
+
+return Math.ceil(
+  filteredProducts.value.length /
+  pageSize
+)
+
+})
+const paginatedProducts = computed(() => {
+
+const start =
+  (currentPage.value - 1) *
+  pageSize
+
+const end =
+  start + pageSize
+
+return filteredProducts.value.slice(
+  start,
+  end
+)
+
+})
+const resetFilter = () => {
+
+searchKeyword.value = ''
+
+selectedMauSac.value = ''
+
+selectedTrongLuong.value = ''
+
+currentPage.value = 1
+
+}
+watch(
+  [
+    searchKeyword,
+    selectedMauSac,
+    selectedTrongLuong
+  ],
+  () => {
+
+    currentPage.value = 1
+
+  }
+)
+const loadChiTietHoaDon = async () => {
+
+try {
+
+  danhSachSanPham.value =
+    await getChiTietHoaDon(idHoaDon)
+
+  console.log(
+    "Chi tiết hóa đơn:",
+    danhSachSanPham.value
+  )
+
+} catch (error) {
+
+  console.error(
+    "Lỗi lấy chi tiết hóa đơn:",
+    error
+  )
+
+}
+}
 const loadLichSuThanhToan = async () => {
   try {
 
@@ -130,6 +320,36 @@ const loadLichSuHoaDon = async () => {
   }
 }
 
+const getTrangThaiText = (status) => {
+
+switch (status) {
+
+  case 0:
+    return 'Chờ xác nhận'
+
+  case 1:
+    return 'Đã xác nhận'
+
+  case 2:
+    return 'Chờ giao hàng'
+
+  case 3:
+    return 'Đang giao hàng'
+
+  case 4:
+    return 'Đã giao hàng'
+
+  case 5:
+    return 'Đã hoàn thành'
+
+  case 6:
+    return 'Đã hủy'
+
+  default:
+    return 'Khởi tạo'
+}
+}
+
 // Mounted
 onMounted(async () => {
 
@@ -138,6 +358,8 @@ await loadHoaDon()
 await loadLichSuHoaDon()
 
 await loadLichSuThanhToan()
+
+await loadChiTietHoaDon()
 
 })
 </script>
@@ -351,6 +573,54 @@ await loadLichSuThanhToan()
         <span>Danh sách sản phẩm</span>
       </div>
 
+      <div class="table-toolbar">
+
+<input
+  v-model="searchKeyword"
+  type="text"
+  placeholder="Tìm mã hoặc tên sản phẩm..."
+>
+
+<select v-model="selectedMauSac">
+
+  <option value="">
+    Tất cả màu sắc
+  </option>
+
+  <option
+    v-for="item in mauSacOptions"
+    :key="item"
+    :value="item"
+  >
+    {{ item }}
+  </option>
+
+</select>
+
+<select v-model="selectedTrongLuong">
+
+  <option value="">
+    Tất cả trọng lượng
+  </option>
+
+  <option
+    v-for="item in trongLuongOptions"
+    :key="item"
+    :value="item"
+  >
+    {{ item }}
+  </option>
+
+</select>
+
+<button
+  class="reset-btn"
+  @click="resetFilter"
+>
+  <i class="fa-solid fa-rotate-right"></i>
+</button>
+
+</div>
       <table>
 
         <thead>
@@ -358,7 +628,7 @@ await loadLichSuThanhToan()
             <th>STT</th>
             <th>Mã sản phẩm</th>
             <th>Tên sản phẩm</th>
-            <th>Size</th>
+            <th>Trọng Lượng1</th>
             <th>Màu sắc</th>
             <th>Số lượng</th>
             <th>Đơn giá</th>
@@ -368,13 +638,63 @@ await loadLichSuThanhToan()
 
         <tbody>
 
-          <tr>
-          
-          </tr>
+<tr
+  v-for="(item,index) in paginatedProducts"
+  :key="item.id"
+>
 
-        </tbody>
+  <td>{{ index + 1 }}</td>
+
+  <td>{{ item.maSanPham }}</td>
+
+  <td>{{ item.tenSanPham }}</td>
+
+  <td>{{ item.trongLuong }}</td>
+
+  <td>{{ item.mauSac }}</td>
+
+  <td>{{ item.soLuong }}</td>
+
+  <td>{{ formatCurrency(item.donGia) }}</td>
+
+  <td>{{ formatCurrency(item.thanhTien) }}</td>
+
+</tr>
+
+</tbody>
 
       </table>
+      <div class="table-footer">
+
+<div class="table-info">
+  Tổng:
+  <strong>{{ totalProducts }}</strong>
+  sản phẩm
+</div>
+
+<div class="pagination">
+
+  <button
+    :disabled="currentPage === 1"
+    @click="currentPage--"
+  >
+    <
+  </button>
+
+  <span>
+    Trang {{ currentPage }} / {{ totalPages || 1 }}
+  </span>
+
+  <button
+    :disabled="currentPage === totalPages"
+    @click="currentPage++"
+  >
+    >
+  </button>
+
+</div>
+
+</div>
 
     </div>
 
@@ -408,14 +728,15 @@ await loadLichSuThanhToan()
 <div class="filter-group">
   <label>Người thao tác</label>
   <input
-    type="text"
-    placeholder="Nhập tên người thao tác"
-  >
+  v-model="historyKeyword"
+  type="text"
+  placeholder="Nhập tên người thao tác"
+/>
 </div>
 
 <div class="filter-group">
   <label>Hành động</label>
-  <select>
+  <select v-model="historyAction">
     <option value="">Tất cả</option>
     <option value="0">Chờ xác nhận</option>
     <option value="1">Đã xác nhận</option>
@@ -426,8 +747,8 @@ await loadLichSuThanhToan()
   </select>
 </div>
 
-<button class="search-history-btn">
-  <i class="fa-solid fa-magnifying-glass"></i>
+<button class="search-history-btn"  @click="resetHistoryFilter">
+  <i class="fa-solid fa-rotate-right"></i>
 </button>
 
 </div>
@@ -437,32 +758,39 @@ await loadLichSuThanhToan()
 <thead>
   <tr>
     <th>STT</th>
-    <th>Người thao tác</th>
-    <th>Hành động</th>
-    <th>Ghi chú</th>
-    <th>Thời gian</th>
+<th>Người thao tác</th>
+<th>Trạng thái cũ</th>
+<th>Trạng thái mới</th>
+<th>Hành động</th>
+<th>Thời gian</th>
   </tr>
 </thead>
 
 <tbody>
   <tr
-    v-for="(item,index) in lichSuList"
-    :key="item.id"
-  >
+  v-for="(item,index) in filteredHistory"
+  :key="item.id"
+>
     <td>{{ index + 1 }}</td>
 
     <td>{{ item.tenNhanVien }}</td>
 
-    <td>{{ item.hanhDong }}</td>
+<td>
+  {{ getTrangThaiText(item.trangThaiCu) }}
+</td>
 
-    <td>{{ item.ghiChu }}</td>
+<td>
+  {{ getTrangThaiText(item.trangThaiMoi) }}
+</td>
 
-    <td>
-      {{
-        new Date(item.thoiGianHanhDong)
-          .toLocaleString('vi-VN')
-      }}
-    </td>
+<td>{{ item.hanhDong }}</td>
+
+<td>
+  {{
+    new Date(item.thoiGianHanhDong)
+      .toLocaleString('vi-VN')
+  }}
+</td>
   </tr>
 </tbody>
 
@@ -1024,5 +1352,119 @@ td{
 
 .payment-table tbody tr:hover{
   background:#fafafa;
+}
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.table-toolbar input {
+  flex: 1;
+  min-width: 280px;
+  height: 42px;
+  border: 1px solid #dcdfe6;
+  border-radius: 8px;
+  padding: 0 14px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.table-toolbar input:focus {
+  border-color: #409eff;
+}
+
+.table-toolbar select {
+  min-width: 170px;
+  height: 42px;
+  border: 1px solid #dcdfe6;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+}
+
+.reset-btn {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 8px;
+  background: #f79b66;
+  color: white;
+  cursor: pointer;
+}
+
+.reset-btn:hover {
+  background: #f79b66;
+  transform: none;
+}
+.table-info {
+  margin-top: 16px;
+  font-size: 12px;
+ 
+}
+
+
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.pagination button {
+  min-width: 38px;
+  height: 38px;
+  border: 1px solid #dcdfe6;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination{
+  margin-top:16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:12px;
+}
+
+
+@media (max-width: 768px) {
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .table-toolbar input,
+  .table-toolbar select {
+    width: 100%;
+  }
+
+  .reset-btn {
+    width: 100%;
+  }
+
+
+}
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+@media (max-width: 768px) {
+
+  .table-footer {
+    flex-direction: column;
+    gap: 15px;
+  }
+
 }
 </style>
