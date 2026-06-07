@@ -1,6 +1,7 @@
 export const printInvoice = (
     hoaDon,
-    danhSachSanPham
+    danhSachSanPham,
+    lichSuThanhToan
   ) => {
   
     const formatCurrency = (value) => {
@@ -21,6 +22,18 @@ export const printInvoice = (
         </tr>
       `)
       .join('')
+      const paymentRows = lichSuThanhToan.map(
+        (item, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${formatCurrency(item.soTien)}</td>
+            <td>${new Date(item.ngayThanhToan)
+              .toLocaleString('vi-VN')}</td>
+            <td>${item.phuongThucThanhToan || ''}</td>
+            <td>${item.ghiChu || ''}</td>
+          </tr>
+        `
+      ).join('')
   
     printWindow.document.write(`
       <html>
@@ -60,9 +73,9 @@ export const printInvoice = (
             }
   
             .total{
-              margin-top:20px;
-              text-align:right;
-            }
+  margin-top:20px;
+  text-align:left;
+}
           </style>
         </head>
   
@@ -154,6 +167,25 @@ export const printInvoice = (
             </h2>
   
           </div>
+          <h3 style="margin-top:25px">
+  Lịch sử thanh toán
+</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>STT</th>
+      <th>Số tiền</th>
+      <th>Thời gian</th>
+      <th>Phương thức</th>
+      <th>Ghi chú</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    ${paymentRows}
+  </tbody>
+</table>
   
           <hr>
   

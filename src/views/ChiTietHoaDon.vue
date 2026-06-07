@@ -388,7 +388,7 @@ await loadChiTietHoaDon()
 
 <button
   class="btn-print-invoice"
-  @click="printInvoice(hoaDon, danhSachSanPham)"
+  @click="printInvoice(hoaDon, danhSachSanPham, lichSuThanhToan)"
 >
   <i class="fa-solid fa-print"></i>
   In hóa đơn
@@ -695,25 +695,31 @@ await loadChiTietHoaDon()
 
 <div class="pagination">
 
-  <button
-    :disabled="currentPage === 1"
-    @click="currentPage--"
-  >
-    <
-  </button>
+  <div class="page-center">
 
-  <span>
-    Trang {{ currentPage }} / {{ totalPages || 1 }}
-  </span>
-
-  <button
-    :disabled="currentPage === totalPages"
-    @click="currentPage++"
-  >
+    <button
+      :disabled="currentPage === 1"
+      @click="currentPage--"
     >
-  </button>
+      <
+    </button>
+
+    <span>
+      Trang {{ currentPage }} / {{ totalPages || 1 }}
+    </span>
+
+    <button
+      :disabled="currentPage === totalPages"
+      @click="currentPage++"
+    >
+      >
+    </button>
+
+  </div>
 
 </div>
+
+
 
 </div>
 

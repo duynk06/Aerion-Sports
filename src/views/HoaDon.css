@@ -252,11 +252,10 @@ tbody tr:hover{
 /* PAGINATION */
 
 .pagination{
-  margin-top:16px;
   display:flex;
-  justify-content:space-between;
   align-items:center;
   font-size:12px;
+  margin-top:0;
 }
 
 .page-center{
@@ -283,14 +282,16 @@ tbody tr:hover{
 .table-footer{
   display:flex;
   justify-content:space-between;
-  align-items:center;
+  align-items:center; /* căn giữa theo chiều dọc */
   margin-top:20px;
 }
 
 .table-info{
   font-size:13px;
   color:#060606;
+  margin:0; /* thêm */
 }
+
 
 .table-info strong{
   color:#060606;
