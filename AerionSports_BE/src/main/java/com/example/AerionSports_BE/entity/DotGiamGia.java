@@ -36,9 +36,6 @@ public class DotGiamGia {
     @Column(name = "ten_dot_giam_gia", nullable = false, length = 255)
     private String tenDotGiamGia;
 
-    @Column(name = "hinh_thuc_giam", length = 50)
-    private String hinhThucGiam;
-
     @Column(name = "gia_tri_giam", precision = 18, scale = 2)
     private BigDecimal giaTriGiam;
 
@@ -50,12 +47,6 @@ public class DotGiamGia {
 
     @Column(name = "mo_ta", length = 500)
     private String moTa;
-
-    @Column(name = "ngay_tao")
-    private LocalDateTime ngayTao;
-
-    @Column(name = "ngay_cap_nhat")
-    private LocalDateTime ngayCapNhat;
 
     @Column(name = "trang_thai")
     private Integer trangThai = 1;

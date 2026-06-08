@@ -18,7 +18,6 @@ public class DotGiamGiaDTO {
     private Integer id;
     private String maDotGiamGia;
     private String tenDotGiamGia;
-    private String hinhThucGiam; // "phan_tram" or "tien"
     private BigDecimal giaTriGiam;
     private LocalDateTime ngayBatDau;
     private LocalDateTime ngayKetThuc;

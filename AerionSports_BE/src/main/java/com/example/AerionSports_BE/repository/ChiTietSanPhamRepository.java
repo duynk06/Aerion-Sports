@@ -15,8 +15,29 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
 
     @Query("SELECT ctsp FROM ChiTietSanPham ctsp " +
            "JOIN FETCH ctsp.sanPham sp " +
+           "LEFT JOIN FETCH sp.thuongHieu th " +
+           "LEFT JOIN FETCH ctsp.mauSac ms " +
+           "LEFT JOIN FETCH ctsp.trongLuong tl " +
+           "LEFT JOIN FETCH ctsp.doCung dc " +
+           "LEFT JOIN FETCH ctsp.diemCanBang dcb " +
+           "LEFT JOIN FETCH ctsp.chatLieuThanVot cltv " +
+           "LEFT JOIN FETCH ctsp.chatLieuKhungVot clk " +
+           "LEFT JOIN FETCH ctsp.danhMuc dm " +
            "WHERE ctsp.trangThai = 1 " +
            "AND (:keyword IS NULL OR sp.tenSanPham LIKE %:keyword% OR ctsp.maCtsp LIKE %:keyword%) " +
            "ORDER BY ctsp.ngayTao DESC")
     List<ChiTietSanPham> searchActiveProducts(@Param("keyword") String keyword);
+
+    @Query("SELECT DISTINCT ctsp FROM ChiTietSanPham ctsp " +
+           "JOIN FETCH ctsp.sanPham sp " +
+           "LEFT JOIN FETCH sp.thuongHieu th " +
+           "LEFT JOIN FETCH ctsp.mauSac ms " +
+           "LEFT JOIN FETCH ctsp.trongLuong tl " +
+           "LEFT JOIN FETCH ctsp.doCung dc " +
+           "LEFT JOIN FETCH ctsp.diemCanBang dcb " +
+           "LEFT JOIN FETCH ctsp.chatLieuThanVot cltv " +
+           "LEFT JOIN FETCH ctsp.chatLieuKhungVot clk " +
+           "LEFT JOIN FETCH ctsp.danhMuc dm " +
+           "WHERE ctsp.id IN :ids")
+    List<ChiTietSanPham> findProductsWithDetailsByIds(@Param("ids") List<Integer> ids);
 }

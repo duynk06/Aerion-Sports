@@ -36,7 +36,6 @@ public class DotGiamGiaScheduler {
         for (DotGiamGia dgg : sapDienRa) {
             if (dgg.getNgayBatDau() != null && !now.isBefore(dgg.getNgayBatDau())) {
                 dgg.setTrangThai(2);
-                dgg.setNgayCapNhat(now);
                 dotGiamGiaRepository.save(dgg);
                 log.info("Đợt giảm giá {} đã chuyển sang trạng thái 'Đang diễn ra'", dgg.getMaDotGiamGia());
             }
@@ -47,7 +46,6 @@ public class DotGiamGiaScheduler {
         for (DotGiamGia dgg : dangDienRa) {
             if (dgg.getNgayKetThuc() != null && now.isAfter(dgg.getNgayKetThuc())) {
                 dgg.setTrangThai(3);
-                dgg.setNgayCapNhat(now);
                 dotGiamGiaRepository.save(dgg);
                 log.info("Đợt giảm giá {} đã chuyển sang trạng thái 'Đã kết thúc'", dgg.getMaDotGiamGia());
             }

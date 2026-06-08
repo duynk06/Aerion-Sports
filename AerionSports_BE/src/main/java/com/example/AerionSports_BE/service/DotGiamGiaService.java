@@ -8,6 +8,7 @@ import com.example.AerionSports_BE.entity.DotGiamGia;
 import com.example.AerionSports_BE.repository.ChiTietDotGiamGiaRepository;
 import com.example.AerionSports_BE.repository.ChiTietSanPhamRepository;
 import com.example.AerionSports_BE.repository.DotGiamGiaRepository;
+import com.example.AerionSports_BE.repository.HinhAnhSpRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,9 +16,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,15 +33,29 @@ public class DotGiamGiaService {
     private final DotGiamGiaRepository dotGiamGiaRepository;
     private final ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
     private final ChiTietSanPhamRepository chiTietSanPhamRepository;
+    private final HinhAnhSpRepository hinhAnhSpRepository;
 
     // ==================== CRUD đợt giảm giá ====================
 
     /**
      * Lấy danh sách đợt giảm giá có phân trang và tìm kiếm
      */
-    public Page<DotGiamGiaDTO> getDanhSach(String keyword, Integer trangThai, int page, int size) {
+    public Page<DotGiamGiaDTO> getDanhSach(
+            String keyword,
+            Integer trangThai,
+            String tuNgay,
+            String denNgay,
+            int page,
+            int size) {
+        validateFilterDateRange(tuNgay, denNgay);
+
         Pageable pageable = PageRequest.of(page, size);
-        Page<DotGiamGia> pageResult = dotGiamGiaRepository.searchDotGiamGia(keyword, trangThai, pageable);
+        Page<DotGiamGia> pageResult = dotGiamGiaRepository.searchDotGiamGia(
+                keyword,
+                trangThai,
+                parseStartOfDay(tuNgay),
+                parseEndOfDay(denNgay),
+                pageable);
         return pageResult.map(this::toDTO);
     }
 
@@ -47,9 +67,14 @@ public class DotGiamGiaService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đợt giảm giá với ID: " + id));
         DotGiamGiaDTO dto = toDTO(entity);
 
-        // Load chi tiết
-        List<ChiTietDotGiamGia> chiTietList = chiTietDotGiamGiaRepository.findActiveByDotGiamGiaId(id);
-        dto.setChiTietList(chiTietList.stream().map(this::toChiTietDTO).collect(Collectors.toList()));
+        // Lấy danh sách ID trước, rồi fetch sản phẩm chi tiết bằng query riêng để tránh lazy proxy
+        List<Integer> chiTietSanPhamIds = chiTietDotGiamGiaRepository.findChiTietSanPhamIdsByDotGiamGiaId(id);
+        List<ChiTietSanPham> chiTietSanPhamList = chiTietSanPhamIds.isEmpty()
+                ? List.of()
+                : chiTietSanPhamRepository.findProductsWithDetailsByIds(chiTietSanPhamIds);
+        dto.setChiTietList(chiTietSanPhamList.stream()
+                .map(ctsp -> toChiTietDTO(ctsp, null, null))
+                .collect(Collectors.toList()));
 
         return dto;
     }
@@ -65,13 +90,10 @@ public class DotGiamGiaService {
         DotGiamGia entity = new DotGiamGia();
         entity.setMaDotGiamGia(generateMaDotGiamGia());
         entity.setTenDotGiamGia(dto.getTenDotGiamGia());
-        entity.setHinhThucGiam(dto.getHinhThucGiam());
         entity.setGiaTriGiam(dto.getGiaTriGiam());
         entity.setNgayBatDau(dto.getNgayBatDau());
         entity.setNgayKetThuc(dto.getNgayKetThuc());
         entity.setMoTa(dto.getMoTa());
-        entity.setNgayTao(LocalDateTime.now());
-        entity.setNgayCapNhat(LocalDateTime.now());
         entity.setTrangThai(calculateTrangThai(dto.getNgayBatDau(), dto.getNgayKetThuc()));
 
         DotGiamGia saved = dotGiamGiaRepository.save(entity);
@@ -96,12 +118,10 @@ public class DotGiamGiaService {
         validateDotGiamGia(dto, id);
 
         entity.setTenDotGiamGia(dto.getTenDotGiamGia());
-        entity.setHinhThucGiam(dto.getHinhThucGiam());
         entity.setGiaTriGiam(dto.getGiaTriGiam());
         entity.setNgayBatDau(dto.getNgayBatDau());
         entity.setNgayKetThuc(dto.getNgayKetThuc());
         entity.setMoTa(dto.getMoTa());
-        entity.setNgayCapNhat(LocalDateTime.now());
         entity.setTrangThai(calculateTrangThai(dto.getNgayBatDau(), dto.getNgayKetThuc()));
 
         dotGiamGiaRepository.save(entity);
@@ -123,7 +143,6 @@ public class DotGiamGiaService {
         DotGiamGia entity = dotGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đợt giảm giá với ID: " + id));
         entity.setTrangThai(0); // Hủy
-        entity.setNgayCapNhat(LocalDateTime.now());
         dotGiamGiaRepository.save(entity);
     }
 
@@ -135,7 +154,6 @@ public class DotGiamGiaService {
         DotGiamGia entity = dotGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đợt giảm giá với ID: " + id));
         entity.setTrangThai(trangThai);
-        entity.setNgayCapNhat(LocalDateTime.now());
         dotGiamGiaRepository.save(entity);
         return toDTO(entity);
     }
@@ -147,14 +165,36 @@ public class DotGiamGiaService {
      */
     public List<ChiTietDotGiamGiaDTO> getProductsForSelection(String keyword) {
         List<ChiTietSanPham> products = chiTietSanPhamRepository.searchActiveProducts(keyword);
-        return products.stream().map(ctsp -> {
-            ChiTietDotGiamGiaDTO dto = new ChiTietDotGiamGiaDTO();
-            dto.setIdChiTietSanPham(ctsp.getId());
-            dto.setMaSanPham(ctsp.getMaCtsp());
-            dto.setTenSanPham(ctsp.getSanPham().getTenSanPham());
-            dto.setGiaBan(ctsp.getGiaBan());
-            return dto;
-        }).collect(Collectors.toList());
+        Map<Integer, String> mainImagesByProductId = loadMainImages(products);
+        LocalDateTime now = LocalDateTime.now();
+        Map<Integer, BigDecimal> bestDiscountByProductId = loadBestActiveDiscounts(products, now);
+
+        return products.stream()
+                .map(ctsp -> toChiTietDTO(
+                        ctsp,
+                        mainImagesByProductId.get(ctsp.getId()),
+                        bestDiscountByProductId.get(ctsp.getId())))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Lấy đợt giảm giá hiệu lực cao nhất cho một sản phẩm tại thời điểm hiện tại.
+     * Nếu sản phẩm nằm trong nhiều đợt giảm giá đang giao nhau, đợt có giá trị giảm lớn hơn sẽ được ưu tiên.
+     */
+    public DotGiamGiaDTO getDotGiamGiaHieuLucCaoNhat(Integer chiTietSanPhamId) {
+        if (chiTietSanPhamId == null) {
+            throw new IllegalArgumentException("ID sản phẩm chi tiết không được để trống");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        List<ChiTietDotGiamGia> activeDiscounts =
+                chiTietDotGiamGiaRepository.findBestActiveByChiTietSanPhamId(chiTietSanPhamId, now);
+
+        if (activeDiscounts.isEmpty()) {
+            return null;
+        }
+
+        return toDTO(activeDiscounts.get(0).getDotGiamGia());
     }
 
     // ==================== Helper Methods ====================
@@ -192,12 +232,102 @@ public class DotGiamGiaService {
         };
     }
 
+    private LocalDateTime parseStartOfDay(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        return LocalDate.parse(value).atStartOfDay();
+    }
+
+    private LocalDateTime parseEndOfDay(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        return LocalDate.parse(value).atTime(LocalTime.MAX);
+    }
+
+    private Map<Integer, String> loadMainImages(List<ChiTietSanPham> products) {
+        if (products == null || products.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Integer> productIds = products.stream()
+                .map(ChiTietSanPham::getId)
+                .filter(id -> id != null)
+                .collect(Collectors.toList());
+
+        if (productIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Object[]> imageRows = hinhAnhSpRepository.findMainImagePathsByChiTietSanPhamIds(productIds);
+        Map<Integer, String> images = new HashMap<>();
+
+        for (Object[] row : imageRows) {
+            Integer productId = (Integer) row[0];
+            String imagePath = (String) row[1];
+
+            if (productId != null && imagePath != null && !images.containsKey(productId)) {
+                images.put(productId, imagePath);
+            }
+        }
+
+        return images;
+    }
+
+    private Map<Integer, BigDecimal> loadBestActiveDiscounts(List<ChiTietSanPham> products, LocalDateTime now) {
+        if (products == null || products.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Integer> productIds = products.stream()
+                .map(ChiTietSanPham::getId)
+                .filter(id -> id != null)
+                .collect(Collectors.toList());
+
+        if (productIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Object[]> rows = chiTietDotGiamGiaRepository
+                .findBestActiveDiscountRows(productIds, now);
+
+        Map<Integer, BigDecimal> bestDiscounts = new HashMap<>();
+        for (Object[] row : rows) {
+            if (row == null || row.length < 2) {
+                continue;
+            }
+
+            Integer productId = row[0] instanceof Integer ? (Integer) row[0] : null;
+            BigDecimal discountValue = row[1] instanceof BigDecimal ? (BigDecimal) row[1] : null;
+            if (productId == null || bestDiscounts.containsKey(productId)) {
+                continue;
+            }
+
+            bestDiscounts.put(productId, discountValue);
+        }
+
+        return bestDiscounts;
+    }
+
+    private void validateFilterDateRange(String tuNgay, String denNgay) {
+        boolean hasFrom = tuNgay != null && !tuNgay.isBlank();
+        boolean hasTo = denNgay != null && !denNgay.isBlank();
+
+        if (hasFrom ^ hasTo) {
+            throw new IllegalArgumentException("Vui lòng chọn đủ từ ngày và đến ngày");
+        }
+
+        if (hasFrom && hasTo && LocalDate.parse(tuNgay).isAfter(LocalDate.parse(denNgay))) {
+            throw new IllegalArgumentException("Ngày bắt đầu không được lớn hơn ngày kết thúc");
+        }
+    }
+
     private void validateDotGiamGia(DotGiamGiaDTO dto, Integer excludeId) {
         if (dto.getTenDotGiamGia() == null || dto.getTenDotGiamGia().isBlank()) {
             throw new RuntimeException("Tên đợt giảm giá không được để trống");
-        }
-        if (dto.getHinhThucGiam() == null || dto.getHinhThucGiam().isBlank()) {
-            throw new RuntimeException("Hình thức giảm không được để trống");
         }
         if (dto.getGiaTriGiam() == null) {
             throw new RuntimeException("Giá trị giảm không được để trống");
@@ -211,12 +341,6 @@ public class DotGiamGiaService {
         if (dto.getNgayBatDau().isAfter(dto.getNgayKetThuc())) {
             throw new RuntimeException("Ngày bắt đầu phải trước ngày kết thúc");
         }
-        // Validate phần trăm
-        if ("phan_tram".equals(dto.getHinhThucGiam())) {
-            if (dto.getGiaTriGiam().intValue() < 1 || dto.getGiaTriGiam().intValue() > 100) {
-                throw new RuntimeException("Giá trị giảm theo phần trăm phải từ 1 đến 100");
-            }
-        }
     }
 
     private void saveChiTietList(DotGiamGia dotGiamGia, List<ChiTietDotGiamGiaDTO> dtoList) {
@@ -226,23 +350,9 @@ public class DotGiamGiaService {
                     .orElseThrow(() -> new RuntimeException(
                             "Không tìm thấy sản phẩm chi tiết với ID: " + ctDto.getIdChiTietSanPham()));
 
-            // Check xem sản phẩm đã được áp dụng ở đợt giảm giá khác đang hoạt động chưa
-            boolean exists = chiTietDotGiamGiaRepository.existsByChiTietSanPhamInOtherActiveDot(
-                    ctDto.getIdChiTietSanPham(), dotGiamGia.getId());
-            if (exists) {
-                throw new RuntimeException("Sản phẩm " + ctsp.getMaCtsp() +
-                        " đã được áp dụng trong đợt giảm giá khác đang hoạt động");
-            }
-
             ChiTietDotGiamGia ct = new ChiTietDotGiamGia();
             ct.setDotGiamGia(dotGiamGia);
             ct.setChiTietSanPham(ctsp);
-            ct.setSoLuongApDung(ctDto.getSoLuongApDung());
-            ct.setGiaTriGiamRieng(ctDto.getGiaTriGiamRieng());
-            ct.setGhiChu(ctDto.getGhiChu());
-            ct.setNgayTao(LocalDateTime.now());
-            ct.setNgayCapNhat(LocalDateTime.now());
-            ct.setTrangThai(1);
             entities.add(ct);
         }
         chiTietDotGiamGiaRepository.saveAll(entities);
@@ -253,13 +363,10 @@ public class DotGiamGiaService {
         dto.setId(entity.getId());
         dto.setMaDotGiamGia(entity.getMaDotGiamGia());
         dto.setTenDotGiamGia(entity.getTenDotGiamGia());
-        dto.setHinhThucGiam(entity.getHinhThucGiam());
         dto.setGiaTriGiam(entity.getGiaTriGiam());
         dto.setNgayBatDau(entity.getNgayBatDau());
         dto.setNgayKetThuc(entity.getNgayKetThuc());
         dto.setMoTa(entity.getMoTa());
-        dto.setNgayTao(entity.getNgayTao());
-        dto.setNgayCapNhat(entity.getNgayCapNhat());
 
         // Tính lại trạng thái dựa trên thời gian hiện tại (trừ khi đã bị hủy)
         if (entity.getTrangThai() != null && entity.getTrangThai() == 0) {
@@ -272,20 +379,37 @@ public class DotGiamGiaService {
         return dto;
     }
 
-    private ChiTietDotGiamGiaDTO toChiTietDTO(ChiTietDotGiamGia entity) {
+    private ChiTietDotGiamGiaDTO toChiTietDTO(ChiTietSanPham ctsp, String anhDaiDien, BigDecimal giaTriGiamRieng) {
         ChiTietDotGiamGiaDTO dto = new ChiTietDotGiamGiaDTO();
+        dto.setIdChiTietSanPham(ctsp.getId());
+        dto.setAnhDaiDien(anhDaiDien);
+        dto.setMaSanPham(ctsp.getMaCtsp());
+        dto.setTenSanPham(ctsp.getSanPham() != null ? ctsp.getSanPham().getTenSanPham() : null);
+        dto.setGiaBan(ctsp.getGiaBan());
+        dto.setSoLuongTon(ctsp.getSoLuong());
+        dto.setTenMauSac(ctsp.getMauSac() != null ? ctsp.getMauSac().getTenMauSac() : null);
+        dto.setTenTrongLuong(ctsp.getTrongLuong() != null ? ctsp.getTrongLuong().getTenTrongLuong() : null);
+        dto.setTenDoCung(ctsp.getDoCung() != null ? ctsp.getDoCung().getTenDoCung() : null);
+        dto.setTenDiemCanBang(ctsp.getDiemCanBang() != null ? ctsp.getDiemCanBang().getTenDiemCanBang() : null);
+        dto.setTenChatLieuThanVot(
+                ctsp.getChatLieuThanVot() != null ? ctsp.getChatLieuThanVot().getTenChatLieuThanVot() : null);
+        dto.setTenChatLieuKhungVot(
+                ctsp.getChatLieuKhungVot() != null ? ctsp.getChatLieuKhungVot().getTenChatLieuKhungVot() : null);
+        dto.setTenDanhMuc(ctsp.getDanhMuc() != null ? ctsp.getDanhMuc().getTenDanhMuc() : null);
+        dto.setTenThuongHieu(
+                ctsp.getSanPham() != null && ctsp.getSanPham().getThuongHieu() != null
+                        ? ctsp.getSanPham().getThuongHieu().getTenThuongHieu()
+                        : null);
+        dto.setXuatXuChiTiet(ctsp.getXuatXuChiTiet());
+        dto.setChuViCanVot(ctsp.getChuViCanVot());
+        dto.setGiaTriGiamRieng(giaTriGiamRieng);
+        return dto;
+    }
+
+    private ChiTietDotGiamGiaDTO toChiTietDTO(ChiTietDotGiamGia entity) {
+        ChiTietSanPham ctsp = entity.getChiTietSanPham();
+        ChiTietDotGiamGiaDTO dto = toChiTietDTO(ctsp, null, null);
         dto.setId(entity.getId());
-        dto.setIdDotGiamGia(entity.getDotGiamGia().getId());
-        dto.setIdChiTietSanPham(entity.getChiTietSanPham().getId());
-        dto.setMaSanPham(entity.getChiTietSanPham().getMaCtsp());
-        dto.setTenSanPham(entity.getChiTietSanPham().getSanPham().getTenSanPham());
-        dto.setGiaBan(entity.getChiTietSanPham().getGiaBan());
-        dto.setSoLuongApDung(entity.getSoLuongApDung());
-        dto.setGiaTriGiamRieng(entity.getGiaTriGiamRieng());
-        dto.setTrangThai(entity.getTrangThai());
-        dto.setGhiChu(entity.getGhiChu());
-        dto.setNgayTao(entity.getNgayTao());
-        dto.setNgayCapNhat(entity.getNgayCapNhat());
         return dto;
     }
 }

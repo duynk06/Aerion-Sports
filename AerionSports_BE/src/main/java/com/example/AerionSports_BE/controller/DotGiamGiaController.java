@@ -29,10 +29,18 @@ public class DotGiamGiaController {
     public ResponseEntity<Map<String, Object>> getDanhSach(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer trangThai,
+            @RequestParam(required = false) String tuNgay,
+            @RequestParam(required = false) String denNgay,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         try {
-            Page<DotGiamGiaDTO> pageResult = dotGiamGiaService.getDanhSach(keyword, trangThai, page, size);
+            Page<DotGiamGiaDTO> pageResult = dotGiamGiaService.getDanhSach(
+                    keyword,
+                    trangThai,
+                    tuNgay,
+                    denNgay,
+                    page,
+                    size);
 
             Map<String, Object> response = new HashMap<>();
             response.put("content", pageResult.getContent());
@@ -42,6 +50,9 @@ public class DotGiamGiaController {
             response.put("size", pageResult.getSize());
 
             return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", e.getMessage()));
@@ -129,6 +140,29 @@ public class DotGiamGiaController {
         try {
             List<ChiTietDotGiamGiaDTO> products = dotGiamGiaService.getProductsForSelection(keyword);
             return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * GET /api/dot-giam-gia/san-pham/{chiTietSanPhamId}/hieu-luc
+     * Lấy đợt giảm giá đang có hiệu lực cao nhất cho một sản phẩm chi tiết.
+     * Nếu có nhiều đợt trùng thời gian, ưu tiên giá trị giảm lớn hơn.
+     */
+    @GetMapping("/san-pham/{chiTietSanPhamId}/hieu-luc")
+    public ResponseEntity<?> getDotGiamGiaHieuLuc(
+            @PathVariable Integer chiTietSanPhamId) {
+        try {
+            DotGiamGiaDTO best = dotGiamGiaService.getDotGiamGiaHieuLucCaoNhat(chiTietSanPhamId);
+            return ResponseEntity.ok(best);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", e.getMessage()));
