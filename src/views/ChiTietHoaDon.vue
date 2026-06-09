@@ -233,18 +233,18 @@ const loadLichSuThanhToan = async () => {
 const loadHoaDon = async () => {
   try {
 
-    const response =
-      await getHoaDonById(idHoaDon)
+    const response = await getHoaDonById(idHoaDon)
 
     hoaDon.value = response
 
-    currentStatus.value =
-      response.trangThai
+    if (response.loaiHoaDon === 'Tại quầy') {
+      currentStatus.value = 5
+    } else {
+      currentStatus.value = response.trangThai
+    }
 
   } catch (error) {
-
     console.error(error)
-
   }
 }
 const hoaDon = ref({})
@@ -265,39 +265,31 @@ const lichSuList = ref([])
 const currentStatus = ref(0)
 
 // Danh sách các bước
-const orderSteps = [
-  {
-    value: 0,
-    label: 'Chờ xác nhận',
-    icon: 'fa-hourglass-start'
-  },
-  {
-    value: 1,
-    label: 'Đã xác nhận',
-    icon: 'fa-circle-check'
-  },
-  {
-    value: 2,
-    label: 'Chờ giao hàng',
-    icon: 'fa-box'
-  },
-  {
-    value: 3,
-    label: 'Đang giao hàng',
-    icon: 'fa-truck'
-  },
-  {
-    value: 4,
-    label: 'Đã giao hàng',
-    icon: 'fa-truck-ramp-box'
-  },
-  {
-    value: 5,
-    label: 'Đã hoàn thành',
-    icon: 'fa-flag-checkered'
-  }
+const onlineSteps = [
+  { value: 0, label: 'Chờ xác nhận', icon: 'fa-hourglass-start' },
+  { value: 1, label: 'Đã xác nhận', icon: 'fa-circle-check' },
+  { value: 2, label: 'Chờ giao hàng', icon: 'fa-box' },
+  { value: 3, label: 'Đang giao hàng', icon: 'fa-truck' },
+  { value: 4, label: 'Đã giao hàng', icon: 'fa-truck-ramp-box' },
+  { value: 5, label: 'Đã hoàn thành', icon: 'fa-flag-checkered' }
 ]
 
+const orderSteps = computed(() => {
+  if (isTaiQuay.value) {
+    return [
+      {
+        value: 5,
+        label: 'Đã hoàn thành',
+        icon: 'fa-flag-checkered'
+      }
+    ]
+  }
+
+  return onlineSteps
+})
+const isTaiQuay = computed(() => {
+  return hoaDon.value?.loaiHoaDon === 'Tại quầy'
+})
 // Quay lại
 const goBack = () => {
   router.push('/hoa-don')
