@@ -177,66 +177,122 @@
         </div>
       </div>
 
-      <section v-if="groupedSelectedProducts.length" class="selected-details">
+      <section v-if="selectedProductDetails.length" class="selected-details">
         <div class="selected-details-header">
           <h4>Chi tiết sản phẩm đã chọn</h4>
+          <span>{{ filteredSelectedProducts.length }} / {{ selectedProductDetails.length }} sản phẩm</span>
         </div>
 
-        <div v-for="group in groupedSelectedProducts" :key="group.key" class="selected-group">
-          <div class="selected-group-header">
-            <div>
-              <h5>{{ group.name }}</h5>
-              <p>Tổng số lượng tồn: {{ group.totalStock }}</p>
-            </div>
+        <div class="selected-filter-bar">
+          <div class="selected-search">
+            <input
+              v-model.trim="selectedFilters.keyword"
+              type="text"
+              placeholder="Tìm theo tên hoặc mã..."
+            />
+            <button type="button" @click="resetSelectedFilters">
+              <i class="fa-solid fa-rotate-right"></i>
+            </button>
           </div>
 
-          <div class="selected-group-table-wrap">
-            <table class="selected-group-table">
-              <thead>
-                <tr>
-                  <th scope="col">Chọn</th>
-                  <th scope="col">STT</th>
-                  <th scope="col">Mã CTSP</th>
-                  <th scope="col">Tên SP</th>
-                  <th scope="col">Màu sắc</th>
-                  <th scope="col">Trọng lượng</th>
-                  <th scope="col">Độ cứng</th>
-                  <th scope="col">Điểm cân bằng</th>
-                  <th scope="col">Chất liệu than</th>
-                  <th scope="col">Chất liệu khung</th>
-                  <th scope="col">Chu vi</th>
-                  <th scope="col">Xuất xứ</th>
-                  <th scope="col">Tồn kho</th>
-                  <th scope="col">Giá bán</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                <tr v-for="(product, index) in group.items" :key="product.idChiTietSanPham">
-                  <td>
-                    <input
-                      type="checkbox"
-                      :checked="selectedProductIds.includes(product.idChiTietSanPham)"
-                      @change="$emit('toggle-product-selection', product)"
-                    />
-                  </td>
-                  <td>{{ index + 1 }}</td>
-                  <td>{{ product.maSanPham || '-' }}</td>
-                  <td>{{ product.tenSanPham || '-' }}</td>
-                  <td>{{ formatText(product.tenMauSac) }}</td>
-                  <td>{{ formatText(product.tenTrongLuong) }}</td>
-                  <td>{{ formatText(product.tenDoCung) }}</td>
-                  <td>{{ formatText(product.tenDiemCanBang) }}</td>
-                  <td>{{ formatText(product.tenChatLieuThanVot) }}</td>
-                  <td>{{ formatText(product.tenChatLieuKhungVot) }}</td>
-                  <td>{{ formatText(product.chuViCanVot) }}</td>
-                  <td>{{ formatText(product.xuatXuChiTiet) }}</td>
-                  <td>{{ formatText(product.soLuongTon) }}</td>
-                  <td>{{ formatMoney(product.giaBan) }}</td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="selected-filter">
+            <label>Màu sắc</label>
+            <select v-model="selectedFilters.mauSac">
+              <option value="">Tất cả</option>
+              <option v-for="option in colorOptions" :key="option" :value="option">
+                {{ option }}
+              </option>
+            </select>
           </div>
+
+          <div class="selected-filter">
+            <label>Chất liệu khung</label>
+            <select v-model="selectedFilters.chatLieuKhung">
+              <option value="">Tất cả</option>
+              <option v-for="option in frameMaterialOptions" :key="option" :value="option">
+                {{ option }}
+              </option>
+            </select>
+          </div>
+
+          <div class="selected-filter">
+            <label>Độ cứng</label>
+            <select v-model="selectedFilters.doCung">
+              <option value="">Tất cả</option>
+              <option v-for="option in hardnessOptions" :key="option" :value="option">
+                {{ option }}
+              </option>
+            </select>
+          </div>
+
+          <div class="selected-filter">
+            <label>Giá bán</label>
+            <select v-model="selectedFilters.giaBan">
+              <option value="">Tất cả</option>
+              <option value="under-2000000">Dưới 2 triệu</option>
+              <option value="2000000-3000000">2 - 3 triệu</option>
+              <option value="over-3000000">Trên 3 triệu</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="selected-group-table-wrap">
+          <table class="selected-group-table">
+            <thead>
+              <tr>
+                <th scope="col">
+                  <input
+                    type="checkbox"
+                    :checked="isAllFilteredSelected"
+                    :disabled="!filteredSelectedProducts.length"
+                    @change="$emit('toggle-select-all-selected', filteredSelectedIds)"
+                  />
+                </th>
+                <th scope="col">STT</th>
+                <th scope="col">Mã CTSP</th>
+                <th scope="col">Tên SP</th>
+                <th scope="col">Màu sắc</th>
+                <th scope="col">Trọng lượng</th>
+                <th scope="col">Độ cứng</th>
+                <th scope="col">Điểm cân bằng</th>
+                <th scope="col">Chất liệu than</th>
+                <th scope="col">Chất liệu khung</th>
+                <th scope="col">Chu vi</th>
+                <th scope="col">Xuất xứ</th>
+                <th scope="col">Tồn kho</th>
+                <th scope="col">Giá bán</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr v-if="filteredSelectedProducts.length === 0">
+                <td class="state-cell" colspan="14">Không có sản phẩm phù hợp bộ lọc</td>
+              </tr>
+
+              <tr v-for="(product, index) in filteredSelectedProducts" :key="product.idChiTietSanPham">
+                <td>
+                  <input
+                    type="checkbox"
+                    :checked="selectedProductIds.includes(product.idChiTietSanPham)"
+                    @change="$emit('toggle-product-selection', product)"
+                  />
+                </td>
+                <td>{{ index + 1 }}</td>
+                <td>{{ product.maSanPham || '-' }}</td>
+                <td>{{ product.tenSanPham || '-' }}</td>
+                <td>{{ formatText(product.tenMauSac) }}</td>
+                <td>{{ formatText(product.tenTrongLuong) }}</td>
+                <td>{{ formatText(product.tenDoCung) }}</td>
+                <td>{{ formatText(product.tenDiemCanBang) }}</td>
+                <td>{{ formatText(product.tenChatLieuThanVot) }}</td>
+                <td>{{ formatText(product.tenChatLieuKhungVot) }}</td>
+                <td>{{ formatText(product.chuViCanVot) }}</td>
+                <td>{{ formatText(product.xuatXuChiTiet) }}</td>
+                <td>{{ formatText(product.soLuongTon) }}</td>
+                <td>{{ formatMoney(product.giaBan) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
     </section>
@@ -244,7 +300,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, reactive } from 'vue'
 
 const props = defineProps({
   errorMessage: {
@@ -299,6 +355,10 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
+  isAllSelected: {
+    type: Boolean,
+    default: false,
+  },
   submitting: {
     type: Boolean,
     default: false,
@@ -316,6 +376,7 @@ defineEmits([
   'save',
   'search-products',
   'toggle-product-selection',
+  'toggle-select-all-selected',
   'toggle-select-all-visible',
   'update:productKeyword',
 ])
@@ -336,28 +397,107 @@ const formatMoney = (value) => {
   return `${Number(value).toLocaleString('vi-VN')} đ`
 }
 
-const groupedSelectedProducts = computed(() => {
-  const groups = new Map()
+const selectedFilters = reactive({
+  keyword: '',
+  mauSac: '',
+  chatLieuKhung: '',
+  doCung: '',
+  giaBan: '',
+})
 
-  for (const product of props.selectedProductDetails) {
-    const key = product.tenSanPham || product.maSanPham || String(product.idChiTietSanPham)
+const normalizeText = (value) =>
+  String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
 
-    if (!groups.has(key)) {
-      groups.set(key, {
-        key,
-        name: product.tenSanPham || product.maSanPham || 'Sản phẩm',
-        totalStock: 0,
-        items: [],
-      })
+const uniqueOptions = (values) =>
+  Array.from(new Set(values.filter(Boolean).map((value) => String(value).trim()))).sort((a, b) =>
+    a.localeCompare(b, 'vi'),
+  )
+
+const colorOptions = computed(() =>
+  uniqueOptions(props.selectedProductDetails.map((product) => product.tenMauSac)),
+)
+
+const frameMaterialOptions = computed(() =>
+  uniqueOptions(props.selectedProductDetails.map((product) => product.tenChatLieuKhungVot)),
+)
+
+const hardnessOptions = computed(() =>
+  uniqueOptions(props.selectedProductDetails.map((product) => product.tenDoCung)),
+)
+
+const matchesPriceFilter = (price, filter) => {
+  if (!filter) return true
+
+  const value = Number(price ?? 0)
+
+  switch (filter) {
+    case 'under-2000000':
+      return value < 2000000
+    case '2000000-3000000':
+      return value >= 2000000 && value <= 3000000
+    case 'over-3000000':
+      return value > 3000000
+    default:
+      return true
+  }
+}
+
+const filteredSelectedProducts = computed(() => {
+  const keyword = normalizeText(selectedFilters.keyword)
+
+  return props.selectedProductDetails.filter((product) => {
+    if (keyword) {
+      const searchable = normalizeText(`${product.maSanPham || ''} ${product.tenSanPham || ''}`)
+      if (!searchable.includes(keyword)) {
+        return false
+      }
     }
 
-    const group = groups.get(key)
-    group.items.push(product)
-    group.totalStock += Number(product.soLuongTon || 0)
-  }
+    if (selectedFilters.mauSac && product.tenMauSac !== selectedFilters.mauSac) {
+      return false
+    }
 
-  return Array.from(groups.values())
+    if (
+      selectedFilters.chatLieuKhung &&
+      product.tenChatLieuKhungVot !== selectedFilters.chatLieuKhung
+    ) {
+      return false
+    }
+
+    if (selectedFilters.doCung && product.tenDoCung !== selectedFilters.doCung) {
+      return false
+    }
+
+    if (!matchesPriceFilter(product.giaBan, selectedFilters.giaBan)) {
+      return false
+    }
+
+    return true
+  })
 })
+
+const filteredSelectedIds = computed(() =>
+  filteredSelectedProducts.value
+    .map((product) => product.idChiTietSanPham)
+    .filter((id) => id !== null && id !== undefined),
+)
+
+const isAllFilteredSelected = computed(() =>
+  filteredSelectedIds.value.length > 0 &&
+  filteredSelectedIds.value.every((id) => props.selectedProductIds.includes(id)),
+)
+
+const resetSelectedFilters = () => {
+  selectedFilters.keyword = ''
+  selectedFilters.mauSac = ''
+  selectedFilters.chatLieuKhung = ''
+  selectedFilters.doCung = ''
+  selectedFilters.giaBan = ''
+}
 </script>
 
 <style scoped>
@@ -385,6 +525,53 @@ const groupedSelectedProducts = computed(() => {
 .selected-details-header span {
   color: #6b7280;
   font-size: 0.92rem;
+}
+
+.selected-filter-bar {
+  display: grid;
+  grid-template-columns: 1.8fr repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
+.selected-search {
+  display: flex;
+  gap: 8px;
+}
+
+.selected-search input,
+.selected-filter select {
+  width: 100%;
+  height: 38px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: 13px;
+  background: #ffffff;
+  outline: none;
+}
+
+.selected-search button {
+  width: 44px;
+  height: 38px;
+  border: none;
+  border-radius: 10px;
+  background: #f79b66;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.selected-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.selected-filter label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #111827;
 }
 
 .create-product-panel .product-table-wrap {

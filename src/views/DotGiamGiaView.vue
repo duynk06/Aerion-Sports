@@ -68,7 +68,6 @@
 
               <div>
                 <h3>Danh sách đợt giảm giá</h3>
-                <span>Lọc nhanh theo trạng thái</span>
               </div>
             </div>
 
@@ -78,7 +77,7 @@
             </button>
           </div>
 
-          <div class="status-tabs">
+          <!--
             <button
               type="button"
               :class="{ active: filters.trangThai === '' }"
@@ -115,6 +114,7 @@
               Đã hủy
             </button>
           </div>
+          -->
 
           <table class="discount-table">
             <colgroup>
@@ -165,8 +165,8 @@
                       <button class="action-btn" type="button" @click="handleEdit(item)">
                         <i class="fa-solid fa-pen-to-square"></i>
                       </button>
-                      <button class="action-btn" type="button" @click="handleDelete(item)">
-                        <i class="fa-solid fa-trash-can"></i>
+                      <button class="action-btn" type="button" @click="handleView(item)">
+                        <i class="fa-solid fa-eye"></i>
                       </button>
                     </div>
                   </td>
@@ -210,6 +210,7 @@
         :selected-product-ids="selectedProductIds"
         :selected-products-count="selectedProductsCount"
         :selected-product-details="selectedProductDetails"
+        :is-all-selected="isAllSelected"
         :submitting="isSubmittingCreate"
         :visible-products="visibleProducts"
         @back="handleBackToList"
@@ -237,6 +238,7 @@
         :selected-product-ids="selectedProductIds"
         :selected-products-count="selectedProductsCount"
         :selected-product-details="selectedProductDetails"
+        :is-all-selected="isAllSelected"
         :submitting="isSubmittingEdit"
         :visible-products="visibleProducts"
         @back="handleBackToList"
@@ -248,6 +250,14 @@
         @toggle-select-all-visible="toggleSelectAllVisible"
         @update:productKeyword="productKeyword = $event"
       />
+
+      <DotGiamGiaDetailModal
+        v-if="isDetailOpen"
+        :detail="detailData"
+        :error-message="detailError"
+        :loading="detailLoading"
+        @close="closeDetail"
+      />
     </div>
   </MainLayout>
 </template>
@@ -256,10 +266,10 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import MainLayout from '../layouts/MainLayout.vue'
 import DotGiamGiaCreateModal from '../components/modals/DotGiamGiaCreateModal.vue'
+import DotGiamGiaDetailModal from '../components/modals/DotGiamGiaDetailModal.vue'
 import DotGiamGiaEditModal from '../components/modals/DotGiamGiaEditModal.vue'
 import {
   createDotGiamGia,
-  deleteDotGiamGia,
   fetchDotGiamGiaById,
   fetchDotGiamGiaPage,
   fetchDotGiamGiaProducts,
@@ -286,6 +296,10 @@ const filterError = ref('')
 
 const isCreateMode = ref(false)
 const isEditMode = ref(false)
+const isDetailOpen = ref(false)
+const detailLoading = ref(false)
+const detailError = ref('')
+const detailData = ref(null)
 
 const createError = ref('')
 const isSubmittingCreate = ref(false)
@@ -335,6 +349,13 @@ const selectedProductsCount = computed(() => selectedProductIds.value.length)
 const selectedProductDetails = computed(() => {
   const selectedIds = new Set(selectedProductIds.value)
   return productRows.value.filter((product) => selectedIds.has(product.idChiTietSanPham))
+})
+
+const isAllSelected = computed(() => {
+  if (!selectedProductDetails.value.length) return false
+  return selectedProductDetails.value.every((product) =>
+    selectedProductIds.value.includes(product.idChiTietSanPham),
+  )
 })
 
 const isAllVisibleSelected = computed(() => {
@@ -493,12 +514,6 @@ const resetFilter = async () => {
   await loadData()
 }
 
-const setStatusFilter = async (status) => {
-  filters.trangThai = status
-  page.value = 0
-  await loadData()
-}
-
 const prevPage = async () => {
   if (page.value <= 0) return
   page.value--
@@ -519,6 +534,23 @@ const prevProductPage = () => {
 const nextProductPage = () => {
   if (productPage.value + 1 >= productTotalPages.value) return
   productPage.value++
+}
+
+const toggleSelectAllSelected = (ids = []) => {
+  const selectedIds = (Array.isArray(ids) && ids.length
+    ? ids
+    : selectedProductDetails.value.map((product) => product.idChiTietSanPham)
+  ).filter((id) => id !== null && id !== undefined)
+
+  if (!selectedIds.length) return
+
+  if (isAllSelected.value) {
+    selectedProductIds.value = selectedProductIds.value.filter((id) => !selectedIds.includes(id))
+    return
+  }
+
+  const merged = new Set([...selectedProductIds.value, ...selectedIds])
+  selectedProductIds.value = Array.from(merged)
 }
 
 const formatDate = (value) => {
@@ -649,7 +681,32 @@ const handleEdit = async (item) => {
   }
 }
 
+const handleView = async (item) => {
+  if (!item?.id) return
+
+  isDetailOpen.value = true
+  detailLoading.value = true
+  detailError.value = ''
+  detailData.value = null
+
+  try {
+    detailData.value = await fetchDotGiamGiaById(item.id)
+  } catch (error) {
+    detailError.value = error?.message || 'KhÃ´ng thá»ƒ táº£i chi tiáº¿t Ä‘á»£t giáº£m giÃ¡'
+  } finally {
+    detailLoading.value = false
+  }
+}
+
+const closeDetail = () => {
+  isDetailOpen.value = false
+  detailLoading.value = false
+  detailError.value = ''
+  detailData.value = null
+}
+
 const handleBackToList = () => {
+  closeDetail()
   isCreateMode.value = false
   isEditMode.value = false
   productKeyword.value = ''
@@ -767,6 +824,7 @@ const saveEdit = async () => {
   }
 }
 
+/*
 const handleDelete = async (item) => {
   if (!item?.id) return
 
@@ -781,6 +839,7 @@ const handleDelete = async (item) => {
     errorMessage.value = error?.message || 'Không thể hủy đợt giảm giá'
   }
 }
+*/
 
 onMounted(() => {
   loadData()

@@ -160,29 +160,6 @@
   background: #f9fafb;
 }
 
-.dot-giam-gia-page .status-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 14px;
-}
-
-.dot-giam-gia-page .status-tabs button {
-  height: 28px;
-  padding: 0 12px;
-  border-radius: 20px;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  font-size: 11px;
-  cursor: pointer;
-}
-
-.dot-giam-gia-page .status-tabs .active {
-  background: #f79b66;
-  color: #ffffff;
-  border-color: #f79b66;
-}
-
 .dot-giam-gia-page .discount-table {
   width: 100%;
   border-collapse: collapse;
