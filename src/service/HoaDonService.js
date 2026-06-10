@@ -70,3 +70,18 @@ export const filterHoaDon = async (
   
     return await response.json()
   }
+  export const getHoaDonById = async (id) => {
+    const response = await fetch(
+      `${baseUrl}/${id}`
+    )
+  
+    if (!response.ok) {
+      throw new Error(
+        response.status +
+        ': ' +
+        await response.text()
+      )
+    }
+  
+    return await response.json()
+  }

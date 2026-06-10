@@ -1,7 +1,7 @@
 <template>
   <MainLayout title="Quản lý hóa đơn">
 
-    <!-- FILTER -->
+  
     <div class="card">
 
       <div class="card-header">
@@ -65,8 +65,7 @@
 
     </div>
 
-    <!-- LIST -->
-    <!-- DANH SÁCH HÓA ĐƠN -->
+  
 <div class="card">
 
 <div class="list-title">
@@ -225,6 +224,13 @@
   </tbody>
 
 </table>
+<div class="table-footer">
+
+<div class="table-info">
+  Tổng:
+  <strong>{{ totalInvoices }}</strong>
+  hóa đơn
+</div>
 
 <div class="pagination">
 
@@ -254,6 +260,10 @@
 
 </div>
 
+
+
+</div>
+
   </MainLayout>
 </template>
 <script setup>
@@ -263,11 +273,14 @@ import { useRouter } from 'vue-router'
 import { filterHoaDon } from '@/service/HoaDonService'
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
+import { computed } from 'vue'
+import { getHoaDonById } from '@/service/HoaDonService'
+import { getChiTietHoaDon } from '@/service/ChiTietHoaDonDetailService'
+import { printInvoice } from '@/utils/PrintHoaDon'
+import { getLichSuThanhToan } from '@/service/LichSuThanhToanService'
 const router = useRouter()
 
-// =======================
-// DATA
-// =======================
+
 
 const listHoaDon = ref([])
 
@@ -282,10 +295,36 @@ const page = ref(0)
 const size = ref(5)
 const totalPages = ref(0)
 
-// =======================
-// LOAD DATA
-// =======================
+const printHoaDon = async (id) => {
+  try {
 
+    const hoaDon =
+      await getHoaDonById(id)
+
+    const danhSachSanPham =
+      await getChiTietHoaDon(id)
+
+    const lichSuThanhToan =
+      await getLichSuThanhToan(id)
+
+    await printInvoice(
+      hoaDon,
+      danhSachSanPham,
+      lichSuThanhToan
+    )
+
+  } catch (error) {
+
+    console.error(
+      'Lỗi in hóa đơn:',
+      error
+    )
+
+  }
+}
+const totalInvoices = computed(() => {
+  return listHoaDon.value.length
+})
 const loadData = async () => {
   try {
     const response = await filterHoaDon(
@@ -321,7 +360,35 @@ const data = listHoaDon.value.map((hd, index) => ({
   'Trạng thái': getTrangThaiText(hd.trangThai)
 }))
 
-const worksheet = XLSX.utils.json_to_sheet(data)
+const worksheet = XLSX.utils.aoa_to_sheet([
+  ['DANH SÁCH HÓA ĐƠN'],
+  [
+    'Ngày xuất: ' +
+    new Date().toLocaleString('vi-VN')
+  ],
+  []
+])
+
+XLSX.utils.sheet_add_json(
+  worksheet,
+  data,
+  {
+    origin: 'A4',
+    skipHeader: false
+  }
+)
+
+// Gộp ô tiêu đề
+worksheet['!merges'] = [
+  {
+    s: { r: 0, c: 0 },
+    e: { r: 0, c: 8 }
+  },
+  {
+    s: { r: 1, c: 0 },
+    e: { r: 1, c: 8 }
+  }
+]
 
 const workbook = XLSX.utils.book_new()
 
@@ -352,9 +419,6 @@ saveAs(
   `DanhSachHoaDon_${Date.now()}.xlsx`
 )
 }
-// =======================
-// PAGINATION
-// =======================
 
 const prevPage = async () => {
   if (page.value > 0) {
@@ -370,18 +434,6 @@ const nextPage = async () => {
   }
 }
 
-// =======================
-// SEARCH
-// =======================
-
-const handleSearch = async () => {
-  page.value = 0
-  await loadData()
-}
-
-// =======================
-// FILTER
-// =======================
 
 watch(
   [
@@ -397,9 +449,7 @@ watch(
   }
 )
 
-// =======================
-// FORMAT
-// =======================
+
 
 const formatDate = (date) => {
   if (!date) return ''
@@ -417,9 +467,6 @@ const formatCurrency = (value) => {
   )
 }
 
-// =======================
-// TRẠNG THÁI
-// =======================
 
 const getTrangThaiText = (status) => {
   switch (status) {
@@ -447,9 +494,6 @@ const getStatusClass = (status) => {
   }
 }
 
-// =======================
-// LOẠI HÓA ĐƠN
-// =======================
 
 const getLoaiHoaDonClass = (loai) => {
   switch (loai) {
@@ -464,17 +508,11 @@ const getLoaiHoaDonClass = (loai) => {
   }
 }
 
-// =======================
-// CHI TIẾT
-// =======================
 
 const viewDetail = (id) => {
   router.push(`/hoa-don/${id}`)
 }
 
-// =======================
-// RESET FILTER
-// =======================
 
 const resetFilter = async () => {
   keyword.value = ''
@@ -494,9 +532,7 @@ const resetFilter = async () => {
   await loadData()
 }
 
-// =======================
-// MOUNT
-// =======================
+
 
 onMounted(async () => {
   const today =
@@ -510,287 +546,4 @@ onMounted(async () => {
   await loadData()
 })
 </script>
-
-<style scoped>
-  .invoice-badge{
-  display:inline-block;
-  padding:4px 12px;
-  border-radius:999px;
-  font-size:11px;
-  font-weight:600;
-}
-
-.invoice-offline{
-  background:#dbeafe;
-  color:#1d4ed8;
-}
-
-.invoice-online{
-  background:#f3e8ff;
-  color:#7e22ce;
-}
-  .status-badge{
-  display:inline-block;
-  padding:4px 12px;
-  border-radius:999px;
-  font-size:11px;
-  font-weight:600;
-}
-
-.status-paid{
-  background:#dcfce7;
-  color:#15803d;
-}
-
-.status-cancel{
-  background:#fee2e2;
-  color:#dc2626;
-}
-.card{
-  background:#fff;
-  border-radius:12px;
-  padding:16px;
-  margin-bottom:20px;
-  border:1px solid #e5e7eb;
-}
-
-.card-header{
-  background:#f79b66;
-  color:#fff;
-  padding:12px 16px;
-  border-radius:8px;
-  margin-bottom:20px;
-  font-weight:600;
-  font-size:14px;
-}
-
-.filter-grid{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:20px;
-}
-
-.filter-grid label{
-  display:block;
-  margin-bottom:6px;
-  font-size:12px;
-  font-weight:500;
-}
-
-.filter-grid input,
-.filter-grid select{
-  width:100%;
-  height:38px;
-  border:1px solid #ddd;
-  border-radius:6px;
-  padding:0 10px;
-}
-
-.filter-action{
-  display:flex;
-  justify-content:flex-end;
-  gap:10px;
-  margin-top:16px;
-}
-.status-wait-confirm{
-  background:#fef3c7;
-  color:#b45309;
-}
-
-.status-confirmed{
-  background:#dbeafe;
-  color:#1d4ed8;
-}
-
-.status-wait-delivery{
-  background:#ede9fe;
-  color:#6d28d9;
-}
-
-.status-delivering{
-  background:#cffafe;
-  color:#0e7490;
-}
-
-.status-delivered{
-  background:#dcfce7;
-  color:#15803d;
-}
-
-.status-completed{
-  background:#bbf7d0;
-  color:#166534;
-}
-
-.status-cancel{
-  background:#fee2e2;
-  color:#dc2626;
-}
-
-.btn-reset{
-  border:none;
-  background:#f3f4f6;
-  padding:10px 18px;
-  border-radius:6px;
-  cursor:pointer;
-}
-
-.btn-export{
-  border:none;
-  background:#d8f5eb;
-  color:#00875a;
-  padding:10px 18px;
-  border-radius:6px;
-  cursor:pointer;
-}
-
-
-.list-title{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin-bottom:12px;
-}
-
-.title-icon{
-  width:28px;
-  height:28px;
-  border-radius:8px;
-  background:#f79b66;
-  color:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:12px;
-}
-
-.list-title h3{
-  margin:0;
-  font-size:14px;
-  font-weight:600;
-}
-
-.list-title span{
-  font-size:11px;
-  color:#888;
-}
-
-.status-tabs{
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-  margin-bottom:15px;
-}
-
-.status-tabs button{
-  height:28px;
-  padding:0 12px;
-  border-radius:20px;
-  border:1px solid #e5e7eb;
-  background:white;
-  font-size:11px;
-  cursor:pointer;
-}
-
-.status-tabs .active{
-  background:#f79b66;
-  color:white;
-  border-color:#f79b66;
-}
-
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:12px;
-  table-layout: fixed;
-}
-
-thead{
-  background:#f79b66;
-  color:white;
-}
-
-th,
-td {
-  padding: 10px;
-  text-align: center;
-  vertical-align: middle;
-  white-space: nowrap;
-}
-
-tbody tr:hover{
-  background:#fafafa;
-}
-
-.money{
-  color:#d14343;
-  font-weight:600;
-}
-
-/* BADGE */
-
-.invoice-type{
-  background:#f4f4f4;
-  padding:4px 10px;
-  border-radius:20px;
-  font-size:11px;
-}
-
-.status-success{
-  background:#28a745;
-  color:white;
-  padding:4px 10px;
-  border-radius:20px;
-  font-size:11px;
-}
-
-/* ACTION */
-
-.action-btn{
-  width:32px;
-  height:32px;
-  border:1px solid #ddd;
-  border-radius:6px;
-  background:#fff;
-  cursor:pointer;
-  margin:0 2px;
-}
-
-.action-btn:hover{
-  background:#f5f5f5;
-}
-
-/* PAGINATION */
-
-.pagination{
-  margin-top:16px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  font-size:12px;
-}
-
-.page-center{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-
-.page-center button{
-  width:28px;
-  height:28px;
-  border:1px solid #ddd;
-  background:white;
-  border-radius:4px;
-  cursor:pointer;
-}
-
-.pagination select{
-  height:32px;
-  border:1px solid #ddd;
-  border-radius:6px;
-  padding:0 8px;
-}
-
-</style>
+<style scoped src="./HoaDon.css"></style>
