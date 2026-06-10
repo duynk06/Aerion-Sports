@@ -1,8 +1,9 @@
-export const printInvoice = (
-    hoaDon,
-    danhSachSanPham,
-    lichSuThanhToan
-  ) => {
+import QRCode from 'qrcode'
+export const printInvoice = async (
+  hoaDon,
+  danhSachSanPham,
+  lichSuThanhToan
+) => {
   
     const formatCurrency = (value) => {
       if (!value) return '0 đ'
@@ -10,18 +11,27 @@ export const printInvoice = (
     }
   
     const printWindow = window.open('', '_blank')
+    const qrData = `
+Mã hóa đơn: ${hoaDon.maHoaDon}
+Khách hàng: ${hoaDon.hoTen}
+Tổng tiền: ${hoaDon.tongTienThanhToan}
+`
+
+const qrImage = await QRCode.toDataURL(qrData)
   
     const productRows = danhSachSanPham
-      .map((item, index) => `
-        <tr>
-          <td>${index + 1}</td>
-          <td>${item.tenSanPham}</td>
-          <td>${item.soLuong}</td>
-          <td>${formatCurrency(item.donGia)}</td>
-          <td>${formatCurrency(item.thanhTien)}</td>
-        </tr>
-      `)
-      .join('')
+  .map((item, index) => `
+    <tr>
+      <td>${index + 1}</td>
+      <td>${item.tenSanPham}</td>
+      <td>${item.trongLuong || ''}</td>
+      <td>${item.mauSac || ''}</td>
+      <td>${item.soLuong}</td>
+      <td>${formatCurrency(item.donGia)}</td>
+      <td>${formatCurrency(item.thanhTien)}</td>
+    </tr>
+  `)
+  .join('')
       const paymentRows = lichSuThanhToan.map(
         (item, index) => `
           <tr>
@@ -116,13 +126,15 @@ export const printInvoice = (
   
           <table>
             <thead>
-              <tr>
-                <th>STT</th>
-                <th>Sản phẩm</th>
-                <th>SL</th>
-                <th>Đơn giá</th>
-                <th>Thành tiền</th>
-              </tr>
+             <tr>
+  <th>STT</th>
+  <th>Sản phẩm</th>
+  <th>Trọng lượng</th>
+  <th>Màu sắc</th>
+  <th>SL</th>
+  <th>Đơn giá</th>
+  <th>Thành tiền</th>
+</tr>
             </thead>
   
             <tbody>
@@ -188,16 +200,37 @@ export const printInvoice = (
 </table>
   
           <hr>
-  
-          <div
-            style="
-              text-align:center;
-              margin-top:30px;
-            "
-          >
-            <h3>Cảm ơn quý khách!</h3>
-            <p>Hẹn gặp lại tại AERION SPORTS</p>
-          </div>
+
+<div
+  style="
+    margin-top:20px;
+    text-align:center;
+  "
+>
+  <h3>Mã QR hóa đơn</h3>
+
+  <img
+    src="${qrImage}"
+    width="140"
+    height="140"
+  />
+
+  <p>
+    Quét để xem thông tin hóa đơn
+  </p>
+</div>
+
+<hr>
+
+<div
+  style="
+    text-align:center;
+    margin-top:30px;
+  "
+>
+  <h3>Cảm ơn quý khách!</h3>
+  <p>Hẹn gặp lại tại AERION SPORTS</p>
+</div>
   
         </body>
       </html>

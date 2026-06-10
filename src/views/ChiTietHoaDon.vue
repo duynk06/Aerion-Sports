@@ -380,7 +380,11 @@ await loadChiTietHoaDon()
 
 <button
   class="btn-print-invoice"
-  @click="printInvoice(hoaDon, danhSachSanPham, lichSuThanhToan)"
+  @click="async () => await printInvoice(
+  hoaDon,
+  danhSachSanPham,
+  lichSuThanhToan
+)"
 >
   <i class="fa-solid fa-print"></i>
   In hóa đơn

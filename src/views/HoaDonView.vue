@@ -277,6 +277,7 @@ import { computed } from 'vue'
 import { getHoaDonById } from '@/service/HoaDonService'
 import { getChiTietHoaDon } from '@/service/ChiTietHoaDonDetailService'
 import { printInvoice } from '@/utils/PrintHoaDon'
+import { getLichSuThanhToan } from '@/service/LichSuThanhToanService'
 const router = useRouter()
 
 
@@ -303,14 +304,21 @@ const printHoaDon = async (id) => {
     const danhSachSanPham =
       await getChiTietHoaDon(id)
 
-    printInvoice(
+    const lichSuThanhToan =
+      await getLichSuThanhToan(id)
+
+    await printInvoice(
       hoaDon,
-      danhSachSanPham
+      danhSachSanPham,
+      lichSuThanhToan
     )
 
   } catch (error) {
 
-    console.error(error)
+    console.error(
+      'Lỗi in hóa đơn:',
+      error
+    )
 
   }
 }
