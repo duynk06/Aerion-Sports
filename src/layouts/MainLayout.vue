@@ -56,6 +56,10 @@
           <span>Sản phẩm</span>
 
         </router-link>
+       <router-link to="/thuoc-tinh" class="item">
+          <i class="fa-solid fa-list-check"></i>
+          <span>Thuộc tính</span> 
+        </router-link>
 
         <router-link to="/phieu-giam-gia" class="item">
 
