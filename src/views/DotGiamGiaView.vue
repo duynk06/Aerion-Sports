@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <MainLayout
     :title="isCreateMode || isEditMode ? 'Thêm/Sửa đợt giảm giá' : 'Quản lý đợt giảm giá'"
   >
@@ -26,7 +26,6 @@
               <label for="discount-status">Trạng thái</label>
               <select id="discount-status" v-model="filters.trangThai">
                 <option value="">Tất cả</option>
-                <option value="0">Đã hủy</option>
                 <option value="1">Sắp diễn ra</option>
                 <option value="2">Đang diễn ra</option>
                 <option value="3">Đã kết thúc</option>
@@ -168,6 +167,23 @@
                       <button class="action-btn" type="button" @click="handleView(item)">
                         <i class="fa-solid fa-eye"></i>
                       </button>
+                      <button
+                        class="end-status-toggle"
+                        type="button"
+                        :class="{
+                          'is-active': [STATUS_WAIT, STATUS_RUNNING].includes(
+                            Number(item.trangThai),
+                          ),
+                        }"
+                        :disabled="isEndToggleDisabled(item)"
+                        :title="getEndToggleTitle(item)"
+                        :aria-label="getEndToggleTitle(item)"
+                        @click="markDiscountEnded(item)"
+                      >
+                        <span class="end-status-toggle__track">
+                          <span class="end-status-toggle__handle"></span>
+                        </span>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -200,6 +216,7 @@
         :error-message="createError"
         :form="createForm"
         :is-all-visible-selected="isAllVisibleSelected"
+        :min-date-time="currentDateTimeMin"
         :product-error="productError"
         :product-keyword="productKeyword"
         :product-loading="productLoading"
@@ -228,6 +245,8 @@
         :error-message="editError"
         :form="editForm"
         :is-all-visible-selected="isAllVisibleSelected"
+        :is-start-date-locked="isEditStartDateLocked"
+        :min-date-time="currentDateTimeMin"
         :product-error="productError"
         :product-keyword="productKeyword"
         :product-loading="productLoading"
@@ -258,27 +277,46 @@
         :loading="detailLoading"
         @close="closeDetail"
       />
+
+      <div class="toast-stack">
+        <DotGiamGiaToast
+          :message="noticeMessage"
+          :open="noticeOpen"
+          :title="noticeTitle"
+          :type="noticeType"
+          @close="closeNotice"
+        />
+      </div>
     </div>
   </MainLayout>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import MainLayout from '../layouts/MainLayout.vue'
 import DotGiamGiaCreateModal from '../components/modals/DotGiamGiaCreateModal.vue'
 import DotGiamGiaDetailModal from '../components/modals/DotGiamGiaDetailModal.vue'
 import DotGiamGiaEditModal from '../components/modals/DotGiamGiaEditModal.vue'
+import DotGiamGiaToast from '../components/toasts/DotGiamGiaToast.vue'
 import {
   createDotGiamGia,
   fetchDotGiamGiaById,
   fetchDotGiamGiaPage,
   fetchDotGiamGiaProducts,
   updateDotGiamGia,
+  updateDotGiamGiaTrangThai,
 } from '../service/DotGiamGiaService'
 
 const loading = ref(false)
 const errorMessage = ref('')
 const rows = ref([])
+const STATUS_CANCELLED = 0
+const STATUS_WAIT = 1
+const STATUS_RUNNING = 2
+const STATUS_ENDED = 3
+const updatingStatusIds = ref(new Set())
+const currentDateTimeMin = ref('')
+let currentDateTimeMinTimer = null
 
 const page = ref(0)
 const size = ref(5)
@@ -300,6 +338,11 @@ const isDetailOpen = ref(false)
 const detailLoading = ref(false)
 const detailError = ref('')
 const detailData = ref(null)
+const noticeOpen = ref(false)
+const noticeType = ref('success')
+const noticeTitle = ref('')
+const noticeMessage = ref('')
+let noticeTimer = null
 
 const createError = ref('')
 const isSubmittingCreate = ref(false)
@@ -319,9 +362,13 @@ const editForm = reactive({
   tenDotGiamGia: '',
   giaTriGiam: null,
   ngayBatDau: '',
+  originalNgayBatDau: '',
   ngayKetThuc: '',
   moTa: '',
+  trangThai: null,
 })
+
+const isEditStartDateLocked = computed(() => Number(editForm.trangThai) === STATUS_RUNNING)
 
 const productKeyword = ref('')
 const productLoading = ref(false)
@@ -430,6 +477,58 @@ const toPayloadDateTime = (value) => {
   return `${value}:00`
 }
 
+const refreshCurrentDateTimeMin = () => {
+  currentDateTimeMin.value = toLocalDateTimeValue(new Date())
+}
+
+const toDateMinute = (value) => {
+  if (!value) return null
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+
+  date.setSeconds(0, 0)
+  return date
+}
+
+const getCurrentMinuteDate = () => {
+  const now = new Date()
+  now.setSeconds(0, 0)
+  return now
+}
+
+const validateDiscountDates = (form, isStartLocked = false) => {
+  const start = toDateMinute(form.ngayBatDau)
+  const end = toDateMinute(form.ngayKetThuc)
+  const now = getCurrentMinuteDate()
+
+  if (!start) {
+    return 'Vui lòng chọn ngày bắt đầu'
+  }
+
+  if (!end) {
+    return 'Vui lòng chọn ngày kết thúc'
+  }
+
+  if (isStartLocked && form.originalNgayBatDau && form.ngayBatDau !== form.originalNgayBatDau) {
+    return 'Đợt giảm giá đang diễn ra không được sửa ngày bắt đầu'
+  }
+
+  if (!isStartLocked && start < now) {
+    return 'Ngày bắt đầu không được chọn thời gian trong quá khứ'
+  }
+
+  if (end < now) {
+    return 'Ngày kết thúc không được chọn thời gian trong quá khứ'
+  }
+
+  if (start >= end) {
+    return 'Ngày bắt đầu phải trước ngày kết thúc'
+  }
+
+  return ''
+}
+
 const resetCreateForm = () => {
   createForm.tenDotGiamGia = ''
   createForm.giaTriGiam = null
@@ -446,10 +545,37 @@ const resetEditForm = () => {
   editForm.tenDotGiamGia = ''
   editForm.giaTriGiam = null
   editForm.ngayBatDau = ''
+  editForm.originalNgayBatDau = ''
   editForm.ngayKetThuc = ''
   editForm.moTa = ''
+  editForm.trangThai = null
   editError.value = ''
   selectedProductIds.value = []
+}
+
+const openNotice = (type, title, message) => {
+  if (noticeTimer) {
+    window.clearTimeout(noticeTimer)
+    noticeTimer = null
+  }
+
+  noticeType.value = type
+  noticeTitle.value = title
+  noticeMessage.value = message
+  noticeOpen.value = true
+
+  noticeTimer = window.setTimeout(() => {
+    noticeOpen.value = false
+    noticeTimer = null
+  }, 3500)
+}
+
+const closeNotice = () => {
+  noticeOpen.value = false
+  if (noticeTimer) {
+    window.clearTimeout(noticeTimer)
+    noticeTimer = null
+  }
 }
 
 const loadData = async () => {
@@ -537,9 +663,10 @@ const nextProductPage = () => {
 }
 
 const toggleSelectAllSelected = (ids = []) => {
-  const selectedIds = (Array.isArray(ids) && ids.length
-    ? ids
-    : selectedProductDetails.value.map((product) => product.idChiTietSanPham)
+  const selectedIds = (
+    Array.isArray(ids) && ids.length
+      ? ids
+      : selectedProductDetails.value.map((product) => product.idChiTietSanPham)
   ).filter((id) => id !== null && id !== undefined)
 
   if (!selectedIds.length) return
@@ -610,6 +737,96 @@ const getStatusClass = (status) => {
   }
 }
 
+const setUpdatingStatus = (id, isUpdating) => {
+  const next = new Set(updatingStatusIds.value)
+
+  if (isUpdating) {
+    next.add(id)
+  } else {
+    next.delete(id)
+  }
+
+  updatingStatusIds.value = next
+}
+
+const updateRowStatus = (id, trangThai, trangThaiText = formatTrangThaiText(trangThai)) => {
+  const index = rows.value.findIndex((row) => row.id === id)
+
+  if (index === -1) {
+    return
+  }
+
+  rows.value[index] = {
+    ...rows.value[index],
+    trangThai,
+    trangThaiText,
+  }
+}
+
+const isEndToggleDisabled = (item) => {
+  if (!item?.id) return true
+
+  const status = Number(item.trangThai)
+  return (
+    status === STATUS_CANCELLED || status === STATUS_ENDED || updatingStatusIds.value.has(item.id)
+  )
+}
+
+const getEndToggleTitle = (item) => {
+  const status = Number(item?.trangThai)
+
+  if (updatingStatusIds.value.has(item?.id)) {
+    return 'Đang chuyển trạng thái...'
+  }
+
+  if (status === STATUS_ENDED) {
+    return 'Đợt giảm giá đã kết thúc'
+  }
+
+  if (status === STATUS_CANCELLED) {
+    return 'Đợt giảm giá đã hủy'
+  }
+
+  return 'Gạt để chuyển sang đã kết thúc'
+}
+
+const markDiscountEnded = async (item) => {
+  if (isEndToggleDisabled(item)) return
+
+  const rowIndex = rows.value.findIndex((row) => row.id === item.id)
+  const previousRow = rowIndex >= 0 ? { ...rows.value[rowIndex] } : null
+
+  setUpdatingStatus(item.id, true)
+  updateRowStatus(item.id, STATUS_ENDED)
+
+  try {
+    await updateDotGiamGiaTrangThai(item.id, STATUS_ENDED)
+    openNotice(
+      'success',
+      'Cập nhật trạng thái thành công',
+      `Đợt giảm giá ${item.maDotGiamGia || ''} đã chuyển sang trạng thái Đã kết thúc.`,
+    )
+    try {
+      await loadData()
+    } catch (loadError) {
+      errorMessage.value =
+        loadError?.message || 'Đã đổi trạng thái, nhưng chưa tải lại được danh sách'
+    }
+  } catch (error) {
+    if (rowIndex >= 0 && previousRow) {
+      rows.value[rowIndex] = previousRow
+    }
+
+    const message = error?.message || 'Không thể chuyển trạng thái đợt giảm giá'
+    errorMessage.value = message
+    openNotice('error', 'Đổi trạng thái thất bại', message)
+    setUpdatingStatus(item.id, false)
+    return
+  }
+
+  setUpdatingStatus(item.id, false)
+}
+
 const toggleProductSelection = (product) => {
   const productId = product.idChiTietSanPham
   const index = selectedProductIds.value.indexOf(productId)
@@ -635,6 +852,8 @@ const toggleSelectAllVisible = () => {
 }
 
 const handleAdd = async () => {
+  refreshCurrentDateTimeMin()
+  closeNotice()
   isEditMode.value = false
   isCreateMode.value = true
   productKeyword.value = ''
@@ -652,8 +871,10 @@ const fillEditForm = (detail) => {
   editForm.tenDotGiamGia = detail.tenDotGiamGia || ''
   editForm.giaTriGiam = detail.giaTriGiam ?? null
   editForm.ngayBatDau = toLocalDateTimeValue(detail.ngayBatDau)
+  editForm.originalNgayBatDau = editForm.ngayBatDau
   editForm.ngayKetThuc = toLocalDateTimeValue(detail.ngayKetThuc)
   editForm.moTa = detail.moTa || ''
+  editForm.trangThai = detail.trangThai ?? null
   selectedProductIds.value = Array.isArray(detail.chiTietList)
     ? detail.chiTietList
         .filter((item) => item?.idChiTietSanPham)
@@ -664,6 +885,8 @@ const fillEditForm = (detail) => {
 const handleEdit = async (item) => {
   if (!item?.id) return
 
+  refreshCurrentDateTimeMin()
+  closeNotice()
   isCreateMode.value = false
   isEditMode.value = true
   productKeyword.value = ''
@@ -707,6 +930,7 @@ const closeDetail = () => {
 
 const handleBackToList = () => {
   closeDetail()
+  closeNotice()
   isCreateMode.value = false
   isEditMode.value = false
   productKeyword.value = ''
@@ -735,6 +959,27 @@ const buildPayload = (form) => ({
   })),
 })
 
+const validateDiscountPercent = (value) => {
+  if (value === '' || value === null || value === undefined) {
+    return 'Vui lòng nhập giá trị giảm'
+  }
+
+  const percent = Number(value)
+  if (!Number.isFinite(percent)) {
+    return 'Giá trị giảm phải là số'
+  }
+
+  if (percent <= 0) {
+    return 'Giá trị giảm phải lớn hơn 0%'
+  }
+
+  if (percent > 100) {
+    return 'Giá trị giảm không được vượt quá 100%'
+  }
+
+  return ''
+}
+
 const saveCreate = async () => {
   createError.value = ''
 
@@ -748,6 +993,12 @@ const saveCreate = async () => {
     return
   }
 
+  const percentError = validateDiscountPercent(createForm.giaTriGiam)
+  if (percentError) {
+    createError.value = percentError
+    return
+  }
+
   if (!createForm.ngayBatDau) {
     createError.value = 'Vui lòng chọn ngày bắt đầu'
     return
@@ -755,6 +1006,13 @@ const saveCreate = async () => {
 
   if (!createForm.ngayKetThuc) {
     createError.value = 'Vui lòng chọn ngày kết thúc'
+    return
+  }
+
+  refreshCurrentDateTimeMin()
+  const dateError = validateDiscountDates(createForm)
+  if (dateError) {
+    createError.value = dateError
     return
   }
 
@@ -770,9 +1028,17 @@ const saveCreate = async () => {
     isCreateMode.value = false
     resetCreateForm()
     productRows.value = []
-    await loadData()
+    openNotice('success', 'Thêm mới thành công', 'Đợt giảm giá đã được tạo và lưu vào hệ thống.')
+    try {
+      await loadData()
+    } catch (loadError) {
+      errorMessage.value =
+        loadError?.message || 'Đã tạo đợt giảm giá, nhưng chưa tải lại được danh sách'
+    }
   } catch (error) {
-    createError.value = error?.message || 'Không thể tạo đợt giảm giá'
+    const message = error?.message || 'Không thể tạo đợt giảm giá'
+    createError.value = message
+    openNotice('error', 'Thêm mới thất bại', message)
   } finally {
     isSubmittingCreate.value = false
   }
@@ -796,6 +1062,12 @@ const saveEdit = async () => {
     return
   }
 
+  const percentError = validateDiscountPercent(editForm.giaTriGiam)
+  if (percentError) {
+    editError.value = percentError
+    return
+  }
+
   if (!editForm.ngayBatDau) {
     editError.value = 'Vui lòng chọn ngày bắt đầu'
     return
@@ -811,14 +1083,29 @@ const saveEdit = async () => {
     return
   }
 
+  refreshCurrentDateTimeMin()
+  const dateError = validateDiscountDates(editForm, isEditStartDateLocked.value)
+  if (dateError) {
+    editError.value = dateError
+    return
+  }
+
   isSubmittingEdit.value = true
 
   try {
     await updateDotGiamGia(editForm.id, buildPayload(editForm))
     handleBackToList()
-    await loadData()
+    openNotice('success', 'Cập nhật thành công', 'Đợt giảm giá đã được cập nhật.')
+    try {
+      await loadData()
+    } catch (loadError) {
+      errorMessage.value =
+        loadError?.message || 'Đã cập nhật đợt giảm giá, nhưng chưa tải lại được danh sách'
+    }
   } catch (error) {
-    editError.value = error?.message || 'Không thể cập nhật đợt giảm giá'
+    const message = error?.message || 'Không thể cập nhật đợt giảm giá'
+    editError.value = message
+    openNotice('error', 'Cập nhật thất bại', message)
   } finally {
     isSubmittingEdit.value = false
   }
@@ -842,7 +1129,19 @@ const handleDelete = async (item) => {
 */
 
 onMounted(() => {
+  refreshCurrentDateTimeMin()
   loadData()
+  currentDateTimeMinTimer = window.setInterval(refreshCurrentDateTimeMin, 30000)
+})
+
+onUnmounted(() => {
+  if (currentDateTimeMinTimer) {
+    window.clearInterval(currentDateTimeMinTimer)
+  }
+
+  if (noticeTimer) {
+    window.clearTimeout(noticeTimer)
+  }
 })
 
 watch(
@@ -854,6 +1153,14 @@ watch(
 </script>
 
 <style scoped>
+.toast-stack {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1300;
+  pointer-events: none;
+}
+
 .filter-error {
   margin-top: 10px;
   color: #dc2626;

@@ -10,7 +10,6 @@
           <span>Chọn lại sản phẩm áp dụng nếu cần</span>
         </div>
       </div>
-
     </div>
 
     <section class="card create-card">
@@ -39,6 +38,7 @@
                 v-model.number="form.giaTriGiam"
                 type="number"
                 min="1"
+                max="100"
                 step="1"
                 placeholder="Nhập giá trị giảm"
               />
@@ -46,12 +46,26 @@
 
             <div class="create-field">
               <label for="edit-start">Ngày bắt đầu</label>
-              <input id="edit-start" v-model="form.ngayBatDau" type="datetime-local" />
+              <input
+                id="edit-start"
+                v-model="form.ngayBatDau"
+                type="datetime-local"
+                :min="minDateTime"
+                :disabled="isStartDateLocked"
+                :title="
+                  isStartDateLocked ? 'Đợt giảm giá đang diễn ra không được sửa ngày bắt đầu' : ''
+                "
+              />
             </div>
 
             <div class="create-field">
               <label for="edit-end">Ngày kết thúc</label>
-              <input id="edit-end" v-model="form.ngayKetThuc" type="datetime-local" />
+              <input
+                id="edit-end"
+                v-model="form.ngayKetThuc"
+                type="datetime-local"
+                :min="endDateMin"
+              />
             </div>
 
             <div class="create-field">
@@ -113,7 +127,7 @@
                     />
                   </th>
                   <th scope="col">STT</th>
-                  <th scope="col">Mã SP</th>
+                  <th scope="col">Mã CTSP</th>
                   <th scope="col">Tên sản phẩm</th>
                   <th scope="col">Giá bán</th>
                   <th scope="col">Số lượng</th>
@@ -139,10 +153,10 @@
                       />
                     </td>
                     <td>{{ productPage * productPageSize + index + 1 }}</td>
-                    <td>{{ product.maSanPham || '-' }}</td>
+                    <td>{{ product.maCtsp || product.maSanPham || '-' }}</td>
                     <td>{{ product.tenSanPham || '-' }}</td>
                     <td>{{ formatMoney(product.giaBan) }}</td>
-                    <td>{{ product.soLuongTon ?? '-' }}</td>
+                    <td>{{ product.soLuong ?? product.soLuongTon ?? '-' }}</td>
                   </tr>
                 </template>
 
@@ -180,7 +194,10 @@
       <section v-if="selectedProductDetails.length" class="selected-details">
         <div class="selected-details-header">
           <h4>Chi tiết sản phẩm đã chọn</h4>
-          <span>{{ filteredSelectedProducts.length }} / {{ selectedProductDetails.length }} sản phẩm</span>
+          <span
+            >{{ filteredSelectedProducts.length }} / {{ selectedProductDetails.length }} sản
+            phẩm</span
+          >
         </div>
 
         <div class="selected-filter-bar">
@@ -190,9 +207,19 @@
               type="text"
               placeholder="Tìm theo tên hoặc mã..."
             />
-            <button type="button" @click="resetSelectedFilters">
-              <i class="fa-solid fa-rotate-right"></i>
+            <button type="button" aria-label="Tìm kiếm sản phẩm đã chọn">
+              <i class="fa-solid fa-magnifying-glass"></i>
             </button>
+          </div>
+
+          <div class="selected-filter">
+            <label>Hãng</label>
+            <select v-model="selectedFilters.thuongHieu">
+              <option value="">Tất cả</option>
+              <option v-for="option in brandOptions" :key="option" :value="option">
+                {{ option }}
+              </option>
+            </select>
           </div>
 
           <div class="selected-filter">
@@ -251,6 +278,7 @@
                 <th scope="col">STT</th>
                 <th scope="col">Mã CTSP</th>
                 <th scope="col">Tên SP</th>
+                <th scope="col">Hãng</th>
                 <th scope="col">Màu sắc</th>
                 <th scope="col">Trọng lượng</th>
                 <th scope="col">Độ cứng</th>
@@ -266,10 +294,13 @@
 
             <tbody>
               <tr v-if="filteredSelectedProducts.length === 0">
-                <td class="state-cell" colspan="14">Không có sản phẩm phù hợp bộ lọc</td>
+                <td class="state-cell" colspan="15">Không có sản phẩm phù hợp bộ lọc</td>
               </tr>
 
-              <tr v-for="(product, index) in filteredSelectedProducts" :key="product.idChiTietSanPham">
+              <tr
+                v-for="(product, index) in filteredSelectedProducts"
+                :key="product.idChiTietSanPham"
+              >
                 <td>
                   <input
                     type="checkbox"
@@ -278,17 +309,18 @@
                   />
                 </td>
                 <td>{{ index + 1 }}</td>
-                <td>{{ product.maSanPham || '-' }}</td>
+                <td>{{ product.maCtsp || product.maSanPham || '-' }}</td>
                 <td>{{ product.tenSanPham || '-' }}</td>
+                <td>{{ formatText(product.tenThuongHieu) }}</td>
                 <td>{{ formatText(product.tenMauSac) }}</td>
                 <td>{{ formatText(product.tenTrongLuong) }}</td>
                 <td>{{ formatText(product.tenDoCung) }}</td>
                 <td>{{ formatText(product.tenDiemCanBang) }}</td>
                 <td>{{ formatText(product.tenChatLieuThanVot) }}</td>
                 <td>{{ formatText(product.tenChatLieuKhungVot) }}</td>
-                <td>{{ formatText(product.chuViCanVot) }}</td>
-                <td>{{ formatText(product.xuatXuChiTiet) }}</td>
-                <td>{{ formatText(product.soLuongTon) }}</td>
+                <td>{{ formatText(product.tenChuViCanVot || product.chuViCanVot) }}</td>
+                <td>{{ formatText(product.tenXuatXu || product.xuatXuChiTiet) }}</td>
+                <td>{{ formatText(product.soLuong ?? product.soLuongTon) }}</td>
                 <td>{{ formatMoney(product.giaBan) }}</td>
               </tr>
             </tbody>
@@ -314,6 +346,14 @@ const props = defineProps({
   isAllVisibleSelected: {
     type: Boolean,
     default: false,
+  },
+  isStartDateLocked: {
+    type: Boolean,
+    default: false,
+  },
+  minDateTime: {
+    type: String,
+    default: '',
   },
   productError: {
     type: String,
@@ -397,8 +437,13 @@ const formatMoney = (value) => {
   return `${Number(value).toLocaleString('vi-VN')} đ`
 }
 
+const endDateMin = computed(() =>
+  props.isStartDateLocked ? props.minDateTime : props.form.ngayBatDau || props.minDateTime,
+)
+
 const selectedFilters = reactive({
   keyword: '',
+  thuongHieu: '',
   mauSac: '',
   chatLieuKhung: '',
   doCung: '',
@@ -416,6 +461,10 @@ const uniqueOptions = (values) =>
   Array.from(new Set(values.filter(Boolean).map((value) => String(value).trim()))).sort((a, b) =>
     a.localeCompare(b, 'vi'),
   )
+
+const brandOptions = computed(() =>
+  uniqueOptions(props.selectedProductDetails.map((product) => product.tenThuongHieu)),
+)
 
 const colorOptions = computed(() =>
   uniqueOptions(props.selectedProductDetails.map((product) => product.tenMauSac)),
@@ -451,10 +500,16 @@ const filteredSelectedProducts = computed(() => {
 
   return props.selectedProductDetails.filter((product) => {
     if (keyword) {
-      const searchable = normalizeText(`${product.maSanPham || ''} ${product.tenSanPham || ''}`)
+      const searchable = normalizeText(
+        `${product.maCtsp || product.maSanPham || ''} ${product.tenSanPham || ''} ${product.tenThuongHieu || ''}`,
+      )
       if (!searchable.includes(keyword)) {
         return false
       }
+    }
+
+    if (selectedFilters.thuongHieu && product.tenThuongHieu !== selectedFilters.thuongHieu) {
+      return false
     }
 
     if (selectedFilters.mauSac && product.tenMauSac !== selectedFilters.mauSac) {
@@ -486,18 +541,11 @@ const filteredSelectedIds = computed(() =>
     .filter((id) => id !== null && id !== undefined),
 )
 
-const isAllFilteredSelected = computed(() =>
-  filteredSelectedIds.value.length > 0 &&
-  filteredSelectedIds.value.every((id) => props.selectedProductIds.includes(id)),
+const isAllFilteredSelected = computed(
+  () =>
+    filteredSelectedIds.value.length > 0 &&
+    filteredSelectedIds.value.every((id) => props.selectedProductIds.includes(id)),
 )
-
-const resetSelectedFilters = () => {
-  selectedFilters.keyword = ''
-  selectedFilters.mauSac = ''
-  selectedFilters.chatLieuKhung = ''
-  selectedFilters.doCung = ''
-  selectedFilters.giaBan = ''
-}
 </script>
 
 <style scoped>
@@ -529,7 +577,7 @@ const resetSelectedFilters = () => {
 
 .selected-filter-bar {
   display: grid;
-  grid-template-columns: 1.8fr repeat(4, minmax(0, 1fr));
+  grid-template-columns: 1.6fr repeat(5, minmax(0, 1fr));
   gap: 12px;
   align-items: end;
   margin-bottom: 14px;
@@ -661,7 +709,7 @@ const resetSelectedFilters = () => {
 
 .selected-details .selected-group-table {
   width: 100%;
-  min-width: 1300px;
+  min-width: 1400px;
   border-collapse: collapse;
 }
 

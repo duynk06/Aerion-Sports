@@ -72,6 +72,7 @@
                   <th scope="col">STT</th>
                   <th scope="col">Mã CTSP</th>
                   <th scope="col">Tên SP</th>
+                  <th scope="col">Hãng</th>
                   <th scope="col">Màu sắc</th>
                   <th scope="col">Trọng lượng</th>
                   <th scope="col">Độ cứng</th>
@@ -88,17 +89,18 @@
               <tbody>
                 <tr v-for="(product, index) in detailProducts" :key="product.idChiTietSanPham">
                   <td>{{ index + 1 }}</td>
-                  <td>{{ product.maSanPham || '-' }}</td>
+                  <td>{{ product.maCtsp || product.maSanPham || '-' }}</td>
                   <td>{{ product.tenSanPham || '-' }}</td>
+                  <td>{{ formatText(product.tenThuongHieu) }}</td>
                   <td>{{ formatText(product.tenMauSac) }}</td>
                   <td>{{ formatText(product.tenTrongLuong) }}</td>
                   <td>{{ formatText(product.tenDoCung) }}</td>
                   <td>{{ formatText(product.tenDiemCanBang) }}</td>
                   <td>{{ formatText(product.tenChatLieuThanVot) }}</td>
                   <td>{{ formatText(product.tenChatLieuKhungVot) }}</td>
-                  <td>{{ formatText(product.chuViCanVot) }}</td>
-                  <td>{{ formatText(product.xuatXuChiTiet) }}</td>
-                  <td>{{ formatText(product.soLuongTon) }}</td>
+                  <td>{{ formatText(product.tenChuViCanVot || product.chuViCanVot) }}</td>
+                  <td>{{ formatText(product.tenXuatXu || product.xuatXuChiTiet) }}</td>
+                  <td>{{ formatText(product.soLuong ?? product.soLuongTon) }}</td>
                   <td>{{ formatMoney(product.giaBan) }}</td>
                 </tr>
               </tbody>
@@ -351,6 +353,7 @@ const getStatusClass = (status) => {
 
 .detail-table {
   width: 100%;
+  min-width: 1280px;
   border-collapse: collapse;
   table-layout: fixed;
   font-size: 12px;

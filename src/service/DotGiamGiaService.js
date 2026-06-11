@@ -97,6 +97,21 @@ export const updateDotGiamGia = async (id, payload) => {
   return await response.json()
 }
 
+export const updateDotGiamGiaTrangThai = async (id, trangThai) => {
+  const params = new URLSearchParams()
+  params.append('trangThai', trangThai)
+
+  const response = await fetch(`${baseUrl}/${id}/trang-thai?${params.toString()}`, {
+    method: 'PUT',
+  })
+
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response))
+  }
+
+  return await response.json()
+}
+
 // POST /api/dot-giam-gia
 // Tạo mới một đợt giảm giá kèm danh sách sản phẩm áp dụng.
 export const createDotGiamGia = async (payload) => {
