@@ -102,7 +102,7 @@
               <td style="padding: 12px 10px; color: #555;">{{ (currentPage - 1) * pageSize + index + 1 }}</td>
               <td style="padding: 12px 10px;" class="no-print">
                 <div class="avatar-placeholder" style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: #e2e8f0; display: flex; align-items: center; justify-content: center;">
-                  <img v-if="nhanVien.anh" :src="nhanVien.anh" alt="avatar" style="width: 100%; height: 100%; object-fit: cover;" />
+                  <img v-if="nhanVien.avatar" :src="nhanVien.avatar" alt="avatar" style="width: 100%; height: 100%; object-fit: cover;" />
                   <span v-else class="avatar-default-img" style="font-size: 18px;">👤</span>
                 </div>
               </td>
@@ -177,7 +177,7 @@
         <div class="avatar-upload-block">
           <div class="section-sub-title fw-bold mb-3">Ảnh đại diện</div>
           <div class="avatar-preview-circle">
-            <img v-if="nhanVienDetail.anh" :src="nhanVienDetail.anh" alt="Avatar" />
+            <img v-if="nhanVienDetail.avatar" :src="nhanVienDetail.avatar" alt="Avatar" />
             <span v-else class="default-avatar-icon">👤</span>
           </div>
           <div :class="['status-badge-detail mt-3', nhanVienDetail.trangThai === 1 ? 'badge-active-blue' : 'badge-inactive-red']">
@@ -266,7 +266,7 @@
             <div class="avatar-upload-block">
               <div class="section-sub-title fw-bold mb-3">Ảnh đại diện</div>
               <div class="avatar-preview-circle mb-3">
-                <img v-if="nhanVienForm.anh" :src="nhanVienForm.anh" alt="Avatar" />
+                <img v-if="nhanVienForm.avatar" :src="nhanVienForm.avatar" alt="Avatar" />
                 <span v-else class="default-avatar-icon">👤</span>
               </div>
               <button type="button" class="btn-upload-avatar mb-2" @click="triggerFormFileInput">📁 Chọn ảnh</button>
@@ -350,7 +350,7 @@
                 <div class="form-cell">
                   <label>Phường / Xã <span class="required">*</span></label>
                   <select v-model="addr.phuongXa" class="form-select-control" required>
-                    <option value="Văn Quán">Phường Văn Quán</option>
+                    <option value="Vavan Quán">Phường Văn Quán</option>
                     <option value="Mộ Lao">Phường Mộ Lao</option>
                     <option value="Dịch Vọng">Phường Dịch Vọng</option>
                   </select>
@@ -538,12 +538,12 @@ const currentPage = ref(1)
 const pageSize = ref(5)
 
 const nhanVienDetail = ref({
-  id: '', tenNv: '', sdt: '', email: '', ngaySinh: '', gioiTinh: '', anh: '', vaiTro: '', trangThai: '', diaChi: '', addresses: []
+  id: '', tenNv: '', sdt: '', email: '', ngaySinh: '', gioiTinh: '', avatar: '', vaiTro: '', trangThai: '', diaChi: '', addresses: []
 })
 
 // Đồng bộ kiểu dữ liệu số (Number) giống màn hình thêm mới
 const nhanVienForm = ref({
-  id: '', tenNv: '', sdt: '', email: '', ngaySinh: '', gioiTinh: 1, anh: '', vaiTro: 3, trangThai: 1, diaChi: '', addresses: []
+  id: '', tenNv: '', sdt: '', email: '', ngaySinh: '', gioiTinh: 1, avatar: '', vaiTro: 3, trangThai: 1, diaChi: '', addresses: []
 })
 
 // Trạng thái quản lý Modal địa chỉ khách hàng/nhân viên
@@ -552,7 +552,7 @@ const selectedNhanVienForAddress = ref(null)
 const currentAddressList = ref([])
 const newAddress = ref({ tinhThanh: '', phuongXa: '', chiTietCuThe: '', isDefault: false })
 
-// 🌟 LOGIC CHỌN ẢNH ĐẠI DIỆN CHO FORM CẬP NHẬT
+// 🌟 LOGIC CHỌN ẢNH ĐẠI DIỆN CHO FORM CẬP NHẬT (ĐÃ CHUYỂN .anh SANG .avatar)
 const formFileInputRef = ref(null)
 
 const triggerFormFileInput = () => {
@@ -581,7 +581,7 @@ const handleFormAvatarChange = (event) => {
   // Đọc file sang chuỗi Base64 để hiển thị trực tiếp lên khung preview đại diện
   const reader = new FileReader()
   reader.onload = (e) => {
-    nhanVienForm.value.anh = e.target.result
+    nhanVienForm.value.avatar = e.target.result
   }
   reader.readAsDataURL(file)
 }
@@ -607,11 +607,17 @@ const handleFetchAllData = async () => {
         if (Array.isArray(item.addresses) && item.addresses.length > 0) {
           processedAddresses = item.addresses.map(addr => ({
             ...addr,
+            tinhThanh: addr.tinhThanh || '',
+            phuongXa: addr.phuongXa || '',
+            chiTietCuThe: addr.chiTietCuThe || addr.chiTiet || '',
             chiTiet: addr.chiTiet || `Số ${addr.chiTietCuThe || ''}, Phường ${addr.phuongXa || ''}, ${addr.tinhThanh || ''}`
           }));
         } else if (item.diaChi && item.diaChi.trim() !== '') {
           processedAddresses = [{
             id: 'ADDR_' + (item.id || item.idNhanVien),
+            tinhThanh: '',
+            phuongXa: '',
+            chiTietCuThe: item.diaChi,
             chiTiet: item.diaChi,
             isDefault: true
           }];
@@ -626,6 +632,7 @@ const handleFetchAllData = async () => {
           trangThai: (item.trangThai === 1 || item.trangThai === true) ? 1 : 0,
           vaiTro: role,
           diaChi: item.diaChi || '',
+          avatar: item.avatar || item.anh || '', // Nhận linh hoạt cả avatar hoặc anh từ API
           addresses: processedAddresses
         };
       });
@@ -672,8 +679,8 @@ const handleExport = () => {
 
   const worksheet = XLSX.utils.json_to_sheet(dataToExport)
   const workbook = XLSX.utils.book_new()
-  XXLSX.utils.book_append_sheet(workbook, worksheet, 'Danh Sách Nhân Viên')
-  XXLSX.writeFile(workbook, 'Danh_Sach_Nhan_Vien.xlsx')
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Danh Sách Nhân Viên')
+  XLSX.writeFile(workbook, 'Danh_Sach_Nhan_Vien.xlsx')
 }
 
 // --- 3. QUẢN LÝ SỔ ĐỊA CHỈ QUA MODAL ---
@@ -786,7 +793,7 @@ const removeAddressInModal = async (addrId, index) => {
 const addNewAddressRow = () => {
   nhanVienForm.value.addresses.push({
     id: 'ADDR_NEW_' + Date.now(),
-    tinhThanh: 'Hà Nội',
+    tinhThanh: '',
     phuongXa: '',
     chiTietCuThe: '',
     chiTiet: '',
@@ -817,13 +824,45 @@ const viewDetail = (nhanVien) => {
 const cancelDetailMode = () => { isDetailMode.value = false }
 
 // --- 6. CHỈNH SỬA TOÀN BỘ THÔNG TIN ---
+// 🌟 ĐÃ SỬA: Chuẩn hóa map mảng địa chỉ tương thích 100% với form input khi bấm sửa thông tin
 const openEditForm = (nhanVien) => {
+  let processedAddresses = []
+  
+  if (Array.isArray(nhanVien.addresses) && nhanVien.addresses.length > 0) {
+    processedAddresses = nhanVien.addresses.map(addr => ({
+      id: addr.id || 'ADDR_' + Date.now() + Math.random(),
+      tinhThanh: addr.tinhThanh || '',
+      phuongXa: addr.phuongXa || '',
+      chiTietCuThe: addr.chiTietCuThe || addr.chiTiet || '', 
+      chiTiet: addr.chiTiet || '',
+      isDefault: addr.isDefault === true || addr.isDefault === 1
+    }))
+  } else if (nhanVien.diaChi && nhanVien.diaChi.trim() !== '') {
+    processedAddresses = [{
+      id: 'ADDR_FB_' + nhanVien.id,
+      tinhThanh: '',
+      phuongXa: '',
+      chiTietCuThe: nhanVien.diaChi,
+      chiTiet: nhanVien.diaChi,
+      isDefault: true
+    }]
+  } else {
+    processedAddresses = [{
+      id: 'ADDR_EMPTY_' + Date.now(),
+      tinhThanh: '',
+      phuongXa: '',
+      chiTietCuThe: '',
+      chiTiet: '',
+      isDefault: true
+    }]
+  }
+
   nhanVienForm.value = {
     ...nhanVien,
     vaiTro: nhanVien.vaiTro,
     gioiTinh: nhanVien.gioiTinh !== undefined ? Number(nhanVien.gioiTinh) : 1,
     trangThai: nhanVien.trangThai === 1 ? 1 : 0,
-    addresses: Array.isArray(nhanVien.addresses) ? JSON.parse(JSON.stringify(nhanVien.addresses)) : []
+    addresses: processedAddresses
   }
   isDetailMode.value = false
   isFormMode.value = true
@@ -843,7 +882,6 @@ const submitEditForm = async () => {
       return
     }
 
-    // Tối ưu hóa việc lặp và gán lại chuỗi địa chỉ chi tiết rõ ràng hơn
     nhanVienForm.value.addresses.forEach(addr => {
       if (addr.chiTietCuThe || addr.phuongXa || addr.tinhThanh) {
         addr.chiTiet = `Số ${addr.chiTietCuThe || ''}, Phường ${addr.phuongXa || ''}, ${addr.tinhThanh || ''}`
@@ -854,7 +892,7 @@ const submitEditForm = async () => {
     if (defaultAddrObj) {
       nhanVienForm.value.diaChi = defaultAddrObj.chiTiet || defaultAddrObj.chiTietCuThe
     } else {
-      nhanVienForm.value.diaChi = '' // Reset nếu không còn địa chỉ nào
+      nhanVienForm.value.diaChi = '' 
     }
 
     const payload = {
@@ -876,7 +914,6 @@ const submitEditForm = async () => {
 const toggleTrangThai = async (nhanVien) => {
   const targetStatus = nhanVien.trangThai === 1 ? 0 : 1;
   try {
-    // 🌟Ưu tiên dùng hàm changeStatusNhanVien viết riêng nếu Backend hỗ trợ để tối ưu hiệu năng
     if (typeof changeStatusNhanVien === 'function') {
       await changeStatusNhanVien(nhanVien.id, targetStatus);
     } else {
@@ -918,7 +955,6 @@ const resetFilters = () => {
   currentPage.value = 1
 }
 
-// 🌟 Sửa lỗi phân trang: Theo dõi bộ lọc để ép trang hiện tại về trang 1 tự động khi tìm kiếm
 watch(filterParams, () => {
   handleFilter()
 }, { deep: true })

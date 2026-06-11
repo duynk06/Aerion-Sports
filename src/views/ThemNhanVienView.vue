@@ -32,7 +32,7 @@
           <div class="avatar-box">
             <h3>Ảnh đại diện</h3>
             <div class="avatar-preview">
-              <img v-if="nhanVien.anh" :src="nhanVien.anh" alt="avatar" />
+              <img v-if="nhanVien.avatar" :src="nhanVien.avatar" alt="avatar" />
               <span v-else>👤</span>
             </div>
             
@@ -207,27 +207,27 @@ import MainLayout from '../layouts/MainLayout.vue'
 
 const router = useRouter()
 
-// 🌟 ĐỒNG BỘ: Chuyển tên các trường về đúng định dạng của form sửa/danh sách
+// 🌟 ĐỒNG BỘ: Đổi trường 'anh' thành 'avatar' để đồng bộ toàn bộ dự án
 const nhanVien = reactive({
   tenNv: '',
   sdt: '',
   email: '',
   ngaySinh: '',
-  gioiTinh: 1, // Đưa về kiểu Number để khớp với template `:value="1"`
-  vaiTro: 3,   // Đổi từ idVaiTro thành vaiTro và mặc định là 3 (Nhân viên)
-  trangThai: 1, // Đổi từ true/false sang 1/0 để đồng bộ kiểu dữ liệu SQL
-  anh: '',      // Đổi từ avatar sang anh
+  gioiTinh: 1, 
+  vaiTro: 3,   
+  trangThai: 1, 
+  avatar: '',   // Đã sửa thành avatar
   listDiaChi: [
     {
       tinhThanh: '',
       phuongXa: '',
-      chiTietCuThe: '', // Đổi từ diaChiChiTiet sang chiTietCuThe
-      isDefault: true   // Đổi từ macDinh sang isDefault
+      chiTietCuThe: '', 
+      isDefault: true   
     }
   ]
 })
 
-// Quản lý trạng thái thông báo lỗi cục bộ (Bổ sung thêm tenNv)
+// Quản lý trạng thái thông báo lỗi cục bộ
 const errors = reactive({
   tenNv: '',
   sdt: '',
@@ -275,8 +275,6 @@ const onScanSuccess = (decodedText) => {
       
       nhanVien.gioiTinh = parts[4] === 'Nam' ? 1 : 0
       
-      // 🌟 TỐI ƯU QR: Vì parts[5] chứa toàn bộ chuỗi địa chỉ hộ khẩu, 
-      // Tạm thời gán vào chiTietCuThe và nhắc nhở người dùng tách nhanh nếu cần.
       if (nhanVien.listDiaChi.length > 0) {
         nhanVien.listDiaChi[0].chiTietCuThe = parts[5]
       }
@@ -304,11 +302,11 @@ const addAddress = () => {
   })
 }
 
+// Nếu xóa đúng địa chỉ mặc định thì tự động đẩy dòng đầu tiên làm mặc định mới
 const removeAddress = (index) => {
   const wasDefault = nhanVien.listDiaChi[index].isDefault
   nhanVien.listDiaChi.splice(index, 1)
   
-  // Nếu xóa đúng địa chỉ mặc định thì tự động đẩy dòng đầu tiên làm mặc định mới
   if (wasDefault && nhanVien.listDiaChi.length > 0) {
     nhanVien.listDiaChi[0].isDefault = true
   }
@@ -332,7 +330,7 @@ const handleImageUpload = (event) => {
   
   const reader = new FileReader()
   reader.onload = (e) => {
-    nhanVien.anh = e.target.result 
+    nhanVien.avatar = e.target.result // Đã sửa gán vào avatar
   }
   reader.onerror = (err) => {
     console.error("Lỗi khi đọc file ảnh:", err)
@@ -342,12 +340,10 @@ const handleImageUpload = (event) => {
 
 // --- SUBMIT LƯU DỮ LIỆU CHUẨN HOÁ PHÍA FRONTEND ---
 const saveNhanVien = async () => {
-  // Reset trạng thái lỗi
   errors.tenNv = ''
   errors.sdt = ''
   errors.email = ''
 
-  // Validate phía Frontend dữ liệu trống
   let hasError = false
   if (!nhanVien.tenNv.trim()) {
     errors.tenNv = 'Vui lòng không để trống Họ và tên!'
@@ -361,7 +357,6 @@ const saveNhanVien = async () => {
   if (hasError) return
 
   try {
-    // Tìm địa chỉ mặc định để tạo chuỗi text diaChi tổng hợp gửi lên DB SQL
     const activeAddr = nhanVien.listDiaChi.find(a => a.isDefault) || nhanVien.listDiaChi[0]
     
     let stringDiaChi = ''
@@ -369,23 +364,22 @@ const saveNhanVien = async () => {
       stringDiaChi = `Số ${activeAddr.chiTietCuThe || ''}, Phường ${activeAddr.phuongXa || ''}, ${activeAddr.tinhThanh || ''}`
     }
 
-    // Chuẩn hóa mảng listDiaChi trước khi gửi (Tạo trường chiTiet đầy đủ cho từng phần tử)
     const processedAddresses = nhanVien.listDiaChi.map(addr => ({
       ...addr,
       chiTiet: `Số ${addr.chiTietCuThe || ''}, Phường ${addr.phuongXa || ''}, ${addr.tinhThanh || ''}`
     }))
 
-    // Cấu trúc Payload khớp hoàn toàn với Jackson Map của Spring Boot
+    // Cấu trúc Payload đồng bộ trường avatar gửi lên Backend
     const dataPayload = {
       tenNv: nhanVien.tenNv.trim(),
       sdt: nhanVien.sdt.trim(),
       email: nhanVien.email.trim() || null, 
       gioiTinh: Number(nhanVien.gioiTinh),
-      anh: nhanVien.anh || null, 
+      avatar: nhanVien.avatar || null, // Đã sửa đổi gửi avatar lên API
       ngaySinh: nhanVien.ngaySinh || null, 
       diaChi: stringDiaChi, 
       trangThai: Number(nhanVien.trangThai),
-      addresses: processedAddresses, // Gửi kèm mảng phòng trường hợp backend lưu bảng quan hệ n-1
+      addresses: processedAddresses, 
       vaiTro: {
         id: Number(nhanVien.vaiTro)
       }
