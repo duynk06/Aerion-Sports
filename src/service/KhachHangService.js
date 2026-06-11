@@ -40,9 +40,9 @@ export const addKhachHang = async (khachHangData) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(khachHangData)
-      }
+        }
+      },
+      body, JSON.stringify(khachHangData)
     )
 
     if (!response.ok) {
@@ -52,7 +52,9 @@ export const addKhachHang = async (khachHangData) => {
       )
     }
 
-    return await response.json()
+    // 🌟 SỬA LỖI: Phòng trường hợp Backend trả về chuỗi trống hoặc không có body dữ liệu
+    const text = await response.text()
+    return text ? JSON.parse(text) : { success: true }
   } catch (error) {
     console.error('Lỗi addKhachHang:', error)
     throw error
@@ -110,7 +112,9 @@ export const updateKhachHang = async (id, khachHangData) => {
       )
     }
 
-    return await response.json()
+    // 🌟 SỬA LỖI: Tránh lỗi "Unexpected end of JSON input" nếu Backend phản hồi trống
+    const text = await response.text()
+    return text ? JSON.parse(text) : { success: true }
   } catch (error) {
     console.error('Lỗi updateKhachHang:', error)
     throw error
@@ -125,7 +129,10 @@ export const deleteKhachHang = async (id) => {
     const response = await fetch(
       `${baseUrl}/public/khach-hang/delete/${id}`,
       {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       }
     )
 
@@ -136,7 +143,8 @@ export const deleteKhachHang = async (id) => {
       )
     }
 
-    return await response.text()
+    const text = await response.text()
+    return text || 'Xóa thành công'
   } catch (error) {
     console.error('Lỗi deleteKhachHang:', error)
     throw error

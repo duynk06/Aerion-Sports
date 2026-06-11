@@ -7,14 +7,12 @@ export const fetchAllNhanVien = async () => {
   try {
     const response = await fetch(`${baseUrl}/nhan-vien/hien-thi`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      }
+      headers: { 'Content-Type': 'application/json' }
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Lỗi ${response.status}: ${errorText || 'Không thể tải dữ liệu'}`);
+      throw new Error(`Lỗi ${response.status}: ${errorText || 'Không thể tải dữ liệu nhân viên'}`);
     }
 
     const data = await response.json();
@@ -32,9 +30,7 @@ export const updateNhanVien = async (id, nhanVienData) => {
   try {
     const response = await fetch(`${baseUrl}/nhan-vien/update/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(nhanVienData)
     });
 
@@ -57,9 +53,7 @@ export const changeStatusNhanVien = async (id, trangThai) => {
   try {
     const response = await fetch(`${baseUrl}/nhan-vien/doi-trang-thai/${id}?trangThai=${trangThai}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      }
+      headers: { 'Content-Type': 'application/json' }
     });
 
     if (!response.ok) {
@@ -76,102 +70,102 @@ export const changeStatusNhanVien = async (id, trangThai) => {
 
 /**
  * 4. Thêm địa chỉ mới trực tiếp cho nhân viên từ Modal
- * (Tận dụng hàm cập nhật tổng để đồng bộ mảng địa chỉ xuống SQL)
+ * 💡 TỐI ƯU: Truyền thẳng object nhân viên hiện tại (currentNv) từ giao diện vào để tránh fetch lại toàn bộ DB
  */
-export const addAddressByNhanVienId = async (nhanVienId, addressPayload) => {
+export const addAddressByNhanVienId = async (currentNv, addressPayload) => {
   try {
-    // Tải thông tin hiện tại của toàn bộ nhân viên để tìm đúng đối tượng
-    const allNhanVien = await fetchAllNhanVien();
-    const currentNv = allNhanVien.find(item => (item.id || item.idNhanVien) === nhanVienId);
-    
     if (!currentNv) {
-      throw new Error("Không tìm thấy thông tin nhân viên để thêm địa chỉ!");
+      throw new Error("Thông tin nhân viên không hợp lệ!");
     }
 
-    // Khởi tạo mảng địa chỉ nếu chưa có và thêm địa chỉ mới vào
-    if (!Array.isArray(currentNv.addresses)) {
-      currentNv.addresses = [];
+    // Nhân bản sâu (Deep clone) tránh làm biến đổi trực tiếp trạng thái trên UI khi chưa lưu thành công
+    const updatedNv = JSON.parse(JSON.stringify(currentNv));
+    const nhanVienId = updatedNv.id || updatedNv.idNhanVien;
+
+    if (!Array.isArray(updatedNv.addresses)) {
+      updatedNv.addresses = [];
     }
 
-    // Tạo ID giả định tạm thời cho địa chỉ mới nếu Backend cần, hoặc để tự tăng dưới SQL
     const newAddr = {
       ...addressPayload,
-      id: addressPayload.id || Date.now() // tạo tạm id số nếu cần
+      id: addressPayload.id || 'ADDR_' + Date.now()
     };
 
-    // Nếu địa chỉ mới được đặt làm mặc định, hủy mặc định các địa chỉ cũ
+    // Nếu đặt địa chỉ mới làm mặc định, tắt mặc định của các địa chỉ cũ
     if (newAddr.isDefault) {
-      currentNv.addresses.forEach(addr => addr.isDefault = false);
+      updatedNv.addresses.forEach(addr => addr.isDefault = false);
+      updatedNv.addresses.unshift(newAddr); // Đẩy địa chỉ mặc định lên đầu mảng
+    } else {
+      updatedNv.addresses.push(newAddr);
     }
 
-    currentNv.addresses.push(newAddr);
+    // Đồng bộ trường văn bản diaChi chính theo địa chỉ mặc định mới
+    updatedNv.diaChi = newAddr.isDefault ? (newAddr.chiTiet || `Số ${newAddr.chiTietCuThe || ''}, Phường ${newAddr.phuongXa || ''}, ${newAddr.tinhThanh || ''}`) : updatedNv.diaChi;
 
-    // Chuẩn hóa cấu trúc vai trò tương thích với Spring Boot Jackson Map giống giao diện view
+    // Chuẩn hóa cấu trúc vai trò tương thích với Spring Boot
     let roleId = 3;
-    if (currentNv.vaiTro && typeof currentNv.vaiTro === 'object') {
-      roleId = currentNv.vaiTro.id;
-    } else if (currentNv.vaiTro) {
-      roleId = currentNv.vaiTro;
+    if (updatedNv.vaiTro && typeof updatedNv.vaiTro === 'object') {
+      roleId = updatedNv.vaiTro.id;
+    } else if (updatedNv.vaiTro) {
+      roleId = updatedNv.vaiTro;
     }
 
-    const updatedPayload = {
-      ...currentNv,
+    const payload = {
+      ...updatedNv,
       vaiTro: { id: Number(roleId) }
     };
 
-    // Gọi hàm update để đẩy dữ liệu mới lên cơ sở dữ liệu
-    return await updateNhanVien(nhanVienId, updatedPayload);
+    return await updateNhanVien(nhanVienId, payload);
   } catch (error) {
-    console.error(`Lỗi tại addAddressByNhanVienId (ID NV: ${nhanVienId}):`, error);
+    console.error(`Lỗi tại addAddressByNhanVienId:`, error);
     throw error;
   }
 };
 
 /**
- * 5. Đặt địa chỉ làm mặc định hoặc cập nhật một địa chỉ từ Modal
+ * 5. Cập nhật thông tin hoặc Đặt địa chỉ làm mặc định từ Modal
+ * 💡 ĐÃ SỬA LỖI: Sửa tận gốc logic map trạng thái isDefault không làm mất thông tin cũ
  */
-export const updateAddress = async (addressId, addressPayload) => {
+export const updateAddress = async (currentNv, addressId, addressPayload) => {
   try {
-    const allNhanVien = await fetchAllNhanVien();
-    let targetNv = null;
-
-    // Tìm xem địa chỉ cần sửa đang thuộc về nhân viên nào
-    for (const nv of allNhanVien) {
-      if (Array.isArray(nv.addresses) && nv.addresses.some(addr => addr.id === addressId)) {
-        targetNv = nv;
-        break;
-      }
+    if (!currentNv || !Array.isArray(currentNv.addresses)) {
+      throw new Error("Dữ liệu nhân viên hoặc danh sách địa chỉ bị trống!");
     }
 
-    if (!targetNv) {
-      throw new Error("Không tìm thấy nhân viên sở hữu địa chỉ này!");
-    }
+    const updatedNv = JSON.parse(JSON.stringify(currentNv));
+    const nhanVienId = updatedNv.id || updatedNv.idNhanVien;
 
-    // Cập nhật trạng thái hoặc thông tin của địa chỉ trong mảng
-    targetNv.addresses = targetNv.addresses.map(addr => {
+    // Sửa lỗi: Duyệt mảng chuẩn xác, chỉ đổi trạng thái isDefault khi addressPayload có yêu cầu đặt mặc định
+    updatedNv.addresses = updatedNv.addresses.map(addr => {
       if (addr.id === addressId) {
-        return { ...addr, ...addressPayload };
+        const mergedAddr = { ...addr, ...addressPayload };
+        // Nếu địa chỉ này được đặt làm mặc định, đồng bộ text ra trường diaChi của Nhân viên
+        if (mergedAddr.isDefault) {
+          updatedNv.diaChi = mergedAddr.chiTiet || `Số ${mergedAddr.chiTietCuThe || ''}, Phường ${mergedAddr.phuongXa || ''}, ${mergedAddr.tinhThanh || ''}`;
+        }
+        return mergedAddr;
       }
-      // Nếu địa chỉ hiện tại được đặt làm mặc định, các địa chỉ khác sẽ hủy mặc định
-      if (addressPayload.isDefault) {
+      
+      // Nếu địa chỉ đang sửa được set làm mặc định, các địa chỉ khác tự động hủy mặc định
+      if (addressPayload.isDefault === true) {
         return { ...addr, isDefault: false };
       }
       return addr;
     });
 
     let roleId = 3;
-    if (targetNv.vaiTro && typeof targetNv.vaiTro === 'object') {
-      roleId = targetNv.vaiTro.id;
-    } else if (targetNv.vaiTro) {
-      roleId = targetNv.vaiTro;
+    if (updatedNv.vaiTro && typeof updatedNv.vaiTro === 'object') {
+      roleId = updatedNv.vaiTro.id;
+    } else if (updatedNv.vaiTro) {
+      roleId = updatedNv.vaiTro;
     }
 
-    const updatedPayload = {
-      ...targetNv,
+    const payload = {
+      ...updatedNv,
       vaiTro: { id: Number(roleId) }
     };
 
-    return await updateNhanVien(targetNv.id || targetNv.idNhanVien, updatedPayload);
+    return await updateNhanVien(nhanVienId, payload);
   } catch (error) {
     console.error(`Lỗi tại updateAddress (ID Địa chỉ: ${addressId}):`, error);
     throw error;
@@ -179,47 +173,44 @@ export const updateAddress = async (addressId, addressPayload) => {
 };
 
 /**
- * 6. Xóa vĩnh viễn một địa chỉ khỏi nhân viên từ Modal
+ * 6. Xóa vĩnh viễn một địa chỉ khỏi mảng lưu trữ của nhân viên
  */
-export const deleteAddress = async (addressId) => {
+export const deleteAddress = async (currentNv, addressId) => {
   try {
-    const allNhanVien = await fetchAllNhanVien();
-    let targetNv = null;
-
-    // Tìm nhân viên đang chứa địa chỉ muốn xóa
-    for (const nv of allNhanVien) {
-      if (Array.isArray(nv.addresses) && nv.addresses.some(addr => addr.id === addressId)) {
-        targetNv = nv;
-        break;
-      }
+    if (!currentNv || !Array.isArray(currentNv.addresses)) {
+      throw new Error("Không tìm thấy thông tin địa chỉ hợp lệ để xóa!");
     }
 
-    if (!targetNv) {
-      throw new Error("Không tìm thấy thông tin nhân viên chứa địa chỉ cần xóa!");
-    }
+    const updatedNv = JSON.parse(JSON.stringify(currentNv));
+    const nhanVienId = updatedNv.id || updatedNv.idNhanVien;
 
-    // Lọc bỏ địa chỉ cần xóa ra khỏi mảng
-    const wasDefault = targetNv.addresses.find(addr => addr.id === addressId)?.isDefault;
-    targetNv.addresses = targetNv.addresses.filter(addr => addr.id !== addressId);
+    const wasDefault = updatedNv.addresses.find(addr => addr.id === addressId)?.isDefault;
+    
+    // Lọc bỏ phần tử ra khỏi mảng địa chỉ
+    updatedNv.addresses = updatedNv.addresses.filter(addr => addr.id !== addressId);
 
-    // Nếu xóa đúng địa chỉ mặc định, tự động chuyển quyền mặc định sang địa chỉ đầu tiên còn lại
-    if (wasDefault && targetNv.addresses.length > 0) {
-      targetNv.addresses[0].isDefault = true;
+    // Nếu xóa đúng dòng đang mặc định, tự động gán quyền mặc định cho dòng đầu tiên còn lại
+    if (wasDefault && updatedNv.addresses.length > 0) {
+      updatedNv.addresses[0].isDefault = true;
+      const primaryAddr = updatedNv.addresses[0];
+      updatedNv.diaChi = primaryAddr.chiTiet || `Số ${primaryAddr.chiTietCuThe || ''}, Phường ${primaryAddr.phuongXa || ''}, ${primaryAddr.tinhThanh || ''}`;
+    } else if (updatedNv.addresses.length === 0) {
+      updatedNv.diaChi = ''; // Nếu xóa sạch địa chỉ, xóa trắng văn bản diaChi tổng
     }
 
     let roleId = 3;
-    if (targetNv.vaiTro && typeof targetNv.vaiTro === 'object') {
-      roleId = targetNv.vaiTro.id;
-    } else if (targetNv.vaiTro) {
-      roleId = targetNv.vaiTro;
+    if (updatedNv.vaiTro && typeof updatedNv.vaiTro === 'object') {
+      roleId = updatedNv.vaiTro.id;
+    } else if (updatedNv.vaiTro) {
+      roleId = updatedNv.vaiTro;
     }
 
-    const updatedPayload = {
-      ...targetNv,
+    const payload = {
+      ...updatedNv,
       vaiTro: { id: Number(roleId) }
     };
 
-    return await updateNhanVien(targetNv.id || targetNv.idNhanVien, updatedPayload);
+    return await updateNhanVien(nhanVienId, payload);
   } catch (error) {
     console.error(`Lỗi tại deleteAddress (ID Địa chỉ: ${addressId}):`, error);
     throw error;

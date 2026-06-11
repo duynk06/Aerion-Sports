@@ -1,5 +1,5 @@
 <template>
-  <MainLayout title="Nhân viên">
+  <MainLayout title="Quản Lý Nhân Viên">
     <div class="customer-card">
 
       <div class="page-header">
@@ -32,7 +32,7 @@
           <div class="avatar-box">
             <h3>Ảnh đại diện</h3>
             <div class="avatar-preview">
-              <img v-if="nhanVien.avatar" :src="nhanVien.avatar" alt="avatar" />
+              <img v-if="nhanVien.anh" :src="nhanVien.anh" alt="avatar" />
               <span v-else>👤</span>
             </div>
             
@@ -43,7 +43,7 @@
               id="employee-avatar-input"
               type="file" 
               style="display: none;" 
-              accept="image/*" 
+              accept="image/jpeg, image/jpg, image/png" 
               @change="handleImageUpload" 
             />
             
@@ -51,12 +51,18 @@
           </div>
 
           <div class="form-content">
-            <h3>Thông tin khách hàng</h3>
-            <div class="form-grid">
+            <h3>Thông tin nhân viên</h3> <div class="form-grid">
               
               <div class="form-group">
                 <label>Họ và tên <span>*</span></label>
-                <input type="text" v-model="nhanVien.tenNv" placeholder="Nhập họ và tên" />
+                <input 
+                  type="text" 
+                  v-model="nhanVien.tenNv" 
+                  placeholder="Nhập họ và tên" 
+                  :class="{ 'input-error': errors.tenNv }"
+                  @input="errors.tenNv = ''"
+                />
+                <span v-if="errors.tenNv" class="error-text">{{ errors.tenNv }}</span>
               </div>
 
               <div class="form-group">
@@ -72,9 +78,8 @@
               </div>
 
               <div class="form-group">
-                <label>Email</label>
-                <input 
-                  type="email" 
+                <label>Email <span>*</span></label> <input 
+                  type="type" 
                   v-model="nhanVien.email" 
                   placeholder="Nhập email" 
                   :class="{ 'input-error': errors.email }"
@@ -92,28 +97,28 @@
                 <label>Giới tính</label>
                 <div class="radio-group">
                   <label class="radio-label">
-                    <input type="radio" value="1" v-model="nhanVien.gioiTinh" /> Nam
+                    <input type="radio" :value="1" v-model="nhanVien.gioiTinh" /> Nam
                   </label>
                   <label class="radio-label">
-                    <input type="radio" value="0" v-model="nhanVien.gioiTinh" /> Nữ
+                    <input type="radio" :value="0" v-model="nhanVien.gioiTinh" /> Nữ
                   </label>
                 </div>
               </div>
 
               <div class="form-group">
                 <label>Vai trò <span>*</span></label>
-                <select v-model="nhanVien.idVaiTro">
-                  <option value="3">Nhân viên</option>
-                  <option value="2">Quản lý</option>
-                  <option value="1">Quản trị viên (Admin)</option>
+                <select v-model="nhanVien.vaiTro">
+                  <option :value="3">Nhân viên</option>
+                  <option :value="2">Quản lý</option>
+                  <option :value="1">Quản trị viên (Admin)</option>
                 </select>
               </div>
 
               <div class="form-group-full">
                 <label>Trạng thái</label>
                 <select v-model="nhanVien.trangThai">
-                  <option :value="true">Hoạt động</option>
-                  <option :value="false">Ngừng hoạt động</option>
+                  <option :value="1">Hoạt động</option>
+                  <option :value="0">Ngừng hoạt động</option>
                 </select>
               </div>
 
@@ -131,7 +136,7 @@
 
           <div 
             v-for="(item, index) in nhanVien.listDiaChi" 
-            :key="index" 
+            :key="item.id || index" 
             class="address-item"
           >
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -167,14 +172,14 @@
               <label>Địa chỉ chi tiết <span>*</span></label>
               <input 
                 type="text" 
-                v-model="item.diaChiChiTiet" 
+                v-model="item.chiTietCuThe" 
                 placeholder="Nhập số nhà, tên đường, ngõ ngách..." 
               />
             </div>
 
             <div>
               <label class="checkbox-label">
-                <input type="checkbox" :checked="item.macDinh" @change="setMainAddress(index)" />
+                <input type="checkbox" :checked="item.isDefault" @change="setMainAddress(index)" />
                 Đặt làm địa chỉ mặc định
               </label>
             </div>
@@ -202,27 +207,29 @@ import MainLayout from '../layouts/MainLayout.vue'
 
 const router = useRouter()
 
+// 🌟 ĐỒNG BỘ: Chuyển tên các trường về đúng định dạng của form sửa/danh sách
 const nhanVien = reactive({
   tenNv: '',
   sdt: '',
   email: '',
   ngaySinh: '',
-  gioiTinh: '1', 
-  idVaiTro: '2', 
-  trangThai: true, 
-  avatar: '',
+  gioiTinh: 1, // Đưa về kiểu Number để khớp với template `:value="1"`
+  vaiTro: 3,   // Đổi từ idVaiTro thành vaiTro và mặc định là 3 (Nhân viên)
+  trangThai: 1, // Đổi từ true/false sang 1/0 để đồng bộ kiểu dữ liệu SQL
+  anh: '',      // Đổi từ avatar sang anh
   listDiaChi: [
     {
       tinhThanh: '',
       phuongXa: '',
-      diaChiChiTiet: '',
-      macDinh: true
+      chiTietCuThe: '', // Đổi từ diaChiChiTiet sang chiTietCuThe
+      isDefault: true   // Đổi từ macDinh sang isDefault
     }
   ]
 })
 
-// Biến quản lý trạng thái hiển thị thông báo lỗi cục bộ
+// Quản lý trạng thái thông báo lỗi cục bộ (Bổ sung thêm tenNv)
 const errors = reactive({
+  tenNv: '',
   sdt: '',
   email: ''
 })
@@ -253,24 +260,30 @@ const stopScan = () => {
 }
 
 const onScanSuccess = (decodedText) => {
-  alert('Quét thành công QR!')
+  alert('Quét thành công QR CCCD!')
   stopScan()
+  
   if (decodedText.includes('|')) {
     const parts = decodedText.split('|')
     if (parts.length >= 6) {
       nhanVien.tenNv = parts[2]
+      
       const rawDate = parts[3]
       if (rawDate && rawDate.length === 8) {
         nhanVien.ngaySinh = `${rawDate.substring(4, 8)}-${rawDate.substring(2, 4)}-${rawDate.substring(0, 2)}`
       }
-      nhanVien.gioiTinh = parts[4] === 'Nam' ? '1' : '0'
+      
+      nhanVien.gioiTinh = parts[4] === 'Nam' ? 1 : 0
+      
+      // 🌟 TỐI ƯU QR: Vì parts[5] chứa toàn bộ chuỗi địa chỉ hộ khẩu, 
+      // Tạm thời gán vào chiTietCuThe và nhắc nhở người dùng tách nhanh nếu cần.
       if (nhanVien.listDiaChi.length > 0) {
-        nhanVien.listDiaChi[0].diaChiChiTiet = parts[5]
+        nhanVien.listDiaChi[0].chiTietCuThe = parts[5]
       }
     }
   } else {
     if (nhanVien.listDiaChi.length > 0) {
-      nhanVien.listDiaChi[0].diaChiChiTiet = decodedText
+      nhanVien.listDiaChi[0].chiTietCuThe = decodedText
     }
   }
 }
@@ -286,71 +299,95 @@ const addAddress = () => {
   nhanVien.listDiaChi.push({
     tinhThanh: '',
     phuongXa: '',
-    diaChiChiTiet: '',
-    macDinh: false
+    chiTietCuThe: '',
+    isDefault: false
   })
 }
 
 const removeAddress = (index) => {
+  const wasDefault = nhanVien.listDiaChi[index].isDefault
   nhanVien.listDiaChi.splice(index, 1)
-  if (!nhanVien.listDiaChi.some(a => a.macDinh) && nhanVien.listDiaChi.length > 0) {
-    nhanVien.listDiaChi[0].macDinh = true
+  
+  // Nếu xóa đúng địa chỉ mặc định thì tự động đẩy dòng đầu tiên làm mặc định mới
+  if (wasDefault && nhanVien.listDiaChi.length > 0) {
+    nhanVien.listDiaChi[0].isDefault = true
   }
 }
 
 const setMainAddress = (selectedIndex) => {
   nhanVien.listDiaChi.forEach((item, index) => {
-    item.macDinh = (index === selectedIndex)
+    item.isDefault = (index === selectedIndex)
   })
 }
 
 // --- XỬ LÝ ĐỌC FILE ẢNH SANG CHUỖI BASE64 ---
 const handleImageUpload = (event) => {
   const file = event.target.files[0]
-  if (file) {
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Kích thước ảnh không được vượt quá 2MB!')
-      return
-    }
-    
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      nhanVien.avatar = e.target.result 
-    }
-    reader.onerror = (err) => {
-      console.error("Lỗi khi đọc file ảnh:", err)
-    }
-    reader.readAsDataURL(file)
+  if (!file) return
+
+  if (file.size > 2 * 1024 * 1024) {
+    alert('Kích thước ảnh không được vượt quá 2MB!')
+    return
   }
+  
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    nhanVien.anh = e.target.result 
+  }
+  reader.onerror = (err) => {
+    console.error("Lỗi khi đọc file ảnh:", err)
+  }
+  reader.readAsDataURL(file)
 }
 
 // --- SUBMIT LƯU DỮ LIỆU CHUẨN HOÁ PHÍA FRONTEND ---
 const saveNhanVien = async () => {
-  // Reset lại toàn bộ thông báo lỗi trước đó
+  // Reset trạng thái lỗi
+  errors.tenNv = ''
   errors.sdt = ''
   errors.email = ''
 
-  if (!nhanVien.tenNv.trim() || !nhanVien.sdt.trim()) {
-    alert('Vui lòng điền đủ Họ và tên, Số điện thoại!')
-    return
+  // Validate phía Frontend dữ liệu trống
+  let hasError = false
+  if (!nhanVien.tenNv.trim()) {
+    errors.tenNv = 'Vui lòng không để trống Họ và tên!'
+    hasError = true
   }
+  if (!nhanVien.sdt.trim()) {
+    errors.sdt = 'Vui lòng không để trống Số điện thoại!'
+    hasError = true
+  }
+  
+  if (hasError) return
 
   try {
-    const activeAddr = nhanVien.listDiaChi.find(a => a.macDinh) || nhanVien.listDiaChi[0]
-    const stringDiaChi = `${activeAddr?.diaChiChiTiet || ''}, ${activeAddr?.phuongXa || ''}, ${activeAddr?.tinhThanh || ''}`
+    // Tìm địa chỉ mặc định để tạo chuỗi text diaChi tổng hợp gửi lên DB SQL
+    const activeAddr = nhanVien.listDiaChi.find(a => a.isDefault) || nhanVien.listDiaChi[0]
+    
+    let stringDiaChi = ''
+    if (activeAddr) {
+      stringDiaChi = `Số ${activeAddr.chiTietCuThe || ''}, Phường ${activeAddr.phuongXa || ''}, ${activeAddr.tinhThanh || ''}`
+    }
 
+    // Chuẩn hóa mảng listDiaChi trước khi gửi (Tạo trường chiTiet đầy đủ cho từng phần tử)
+    const processedAddresses = nhanVien.listDiaChi.map(addr => ({
+      ...addr,
+      chiTiet: `Số ${addr.chiTietCuThe || ''}, Phường ${addr.phuongXa || ''}, ${addr.tinhThanh || ''}`
+    }))
+
+    // Cấu trúc Payload khớp hoàn toàn với Jackson Map của Spring Boot
     const dataPayload = {
-      maNv: 'NV' + Math.floor(100000 + Math.random() * 900000),
       tenNv: nhanVien.tenNv.trim(),
       sdt: nhanVien.sdt.trim(),
-      email: nhanVien.email.trim() || "", 
+      email: nhanVien.email.trim() || null, 
       gioiTinh: Number(nhanVien.gioiTinh),
-      avatar: nhanVien.avatar || null, 
+      anh: nhanVien.anh || null, 
       ngaySinh: nhanVien.ngaySinh || null, 
       diaChi: stringDiaChi, 
-      trangThai: nhanVien.trangThai ? 1 : 0,
+      trangThai: Number(nhanVien.trangThai),
+      addresses: processedAddresses, // Gửi kèm mảng phòng trường hợp backend lưu bảng quan hệ n-1
       vaiTro: {
-        id: Number(nhanVien.idVaiTro)
+        id: Number(nhanVien.vaiTro)
       }
     }
 
@@ -365,26 +402,23 @@ const saveNhanVien = async () => {
   } catch (error) {
     console.error("Chi tiết phản hồi lỗi mạng:", error)
     
-    // Xử lý hứng lỗi validation từ Backend (Ví dụ lỗi trùng mã 400 hoặc 422)
     if (error.response && (error.response.status === 400 || error.response.status === 422)) {
       const serverMessage = error.response.data?.message || error.response.data
       const messageStr = String(serverMessage).toLowerCase()
       
-      // Kiểm tra từ khóa trong message do Backend trả về để map vào ô lỗi tương ứng
       if (messageStr.includes('số điện thoại') || messageStr.includes('sdt') || messageStr.includes('phone')) {
-        errors.sdt = 'Số điện thoại này đã được sử dụng!'
+        errors.sdt = 'Số điện thoại này đã được sử dụng trong hệ thống!'
         return
       } 
       
       if (messageStr.includes('email')) {
-        errors.email = 'Địa chỉ email này đã được sử dụng!'
+        errors.email = 'Địa chỉ email này đã được sử dụng trong hệ thống!'
         return
       }
     }
     
-    // Các lỗi khác không phải lỗi trùng lặp (Lỗi hệ thống 500, lỗi mạng...)
     const errDetail = error.response?.data?.message || error.response?.data || error.message
-    alert('Lưu thất bại ' + errDetail)
+    alert('Lưu thất bại: ' + errDetail)
   }
 }
 </script>

@@ -23,15 +23,15 @@
             <label style="display: block; margin-bottom: 6px; color: #555; font-size: 13px;">Giới tính</label>
             <div class="radio-group"
               style="display: flex; gap: 12px; height: 36px; align-items: center; font-size: 13px;">
-              <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio"
-                  v-model="filterParams.gioiTinh" value="" @change="handleFilter"
-                  style="accent-color: #f17236; width: 16px; height: 16px;" /> Tất cả</label>
-              <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio"
-                  v-model="filterParams.gioiTinh" value="1" @change="handleFilter"
-                  style="accent-color: #f17236; width: 16px; height: 16px;" /> Nam</label>
-              <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio"
-                  v-model="filterParams.gioiTinh" value="0" @change="handleFilter"
-                  style="accent-color: #f17236; width: 16px; height: 16px;" /> Nữ</label>
+              <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <input type="radio" v-model="filterParams.gioiTinh" value="" @change="handleFilter" style="accent-color: #f17236; width: 16px; height: 16px;" /> Tất cả
+              </label>
+              <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <input type="radio" v-model="filterParams.gioiTinh" value="1" @change="handleFilter" style="accent-color: #f17236; width: 16px; height: 16px;" /> Nam
+              </label>
+              <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <input type="radio" v-model="filterParams.gioiTinh" value="0" @change="handleFilter" style="accent-color: #f17236; width: 16px; height: 16px;" /> Nữ
+              </label>
             </div>
           </div>
 
@@ -45,53 +45,44 @@
             <label style="display: block; margin-bottom: 6px; color: #555; font-size: 13px;">Trạng thái</label>
             <div class="radio-group"
               style="display: flex; gap: 12px; height: 36px; align-items: center; font-size: 13px;">
-              <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio"
-                  v-model="filterParams.trangThai" value="" @change="handleFilter"
-                  style="accent-color: #f17236; width: 16px; height: 16px;" /> Tất cả</label>
-              <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio"
-                  v-model="filterParams.trangThai" value="1" @change="handleFilter"
-                  style="accent-color: #f17236; width: 16px; height: 16px;" /> Hoạt động</label>
-              <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio"
-                  v-model="filterParams.trangThai" value="0" @change="handleFilter"
-                  style="accent-color: #f17236; width: 16px; height: 16px;" /> Ngừng hoạt động</label>
+              <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <input type="radio" v-model="filterParams.trangThai" value="" @change="handleFilter" style="accent-color: #f17236; width: 16px; height: 16px;" /> Tất cả
+              </label>
+              <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <input type="radio" v-model="filterParams.trangThai" value="1" @change="handleFilter" style="accent-color: #f17236; width: 16px; height: 16px;" /> Hoạt động
+              </label>
+              <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <input type="radio" v-model="filterParams.trangThai" value="0" @change="handleFilter" style="accent-color: #f17236; width: 16px; height: 16px;" /> Ngừng hoạt động
+              </label>
             </div>
           </div>
 
           <button class="refresh-btn" title="Làm mới bộ lọc" @click="resetFilters"
             style="height: 36px; width: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid #ccc; background-color: #fff; border-radius: 4px; cursor: pointer; color: #f17236; box-sizing: border-box;">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
             </svg>
           </button>
         </div>
       </div>
 
-      <div class="table-box"
-        style="border: 1px solid #e0e0e0; border-radius: 4px; overflow: hidden; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-        <div class="table-header-container"
-          style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #e0e0e0; background-color: #fff;">
+      <div class="table-box" style="border: 1px solid #e0e0e0; border-radius: 4px; overflow: hidden; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+        <div class="table-header-container" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #e0e0e0; background-color: #fff;">
           <div class="list-title" style="display: flex; flex-direction: column;">
             <span style="font-size: 18px; font-weight: bold; color: #2c3e50;">Danh sách nhân viên</span>
             <span style="font-size: 12px; color: #888; margin-top: 2px;">Quản lý thông tin nhân viên</span>
           </div>
           <div class="btn-group no-print" style="display: flex; gap: 8px; align-items: center;">
-            <button class="export-btn" title="Xuất file Excel" @click="handleExport"
-              style="background: #fff; border: 1px solid #ccc; width: 36px; height: 36px; padding: 0; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">📑</button>
-            
-            <button class="export-btn" title="In danh sách" @click="handlePrint"
-              style="background: #fff; border: 1px solid #ccc; width: 36px; height: 36px; padding: 0; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">🖨️</button>
-            
-            <button class="add-btn" @click="router.push('/nhan-vien/them')"
-              style="background-color: #f17236; color: white; border: none; padding: 0 16px; height: 36px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 4px; box-sizing: border-box;">+
-              Thêm mới</button>
+            <button class="export-btn" title="Xuất file Excel" @click="handleExport" style="background: #fff; border: 1px solid #ccc; width: 36px; height: 36px; padding: 0; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">📑</button>
+            <button class="export-btn" title="In danh sách" @click="handlePrint" style="background: #fff; border: 1px solid #ccc; width: 36px; height: 36px; padding: 0; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">🖨️</button>
+            <button class="add-btn" @click="router.push('/nhan-vien/them')" style="background-color: #f17236; color: white; border: none; padding: 0 16px; height: 36px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 4px; box-sizing: border-box;">+ Thêm mới</button>
           </div>
         </div>
 
         <table style="width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px;">
           <thead>
             <tr>
-              <th scope="col" style="padding: 12px 10px; width: 4%; font-weight: 600; background-color: #f17236; color: white; border-top-left-radius: 4px; border-bottom-left-radius: 4px;">STT</th>        
+              <th scope="col" style="padding: 12px 10px; width: 4%; font-weight: 600; background-color: #f17236; color: white; border-top-left-radius: 4px; border-bottom-left-radius: 4px;">STT</th>
               <th scope="col" style="padding: 12px 10px; width: 6%; font-weight: 600; background-color: #f17236; color: white;" class="no-print">Ảnh</th>
               <th scope="col" style="padding: 12px 10px; width: 13%; font-weight: 600; background-color: #f17236; color: white;">Họ và tên</th>
               <th scope="col" style="padding: 12px 10px; width: 9%; font-weight: 600; background-color: #f17236; color: white;">Vai trò</th>
@@ -110,51 +101,39 @@
               onmouseover="this.style.backgroundColor='#fdf5f0'" onmouseout="this.style.backgroundColor='transparent'">
               <td style="padding: 12px 10px; color: #555;">{{ (currentPage - 1) * pageSize + index + 1 }}</td>
               <td style="padding: 12px 10px;" class="no-print">
-                <div class="avatar-placeholder"
-                  style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: #e2e8f0; display: flex; align-items: center; justify-content: center;">
-                  <img v-if="nhanVien.anh" :src="nhanVien.anh" alt="avatar"
-                    style="width: 100%; height: 100%; object-fit: cover;" />
+                <div class="avatar-placeholder" style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: #e2e8f0; display: flex; align-items: center; justify-content: center;">
+                  <img v-if="nhanVien.anh" :src="nhanVien.anh" alt="avatar" style="width: 100%; height: 100%; object-fit: cover;" />
                   <span v-else class="avatar-default-img" style="font-size: 18px;">👤</span>
                 </div>
               </td>
               <td style="padding: 12px 10px;">
                 <div class="fw-bold text-name" style="font-weight: bold; color: #2c3e50;">{{ nhanVien.tenNv || 'Chưa cập nhật' }}</div>
               </td>
-
               <td style="padding: 12px 10px; color: #444;">{{ formatVaiTro(nhanVien.vaiTro) }}</td>
               <td style="padding: 12px 10px; color: #444;">{{ formatGioiTinh(nhanVien.gioiTinh) }}</td>
               <td style="padding: 12px 10px; color: #444;">{{ nhanVien.ngaySinh || '-' }}</td>
               <td class="phone-text" style="padding: 12px 10px; color: #444;">{{ nhanVien.sdt }}</td>
               <td class="email-text" style="padding: 12px 10px; color: #444; word-break: break-all;">{{ nhanVien.email }}</td>
-              <td class="address-text-col"
-                style="padding: 12px 10px; color: #555; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                :title="getDefaultAddressText(nhanVien)">
+              <td class="address-text-col" style="padding: 12px 10px; color: #555; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="getDefaultAddressText(nhanVien)">
                 {{ getDefaultAddressText(nhanVien) }}
               </td>
               <td style="padding: 12px 10px;">
                 <span
-                  :class="(nhanVien.trangThai === 1 || nhanVien.trangThai === true) ? 'badge-success-custom' : 'badge-danger-custom'"
                   style="cursor: pointer; user-select: none; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; display: inline-block;"
-                  :style="(nhanVien.trangThai === 1 || nhanVien.trangThai === true) ? { backgroundColor: '#e6f7ed', color: '#25a75b' } : { backgroundColor: '#feebee', color: '#ea3a3a' }"
+                  :style="nhanVien.trangThai === 1 ? { backgroundColor: '#e6f7ed', color: '#25a75b' } : { backgroundColor: '#feebee', color: '#ea3a3a' }"
                   title="Click để thay đổi trạng thái" @click="toggleTrangThai(nhanVien)">
-                  {{ (nhanVien.trangThai === 1 || nhanVien.trangThai === true) ? 'Hoạt động' : 'Ngừng hoạt động' }}
+                  {{ nhanVien.trangThai === 1 ? 'Hoạt động' : 'Ngừng hoạt động' }}
                 </span>
               </td>
               <td style="padding: 12px 10px; text-align: center;" class="no-print">
-                <div class="table-actions"
-                  style="display: flex; gap: 4px; justify-content: center; align-items: center;">
-                  <button class="btn-view" title="Xem chi tiết" @click="viewDetail(nhanVien)"
-                    style="border: 1px solid #3b82f6; background: #eff6ff; color: #3b82f6; padding: 5px; border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
+                <div class="table-actions" style="display: flex; gap: 4px; justify-content: center; align-items: center;">
+                  <button class="btn-view" title="Xem chi tiết" @click="viewDetail(nhanVien)" style="border: 1px solid #3b82f6; background: #eff6ff; color: #3b82f6; padding: 5px; border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
                     <i class="far fa-eye"></i>
                   </button>
-
-                  <button class="btn-action-location" title="Quản lý sổ địa chỉ" @click="openAddressModal(nhanVien)"
-                    style="border: 1px solid #25a75b; background: #e6f7ed; color: #25a75b; padding: 5px; border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
+                  <button class="btn-action-location" title="Quản lý sổ địa chỉ" @click="openAddressModal(nhanVien)" style="border: 1px solid #25a75b; background: #e6f7ed; color: #25a75b; padding: 5px; border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
                     <i class="fas fa-map-marker-alt"></i>
                   </button>
-
-                  <button class="btn-action-edit" title="Sửa thông tin" @click="openEditForm(nhanVien)"
-                    style="border: 1px solid #f17236; background: #fff5f0; color: #f17236; padding: 5px; border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
+                  <button class="btn-action-edit" title="Sửa thông tin" @click="openEditForm(nhanVien)" style="border: 1px solid #f17236; background: #fff5f0; color: #f17236; padding: 5px; border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
                     <i class="far fa-edit"></i>
                   </button>
                 </div>
@@ -167,22 +146,18 @@
         </table>
       </div>
 
-      <div class="main-pagination-container mt-3 no-print" v-if="filteredNhanVien.length > 0"
-        style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-top: 15px;">
+      <div class="main-pagination-container mt-3 no-print" v-if="filteredNhanVien.length > 0" style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-top: 15px;">
         <div class="pagination-info" style="color: #666;">
           Tổng số <strong>{{ filteredNhanVien.length }}</strong> nhân viên
         </div>
         <div class="pagination-controls" style="display: flex; gap: 5px; align-items: center;">
-          <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--"
-            style="padding: 4px 8px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; font-size: 12px;">‹</button>
-          <button v-for="page in totalPages" :key="page" :class="['page-btn-number', { active: currentPage === page }]"
-            @click="currentPage = page"
-            style="padding: 4px 10px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;"
-            :style="currentPage === page ? { backgroundColor: '#f17236', color: '#fff', borderColor: '#f17236' } : { backgroundColor: '#fff', color: '#333' }">{{ page }}</button>
-          <button class="page-btn" :disabled="currentPage === totalPages" @click="currentPage++"
-            style="padding: 4px 8px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; font-size: 12px;">›</button>
-          <select v-model="pageSize" @change="currentPage = 1" class="page-size-select"
-            style="padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 12px; margin-left: 5px; outline: none;">
+          <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--" style="padding: 4px 8px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; font-size: 12px;">‹</button>
+          <button v-for="page in totalPages" :key="page" @click="currentPage = page" style="padding: 4px 10px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;"
+            :style="currentPage === page ? { backgroundColor: '#f17236', color: '#fff', borderColor: '#f17236' } : { backgroundColor: '#fff', color: '#333' }">
+            {{ page }}
+          </button>
+          <button class="page-btn" :disabled="currentPage === totalPages" @click="currentPage++" style="padding: 4px 8px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; font-size: 12px;">›</button>
+          <select v-model="pageSize" @change="currentPage = 1" class="page-size-select" style="padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 12px; margin-left: 5px; outline: none;">
             <option :value="5">5 / trang</option>
             <option :value="10">10 / trang</option>
             <option :value="20">20 / trang</option>
@@ -205,8 +180,8 @@
             <img v-if="nhanVienDetail.anh" :src="nhanVienDetail.anh" alt="Avatar" />
             <span v-else class="default-avatar-icon">👤</span>
           </div>
-          <div :class="['status-badge-detail mt-3', (nhanVienDetail.trangThai === 1 || nhanVienDetail.trangThai === true) ? 'badge-active-blue' : 'badge-inactive-red']">
-            {{ (nhanVienDetail.trangThai === 1 || nhanVienDetail.trangThai === true) ? 'Hoạt động' : 'Ngừng hoạt động' }}
+          <div :class="['status-badge-detail mt-3', nhanVienDetail.trangThai === 1 ? 'badge-active-blue' : 'badge-inactive-red']">
+            {{ nhanVienDetail.trangThai === 1 ? 'Hoạt động' : 'Ngừng hoạt động' }}
           </div>
         </div>
 
@@ -261,19 +236,16 @@
                 {{ addr.chiTiet || `Số ${addr.chiTietCuThe || ''}, Phường ${addr.phuongXa || ''}, ${addr.tinhThanh || ''}` }}
               </td>
               <td class="text-center">
-                  <span v-if="addr.isDefault" class="badge-active"
-                    style="background-color: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; padding: 3px 8px; border-radius: 4px; font-size: 12px;">
-                    ⭐ Mặc định
-                  </span>
-                  <span v-else style="color: #999; font-size: 12px;">Phụ</span>
-                </td>
+                <span v-if="addr.isDefault" class="badge-active" style="background-color: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; padding: 3px 8px; border-radius: 4px; font-size: 12px;">
+                  ⭐ Mặc định
+                </span>
+                <span v-else style="color: #999; font-size: 12px;">Phụ</span>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
-      <div v-else class="alert alert-light border text-muted py-3 ps-3">
-        Chưa có thông tin địa chỉ.
-      </div>
+      <div v-else class="alert alert-light border text-muted py-3 ps-3">Chưa có thông tin địa chỉ.</div>
 
       <div class="form-submit-bar mt-4" style="display: flex; justify-content: flex-end; gap: 10px;">
         <button class="btn-cancel-action" @click="cancelDetailMode">Đóng lại</button>
@@ -281,7 +253,8 @@
       </div>
     </div>
 
-    <div v-if="isFormMode" class="customer-form-container mb-4" style="border: 1px solid #25a75b; border-radius: 6px; padding: 20px; background: #fff; box-shadow: 0 2px 8px rgba(37,167,91,0.1);">
+    <div v-if="isFormMode" class="customer-form-container mb-4"
+      style="border: 1px solid #25a75b; border-radius: 6px; padding: 20px; background: #fff; box-shadow: 0 2px 8px rgba(37,167,91,0.1);">
       <div class="back-to-list mb-3" @click="cancelFormMode" style="cursor: pointer; color: #555; font-size: 14px;">
         ← Hủy cập nhật thông tin
         <div style="font-size: 18px; font-weight: bold; color: #2c3e50; margin-top: 4px;">Cập nhật thông tin nhân viên</div>
@@ -291,26 +264,15 @@
         <form @submit.prevent="submitEditForm">
           <div class="profile-grid">
             <div class="avatar-upload-block">
-  <div class="section-sub-title fw-bold mb-3">Ảnh đại diện</div>
-  <div class="avatar-preview-circle mb-3">
-    <img v-if="nhanVienForm.anh" :src="nhanVienForm.anh" alt="Avatar" />
-    <span v-else class="default-avatar-icon">👤</span>
-  </div>
-  
-  <button type="button" class="btn-upload-avatar mb-2" @click="triggerFormFileInput">
-    📁 Chọn ảnh
-  </button>
-  
-  <input 
-    type="file" 
-    ref="formFileInputRef" 
-    style="display: none;" 
-    accept="image/jpeg, image/png, image/jpg" 
-    @change="handleFormAvatarChange" 
-  />
-  
-  <div style="font-size: 11px; color: #888; margin-top: 4px;">JPG, PNG (tối đa 2MB)</div>
-</div>
+              <div class="section-sub-title fw-bold mb-3">Ảnh đại diện</div>
+              <div class="avatar-preview-circle mb-3">
+                <img v-if="nhanVienForm.anh" :src="nhanVienForm.anh" alt="Avatar" />
+                <span v-else class="default-avatar-icon">👤</span>
+              </div>
+              <button type="button" class="btn-upload-avatar mb-2" @click="triggerFormFileInput">📁 Chọn ảnh</button>
+              <input type="file" ref="formFileInputRef" style="display: none;" accept="image/jpeg, image/png, image/jpg" @change="handleFormAvatarChange" />
+              <div style="font-size: 11px; color: #888; margin-top: 4px;">JPG, PNG (tối đa 2MB)</div>
+            </div>
 
             <div class="info-fields-block">
               <div class="section-sub-title fw-bold mb-3">Thông tin nhân viên</div>
@@ -373,7 +335,7 @@
               <button type="button" class="btn-add-address-orange" @click="addNewAddressRow">+ Thêm địa chỉ</button>
             </div>
 
-            <div v-for="(addr, idx) in nhanVienForm.addresses" :key="idx" class="address-item-box mb-3 p-3"
+            <div v-for="(addr, idx) in nhanVienForm.addresses" :key="addr.id || idx" class="address-item-box mb-3 p-3"
               style="border: 1px solid #f0f0f0; border-radius: 6px; background: #fbfbfb;">
               <div class="fw-bold mb-2 text-secondary" style="font-size: 13px;">📍 Địa chỉ {{ idx + 1 }}</div>
               <div class="form-row">
@@ -397,17 +359,14 @@
               <div class="form-row mt-2">
                 <div class="form-cell w-100">
                   <label>Địa chỉ chi tiết <span class="required">*</span></label>
-                  <input type="text" v-model="addr.chiTietCuThe" class="form-input-text"
-                    placeholder="Số nhà, ngõ, ngách..." required />
+                  <input type="text" v-model="addr.chiTietCuThe" class="form-input-text" placeholder="Số nhà, ngõ, ngách..." required />
                 </div>
               </div>
               <div class="d-flex justify-content-between align-items-center mt-2">
                 <label class="cursor-pointer" style="font-size: 13px;">
                   <input type="checkbox" :checked="addr.isDefault" @change="setFormDefaultAddress(idx)" /> Đặt làm địa chỉ mặc định
                 </label>
-                <button v-if="nhanVienForm.addresses.length > 1" type="button"
-                  class="text-danger border-0 bg-transparent" style="font-size: 13px;"
-                  @click="removeAddressRow(idx)">Xóa</button>
+                <button v-if="nhanVienForm.addresses.length > 1" type="button" class="text-danger border-0 bg-transparent" style="font-size: 13px;" @click="removeAddressRow(idx)">Xóa</button>
               </div>
             </div>
           </div>
@@ -461,9 +420,7 @@
                     <span v-else class="star-inactive" style="cursor: pointer;" @click="setAsDefaultAddress(addr)" title="Đặt làm mặc định">☆</span>
                   </td>
                   <td>
-                    <span style="background-color: #e6f7ed; color: #25a75b; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; display: inline-block;">
-                      Hoạt động
-                    </span>
+                    <span style="background-color: #e6f7ed; color: #25a75b; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; display: inline-block;">Hoạt động</span>
                   </td>
                 </tr>
                 <tr v-if="currentAddressList.length === 0">
@@ -525,28 +482,32 @@
 
 <style scoped>
 @media print {
+
   /* Ẩn bộ lọc tìm kiếm, phân trang và các nút điều hướng không liên quan */
-  .no-print, 
-  .search-filter-box, 
-  .btn-group, 
-  .main-pagination-container, 
-  th.no-print, 
+  .no-print,
+  .search-filter-box,
+  .btn-group,
+  .main-pagination-container,
+  th.no-print,
   td.no-print {
     display: none !important;
   }
-  
+
   /* Giữ định dạng bảng dàn trang rộng toàn màn hình giấy */
   .table-box {
     border: none !important;
     box-shadow: none !important;
   }
+
   table {
     width: 100% !important;
     border: 1px solid #333 !important;
   }
+
   th {
     background-color: #f17236 !important;
-    color: #000 !important; /* Đảm bảo mực in rõ ràng */
+    color: #000 !important;
+    /* Đảm bảo mực in rõ ràng */
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -555,15 +516,15 @@
 
 <script setup>
 import MainLayout from '../layouts/MainLayout.vue'
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue' // Thêm watch ở đây
 import { useRouter } from 'vue-router'
-import * as XLSX from 'xlsx' 
+import * as XLSX from 'xlsx'
 
 // Import các hàm giao tiếp API từ NhanVienService
-import { 
-  fetchAllNhanVien, 
-  updateNhanVien, 
-  changeStatusNhanVien
+import {
+  fetchAllNhanVien,
+  updateNhanVien,
+  changeStatusNhanVien // Hãy dùng hàm này nếu backend hỗ trợ đổi trạng thái nhanh
 } from '@/service/NhanVienService'
 
 const router = useRouter()
@@ -591,7 +552,7 @@ const selectedNhanVienForAddress = ref(null)
 const currentAddressList = ref([])
 const newAddress = ref({ tinhThanh: '', phuongXa: '', chiTietCuThe: '', isDefault: false })
 
-// 🌟 LOGIC CHỌN ẢNH ĐẠI DIỆN CHO FORM CẬP NHẬT (MỚI BỔ SUNG)
+// 🌟 LOGIC CHỌN ẢNH ĐẠI DIỆN CHO FORM CẬP NHẬT
 const formFileInputRef = ref(null)
 
 const triggerFormFileInput = () => {
@@ -632,7 +593,7 @@ const handleFetchAllData = async () => {
     if (Array.isArray(data)) {
       listNhanVien.value = data.map(item => {
         // Giải quyết object lồng nhau vaiTro gửi về từ Spring Boot
-        let role = 3; 
+        let role = 3;
         if (item.vaiTro && typeof item.vaiTro === 'object' && item.vaiTro.id !== undefined) {
           role = Number(item.vaiTro.id);
         } else if (item.id_vai_tro !== undefined && item.id_vai_tro !== null) {
@@ -641,7 +602,7 @@ const handleFetchAllData = async () => {
           role = Number(item.vaiTro);
         }
 
-        // 🌟 ĐỒNG BỘ ĐỊA CHỈ: Kiểm tra nếu DB trả về mảng addresses trống nhưng trường diaChi text có dữ liệu
+        // 🌟 ĐỒNG BỘ ĐỊA CHỈ
         let processedAddresses = [];
         if (Array.isArray(item.addresses) && item.addresses.length > 0) {
           processedAddresses = item.addresses.map(addr => ({
@@ -649,7 +610,6 @@ const handleFetchAllData = async () => {
             chiTiet: addr.chiTiet || `Số ${addr.chiTietCuThe || ''}, Phường ${addr.phuongXa || ''}, ${addr.tinhThanh || ''}`
           }));
         } else if (item.diaChi && item.diaChi.trim() !== '') {
-          // Tách chuỗi hoặc gán thẳng chuỗi từ trường diaChi vào mảng cục bộ
           processedAddresses = [{
             id: 'ADDR_' + (item.id || item.idNhanVien),
             chiTiet: item.diaChi,
@@ -666,7 +626,7 @@ const handleFetchAllData = async () => {
           trangThai: (item.trangThai === 1 || item.trangThai === true) ? 1 : 0,
           vaiTro: role,
           diaChi: item.diaChi || '',
-          addresses: processedAddresses 
+          addresses: processedAddresses
         };
       });
 
@@ -712,14 +672,13 @@ const handleExport = () => {
 
   const worksheet = XLSX.utils.json_to_sheet(dataToExport)
   const workbook = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Danh Sách Nhân Viên')
-  XLSX.writeFile(workbook, 'Danh_Sach_Nhan_Vien.xlsx')
+  XXLSX.utils.book_append_sheet(workbook, worksheet, 'Danh Sách Nhân Viên')
+  XXLSX.writeFile(workbook, 'Danh_Sach_Nhan_Vien.xlsx')
 }
 
-// --- 3. QUẢN LÝ SỔ ĐỊA CHỈ QUA MODAL (ĐÃ ĐỒNG BỘ ĐẦY ĐỦ NHƯ KHÁCH HÀNG) ---
+// --- 3. QUẢN LÝ SỔ ĐỊA CHỈ QUA MODAL ---
 const openAddressModal = (nhanVien) => {
   selectedNhanVienForAddress.value = nhanVien
-  // Nhân bản danh sách địa chỉ cục bộ để render lên bảng bên trái của Modal
   currentAddressList.value = JSON.parse(JSON.stringify(nhanVien.addresses || []))
   resetAddressForm()
   showAddressModal.value = true
@@ -728,19 +687,16 @@ const openAddressModal = (nhanVien) => {
 const closeAddressModal = () => { showAddressModal.value = false }
 const resetAddressForm = () => { newAddress.value = { tinhThanh: '', phuongXa: '', chiTietCuThe: '', isDefault: false } }
 
-// 🌟 CHỨC NĂNG THÊM NHANH: Thêm vào bảng bên trái modal và đồng bộ trực tiếp xuống SQL
 const submitQuickAddress = async () => {
   if (!newAddress.value.tinhThanh || !newAddress.value.phuongXa || !newAddress.value.chiTietCuThe) {
     alert('Vui lòng điền đầy đủ các thông tin có dấu (*)')
     return
   }
-  
-  // 1. Khởi tạo chuỗi địa chỉ đầy đủ
+
   const fullString = `Số ${newAddress.value.chiTietCuThe}, Phường ${newAddress.value.phuongXa}, ${newAddress.value.tinhThanh}`
-  
-  // 2. Tạo một Object địa chỉ mới giống cấu trúc Khách hàng
+
   const newAddrObj = {
-    id: 'ADDR_' + Date.now(), // Tạo ID tạm để Vue định danh trong vòng lặp v-for
+    id: 'ADDR_' + Date.now(),
     tinhThanh: newAddress.value.tinhThanh,
     phuongXa: newAddress.value.phuongXa,
     chiTietCuThe: newAddress.value.chiTietCuThe,
@@ -748,42 +704,34 @@ const submitQuickAddress = async () => {
     isDefault: currentAddressList.value.length === 0 ? true : newAddress.value.isDefault
   }
 
-  // 3. Nếu địa chỉ mới được tích chọn là Mặc định, hủy trạng thái mặc định của các địa chỉ cũ trong bảng trái
   if (newAddrObj.isDefault) {
     currentAddressList.value.forEach(addr => addr.isDefault = false)
-    currentAddressList.value.unshift(newAddrObj) // Đưa lên đầu danh sách
+    currentAddressList.value.unshift(newAddrObj)
   } else {
     currentAddressList.value.push(newAddrObj)
   }
 
-  // 4. Lấy địa chỉ được đánh dấu mặc định để lưu vào trường văn bản 'diaChi' của SQL Server
   const defaultAddress = currentAddressList.value.find(addr => addr.isDefault) || currentAddressList.value[0]
 
   try {
     const payload = {
       ...selectedNhanVienForAddress.value,
-      diaChi: defaultAddress ? defaultAddress.chiTiet : fullString, // Ghi đè chuỗi địa chỉ mặc định mới nhất vào DB
-      addresses: currentAddressList.value, // Gửi kèm mảng phòng trường hợp Backend nâng cấp bảng quan hệ
-      vaiTro: {
-        id: Number(selectedNhanVienForAddress.value.vaiTro)
-      }
+      diaChi: defaultAddress ? defaultAddress.chiTiet : fullString,
+      addresses: currentAddressList.value,
+      vaiTro: { id: Number(selectedNhanVienForAddress.value.vaiTro) }
     }
 
     await updateNhanVien(selectedNhanVienForAddress.value.id, payload)
-    alert('Thêm nhanh địa chỉ mới và đồng bộ hệ thống thành công!')
-    
-    // Tải lại toàn bộ dữ liệu để cập nhật ra bảng tổng danh sách nhân viên bên ngoài
-    await handleFetchAllData() 
+    alert('Thêm nhanh địa chỉ mới thành công!')
+    await handleFetchAllData()
     resetAddressForm()
   } catch (error) {
     console.error('Lỗi khi lưu địa chỉ mới:', error)
-    alert('Thêm địa chỉ thất bại, vui lòng kiểm tra lại backend!')
+    alert('Thêm địa chỉ thất bại!')
   }
 }
 
-// 🌟 CHỨC NĂNG THAY ĐỔI MẶC ĐỊNH (BẤM NGÔI SAO): Đổi địa chỉ chính hiển thị ra danh sách chính
 const setAsDefaultAddress = async (addrItem) => {
-  // Cập nhật lại trạng thái ngôi sao trên mảng giao diện cục bộ (bảng bên trái)
   currentAddressList.value.forEach(addr => {
     addr.isDefault = (addr.id === addrItem.id)
   })
@@ -791,11 +739,9 @@ const setAsDefaultAddress = async (addrItem) => {
   try {
     const payload = {
       ...selectedNhanVienForAddress.value,
-      diaChi: addrItem.chiTiet, // Đồng bộ địa chỉ vừa chọn làm mặc định vào trường diaChi dưới SQL
+      diaChi: addrItem.chiTiet,
       addresses: currentAddressList.value,
-      vaiTro: {
-        id: Number(selectedNhanVienForAddress.value.vaiTro)
-      }
+      vaiTro: { id: Number(selectedNhanVienForAddress.value.vaiTro) }
     }
 
     await updateNhanVien(selectedNhanVienForAddress.value.id, payload)
@@ -807,30 +753,24 @@ const setAsDefaultAddress = async (addrItem) => {
   }
 }
 
-// 🌟 CHỨC NĂNG XÓA ĐỊA CHỈ TRONG MODAL
 const removeAddressInModal = async (addrId, index) => {
   if (!confirm('Bạn có chắc chắn muốn xóa địa chỉ này không?')) return
-  
+
   const wasDefault = currentAddressList.value[index].isDefault
-  // Loại bỏ khỏi mảng hiển thị bên trái modal
   currentAddressList.value.splice(index, 1)
 
-  // Nếu xóa đúng địa chỉ đang mặc định, tự động thiết lập phần tử đầu tiên còn lại làm mặc định mới
   if (wasDefault && currentAddressList.value.length > 0) {
     currentAddressList.value[0].isDefault = true
   }
 
-  // Lấy ra địa chỉ mặc định mới sau khi xóa để cập nhật trường text diaChi
   const newDefaultAddress = currentAddressList.value.find(addr => addr.isDefault)
 
   try {
     const payload = {
       ...selectedNhanVienForAddress.value,
-      diaChi: newDefaultAddress ? newDefaultAddress.chiTiet : '', // Nếu hết sạch địa chỉ thì xóa trắng trường text dưới SQL
+      diaChi: newDefaultAddress ? newDefaultAddress.chiTiet : '',
       addresses: currentAddressList.value,
-      vaiTro: {
-        id: Number(selectedNhanVienForAddress.value.vaiTro)
-      }
+      vaiTro: { id: Number(selectedNhanVienForAddress.value.vaiTro) }
     }
 
     await updateNhanVien(selectedNhanVienForAddress.value.id, payload)
@@ -842,7 +782,7 @@ const removeAddressInModal = async (addrId, index) => {
   }
 }
 
-// --- 4. TẠO ĐỊA CHỈ TRONG FORM CHỈNH SỬA (LƯU KHI NHẤN SUBMIT FORM) ---
+// --- 4. TẠO ĐỊA CHỈ TRONG FORM CHỈNH SỬA ---
 const addNewAddressRow = () => {
   nhanVienForm.value.addresses.push({
     id: 'ADDR_NEW_' + Date.now(),
@@ -876,11 +816,11 @@ const viewDetail = (nhanVien) => {
 }
 const cancelDetailMode = () => { isDetailMode.value = false }
 
-// --- 6. CHỈNH SỬA TOÀN BỘ THÔNG TIN & CẬP NHẬT VÀO SQL ---
+// --- 6. CHỈNH SỬA TOÀN BỘ THÔNG TIN ---
 const openEditForm = (nhanVien) => {
   nhanVienForm.value = {
     ...nhanVien,
-    vaiTro: nhanVien.vaiTro, 
+    vaiTro: nhanVien.vaiTro,
     gioiTinh: nhanVien.gioiTinh !== undefined ? Number(nhanVien.gioiTinh) : 1,
     trangThai: nhanVien.trangThai === 1 ? 1 : 0,
     addresses: Array.isArray(nhanVien.addresses) ? JSON.parse(JSON.stringify(nhanVien.addresses)) : []
@@ -903,33 +843,32 @@ const submitEditForm = async () => {
       return
     }
 
-    // Chuẩn hóa ghép chuỗi dữ liệu text cho mảng địa chỉ trong form sửa
+    // Tối ưu hóa việc lặp và gán lại chuỗi địa chỉ chi tiết rõ ràng hơn
     nhanVienForm.value.addresses.forEach(addr => {
-      if (addr.chiTietCuThe && addr.phuongXa && addr.tinhThanh) {
-        addr.chiTiet = `Số ${addr.chiTietCuThe}, Phường ${addr.phuongXa}, ${addr.tinhThanh}`
+      if (addr.chiTietCuThe || addr.phuongXa || addr.tinhThanh) {
+        addr.chiTiet = `Số ${addr.chiTietCuThe || ''}, Phường ${addr.phuongXa || ''}, ${addr.tinhThanh || ''}`
       }
     })
 
     const defaultAddrObj = nhanVienForm.value.addresses.find(a => a.isDefault) || nhanVienForm.value.addresses[0]
     if (defaultAddrObj) {
       nhanVienForm.value.diaChi = defaultAddrObj.chiTiet || defaultAddrObj.chiTietCuThe
+    } else {
+      nhanVienForm.value.diaChi = '' // Reset nếu không còn địa chỉ nào
     }
 
-    // Biến đổi vaiTro phù hợp định dạng Jackson Map của Spring Boot
     const payload = {
       ...nhanVienForm.value,
-      vaiTro: {
-        id: Number(nhanVienForm.value.vaiTro)
-      }
+      vaiTro: { id: Number(nhanVienForm.value.vaiTro) }
     }
 
     await updateNhanVien(payload.id, payload)
-    alert('Cập nhật thông tin nhân viên vào cơ sở dữ liệu thành công!')
+    alert('Cập nhật thông tin nhân viên thành công!')
     isFormMode.value = false
-    await handleFetchAllData() 
+    await handleFetchAllData()
   } catch (error) {
     console.error('Lỗi khi cập nhật dữ liệu SQL:', error)
-    alert('Cập nhật thất bại, vui lòng kiểm tra lại cấu trúc dữ liệu!');
+    alert('Cập nhật thất bại, vui lòng kiểm tra lại backend!');
   }
 }
 
@@ -937,20 +876,23 @@ const submitEditForm = async () => {
 const toggleTrangThai = async (nhanVien) => {
   const targetStatus = nhanVien.trangThai === 1 ? 0 : 1;
   try {
-    const updatedNhanVienData = {
-      ...nhanVien,
-      trangThai: targetStatus,
-      vaiTro: {
-        id: Number(nhanVien.vaiTro)
-      }
-    };
-
-    await updateNhanVien(nhanVien.id, updatedNhanVienData);
-    nhanVien.trangThai = targetStatus; 
+    // 🌟Ưu tiên dùng hàm changeStatusNhanVien viết riêng nếu Backend hỗ trợ để tối ưu hiệu năng
+    if (typeof changeStatusNhanVien === 'function') {
+      await changeStatusNhanVien(nhanVien.id, targetStatus);
+    } else {
+      const updatedNhanVienData = {
+        ...nhanVien,
+        trangThai: targetStatus,
+        vaiTro: { id: Number(nhanVien.vaiTro) }
+      };
+      await updateNhanVien(nhanVien.id, updatedNhanVienData);
+    }
+    
+    nhanVien.trangThai = targetStatus;
     alert('Thay đổi trạng thái nhân viên thành công!');
     await handleFetchAllData();
   } catch (error) {
-    console.error('Lỗi cập nhật trạng thái thông qua API update:', error);
+    console.error('Lỗi cập nhật trạng thái:', error);
     alert('Không thể lưu trạng thái nhân viên mới vào SQL Server!');
   }
 }
@@ -961,11 +903,7 @@ const formatGioiTinh = (val) => Number(val) === 1 ? 'Nam' : 'Nữ'
 const formatVaiTro = (vaiTro) => {
   if (vaiTro === undefined || vaiTro === null || vaiTro === '') return 'Nhân viên';
   const roleId = String(vaiTro).trim();
-  const map = {
-    '1': 'Quản trị viên', 
-    '2': 'Quản lý', 
-    '3': 'Nhân viên'
-  };
+  const map = { '1': 'Quản trị viên', '2': 'Quản lý', '3': 'Nhân viên' };
   return map[roleId] || 'Nhân viên';
 };
 
@@ -980,6 +918,11 @@ const resetFilters = () => {
   currentPage.value = 1
 }
 
+// 🌟 Sửa lỗi phân trang: Theo dõi bộ lọc để ép trang hiện tại về trang 1 tự động khi tìm kiếm
+watch(filterParams, () => {
+  handleFilter()
+}, { deep: true })
+
 const totalPages = computed(() => {
   return Math.ceil(filteredNhanVien.value.length / pageSize.value) || 1
 })
@@ -993,13 +936,13 @@ const filteredNhanVien = computed(() => {
       if (!matchKw) return false
     }
     if (filterParams.value.gioiTinh !== '') {
-      if (String(item.gioiTinh) !== String(filterParams.value.gioiTinh)) return false
+      if (Number(item.gioiTinh) !== Number(filterParams.value.gioiTinh)) return false
     }
     if (filterParams.value.ngaySinh) {
       if (item.ngaySinh !== filterParams.value.ngaySinh) return false
     }
     if (filterParams.value.trangThai !== '') {
-      if (String(item.trangThai) !== String(filterParams.value.trangThai)) return false
+      if (Number(item.trangThai) !== Number(filterParams.value.trangThai)) return false
     }
     return true
   })

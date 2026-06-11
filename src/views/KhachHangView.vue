@@ -13,9 +13,9 @@
             <img v-if="customerDetail.avatar" :src="customerDetail.avatar" alt="Avatar" />
             <span v-else class="default-avatar-icon">👤</span>
           </div>
-          <span :class="['status-badge', customerDetail.trangThai === 1 ? 'active' : 'inactive']"
+          <span :class="['status-badge', (customerDetail.trangThai === 1 || customerDetail.trangThai === true) ? 'active' : 'inactive']"
             style="margin-top: 15px; display: inline-block;">
-            {{ customerDetail.trangThai === 1 ? 'Hoạt động' : 'Ngừng hoạt động' }}
+            {{ (customerDetail.trangThai === 1 || customerDetail.trangThai === true) ? 'Hoạt động' : 'Ngừng hoạt động' }}
           </span>
         </div>
 
@@ -47,11 +47,9 @@
           <div class="form-row">
             <div class="form-cell">
               <label>Giới tính</label>
-              <input type="text" :value="Number(customerDetail.gioiTinh) === 1 ? 'Nam' : 'Nữ'" disabled
-                class="disabled-input" />
+              <input type="text" :value="Number(customerDetail.gioiTinh) === 1 ? 'Nam' : 'Nữ'" disabled class="disabled-input" />
             </div>
-            <div class="form-cell">
-            </div>
+            <div class="form-cell"></div>
           </div>
         </div>
       </div>
@@ -71,7 +69,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(addr, idx) in customerDetail.addresses" :key="addr.id || idx">
+              <tr v-for="(addr, idx) in customerDetail.addresses" :key="addr.id || 'detail-addr-' + idx">
                 <td>{{ idx + 1 }}</td>
                 <td>
                   <div class="address-detail-text">
@@ -86,7 +84,7 @@
                   <span v-else style="color: #999; font-size: 12px;">Phụ</span>
                 </td>
               </tr>
-              <tr v-if="customerDetail.addresses.length === 0">
+              <tr v-if="!customerDetail.addresses || customerDetail.addresses.length === 0">
                 <td colspan="3" class="no-data" style="padding: 20px;">Khách hàng này chưa cập nhật địa chỉ nào.</td>
               </tr>
             </tbody>
@@ -95,10 +93,8 @@
       </div>
 
       <div class="form-submit-bar">
-        <button class="btn-cancel-action" @click="cancelDetailMode" style="background: #6c757d; color: white;">Đóng
-          lại</button>
-        <button class="btn-submit-action" @click="switchToEditFromDetail(customerDetail.rawOrigin)">Chỉnh sửa thông
-          tin</button>
+        <button class="btn-cancel-action" @click="cancelDetailMode" style="background: #6c757d; color: white;">Đóng lại</button>
+        <button class="btn-submit-action" @click="switchToEditFromDetail(customerDetail.rawOrigin)">Chỉnh sửa thông tin</button>
       </div>
     </div>
 
@@ -110,25 +106,25 @@
         </h3>
       </div>
 
-      <div class="form-section-card profile-grid">
+      <div class="form-section-card edit-form-card profile-grid">
         <div class="avatar-upload-block">
           <div class="section-sub-title fw-bold mb-3">Ảnh đại diện</div>
-          <div class="avatar-preview-circle">
+          <div class="avatar-preview-circle mb-3">
             <img v-if="customerForm.avatar" :src="customerForm.avatar" alt="Avatar" />
             <span v-else class="default-avatar-icon">👤</span>
           </div>
           
-          <button type="button" class="btn-select-image" @click="triggerFileInput">📷 Chọn ảnh</button>
+          <button type="button" class="btn-upload-avatar mb-2" @click="triggerFormFileInput">📁 Chọn ảnh</button>
           
           <input 
             type="file" 
-            ref="fileInput" 
+            ref="formFileInputRef" 
             style="display: none;" 
-            accept="image/jpeg, image/png" 
-            @change="handleAvatarChange" 
+            accept="image/jpeg, image/png, image/jpg" 
+            @change="handleFormAvatarChange" 
           />
           
-          <small class="upload-hint">JPG, PNG (tối đa 2MB)</small>
+          <small class="upload-hint" style="display: block; margin-top: 4px;">JPG, PNG (tối đa 2MB)</small>
         </div>
 
         <div class="info-fields-block">
@@ -166,7 +162,6 @@
             </div>
             <div class="form-cell">
               <label>Trạng thái</label>
-
               <select v-model="customerForm.trangThai" class="select-box">
                 <option :value="1">Hoạt động</option>
                 <option :value="0">Ngừng hoạt động</option>
@@ -182,7 +177,7 @@
           <button class="btn-add-address-item" @click="addNewAddressRow">+ Thêm địa chỉ</button>
         </div>
 
-        <div v-for="(addr, idx) in customerForm.addresses" :key="addr.id || idx" class="address-item-card">
+        <div v-for="(addr, idx) in customerForm.addresses" :key="addr.id || 'form-addr-' + idx" class="address-item-card">
           <div class="address-item-title">
             <span>📍 Địa chỉ {{ idx + 1 }}</span>
             <button v-if="customerForm.addresses.length > 1" class="btn-delete-address" @click="removeAddressRow(idx)">
@@ -224,7 +219,7 @@
           </div>
         </div>
 
-        <div v-if="customerForm.addresses.length === 0" class="no-data" style="padding: 20px 0;">
+        <div v-if="!customerForm.addresses || customerForm.addresses.length === 0" class="no-data" style="padding: 20px 0;">
           Chưa có thông tin địa chỉ nào. Vui lòng bấm nút "+ Thêm địa chỉ".
         </div>
       </div>
@@ -248,23 +243,23 @@
         <div class="filter-row"
           style="padding: 15px 0 0 0; display: flex; align-items: flex-end; flex-wrap: nowrap; gap: 15px; background-color: #fff;">
           <div class="filter-item search-input" style="flex: 1; min-width: 200px;">
-            <label style="display: block; margin-bottom: 6px; color: #555; font-size: 13px;">Họ và tên, sđt,
-              email</label>
-            <input type="text" v-model="filterParams.keyword" placeholder="Nhập họ và tên, sđt, email..."
-              @input="handleFilter"
+            <label style="display: block; margin-bottom: 6px; color: #555; font-size: 13px;">Họ và tên, sđt, email</label>
+            <input type="text" v-model="filterParams.keyword" placeholder="Nhập họ và tên, sđt, email..." @input="handleFilter"
               style="width: 100%; padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; height: 36px; box-sizing: border-box; font-size: 13px;" />
           </div>
 
           <div class="filter-item gender-radio" style="display: flex; flex-direction: column; gap: 6px;">
             <label style="font-size: 13px; color: #4b5563; font-weight: 500;">Giới tính</label>
-            <div class="radio-group"
-              style="display: flex; gap: 12px; height: 40px; align-items: center; white-space: nowrap;">
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 14px;"><input
-                  type="radio" v-model="filterParams.gioiTinh" value="" @change="handleFilter" /> Tất cả</label>
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 14px;"><input
-                  type="radio" v-model="filterParams.gioiTinh" value="1" @change="handleFilter" /> Nam</label>
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 14px;"><input
-                  type="radio" v-model="filterParams.gioiTinh" value="0" @change="handleFilter" /> Nữ</label>
+            <div class="radio-group" style="display: flex; gap: 12px; height: 40px; align-items: center; white-space: nowrap;">
+              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 14px;">
+                <input type="radio" v-model="filterParams.gioiTinh" value="" @change="handleFilter" /> Tất cả
+              </label>
+              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 14px;">
+                <input type="radio" v-model="filterParams.gioiTinh" value="1" @change="handleFilter" /> Nam
+              </label>
+              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 14px;">
+                <input type="radio" v-model="filterParams.gioiTinh" value="0" @change="handleFilter" /> Nữ
+              </label>
             </div>
           </div>
 
@@ -276,23 +271,22 @@
 
           <div class="filter-item status-radio" style="display: flex; flex-direction: column; gap: 6px;">
             <label style="font-size: 13px; color: #4b5563; font-weight: 500;">Trạng thái</label>
-            <div class="radio-group"
-              style="display: flex; gap: 12px; height: 40px; align-items: center; white-space: nowrap;">
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 14px;"><input
-                  type="radio" v-model="filterParams.trangThai" value="" @change="handleFilter" /> Tất cả</label>
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 14px;"><input
-                  type="radio" v-model="filterParams.trangThai" value="true" @change="handleFilter" /> Hoạt động</label>
-              <label
-                style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 14px; white-space: nowrap;"><input
-                  type="radio" v-model="filterParams.trangThai" value="false" @change="handleFilter" /> Ngừng hoạt
-                động</label>
+            <div class="radio-group" style="display: flex; gap: 12px; height: 40px; align-items: center; white-space: nowrap;">
+              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 14px;">
+                <input type="radio" v-model="filterParams.trangThai" value="" @change="handleFilter" /> Tất cả
+              </label>
+              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 14px;">
+                <input type="radio" v-model="filterParams.trangThai" :value="true" @change="handleFilter" /> Hoạt động
+              </label>
+              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 14px; white-space: nowrap;">
+                <input type="radio" v-model="filterParams.trangThai" :value="false" @change="handleFilter" /> Ngừng hoạt động
+              </label>
             </div>
           </div>
 
           <button class="refresh-btn" title="Làm mới bộ lọc" @click="resetFilters"
             style="height: 36px; width: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid #ccc; background-color: #fff; border-radius: 4px; cursor: pointer; color: #f17236; box-sizing: border-box;">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
             </svg>
           </button>
@@ -302,24 +296,17 @@
       <div class="table-box"
         style="background: white; border-radius: 10px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #eee; margin-top: 15px; width: 100%; max-width: 100%; display: block; clear: both;">
 
-        <div
-          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; width: 100%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; width: 100%;">
           <div>
-            <div style="font-size: 24px; font-weight: 700; color: #1f2937;">
-              Danh sách khách hàng
-            </div>
-            <div style="font-size: 13px; color: #9ca3af; margin-top: 2px;">
-              Quản lý thông tin khách hàng
-            </div>
+            <div style="font-size: 24px; font-weight: 700; color: #1f2937;">Danh sách khách hàng</div>
+            <div style="font-size: 13px; color: #9ca3af; margin-top: 2px;">Quản lý thông tin khách hàng</div>
           </div>
 
           <div style="display: flex; gap: 10px;">
             <button class="export-btn" title="Xuất file Excel" @click="handleExport"
               style="background: #fff; border: 1px solid #ccc; width: 36px; height: 36px; padding: 0; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">📑</button>
-
             <button class="export-btn" title="In danh sách" @click="handlePrint"
               style="background: #fff; border: 1px solid #ccc; width: 36px; height: 36px; padding: 0; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">🖨️</button>
-
             <button @click="openAddForm"
               style="background-color: #f17236; color: white; border: none; padding: 0 16px; height: 36px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 4px; box-sizing: border-box;">
               + Thêm mới
@@ -329,118 +316,74 @@
 
         <div class="table-responsive"
           style="border-radius: 8px; overflow-x: auto; border: 1px solid #eee; width: 100%; max-width: 100%; display: block; box-sizing: border-box;">
-          <table class="customer-table"
-            style="width: 100%; min-width: 1050px; border-collapse: collapse; table-layout: fixed; margin: 0;">
+          <table class="customer-table" style="width: 100%; min-width: 1050px; border-collapse: collapse; table-layout: fixed; margin: 0;">
             <thead>
               <tr>
-                <th scope="col"
-                  style="width: 5%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: center; font-size: 13.5px; border: none;">
-                  STT</th>
-                <th scope="col"
-                  style="width: 7%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: center; font-size: 13.5px; border: none;">
-                  Ảnh</th>
-                <th scope="col"
-                  style="width: 15%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: left; font-size: 13.5px; border: none;">
-                  Họ và tên</th>
-                <th scope="col"
-                  style="width: 8%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: left; font-size: 13.5px; border: none;">
-                  Giới tính</th>
-                <th scope="col"
-                  style="width: 10%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: left; font-size: 13.5px; border: none;">
-                  Ngày sinh</th>
-                <th scope="col"
-                  style="width: 12%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: left; font-size: 13.5px; border: none;">
-                  Số điện thoại</th>
-                <th scope="col"
-                  style="width: 14%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: left; font-size: 13.5px; border: none;">
-                  Email</th>
-                <th scope="col"
-                  style="width: 17%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: left; font-size: 13.5px; border: none;">
-                  Địa chỉ</th>
-                <th scope="col"
-                  style="width: 11%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: center; font-size: 13.5px; border: none;">
-                  Trạng thái</th>
-                <th scope="col"
-                  style="width: 11%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: center; font-size: 13.5px; border: none;">
-                  Thao tác</th>
+                <th scope="col" style="width: 5%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: center; font-size: 13.5px; border: none;">STT</th>
+                <th scope="col" style="width: 7%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: center; font-size: 13.5px; border: none;">Ảnh</th>
+                <th scope="col" style="width: 15%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: left; font-size: 13.5px; border: none;">Họ và tên</th>
+                <th scope="col" style="width: 8%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: left; font-size: 13.5px; border: none;">Giới tính</th>
+                <th scope="col" style="width: 10%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: left; font-size: 13.5px; border: none;">Ngày sinh</th>
+                <th scope="col" style="width: 12%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: left; font-size: 13.5px; border: none;">Số điện thoại</th>
+                <th scope="col" style="width: 14%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: left; font-size: 13.5px; border: none;">Email</th>
+                <th scope="col" style="width: 17%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: left; font-size: 13.5px; border: none;">Địa chỉ</th>
+                <th scope="col" style="width: 11%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: center; font-size: 13.5px; border: none;">Trạng thái</th>
+                <th scope="col" style="width: 11%; background: #f37d4b; color: white; font-weight: 600; padding: 14px 10px; text-align: center; font-size: 13.5px; border: none;">Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(khachHang, index) in pagedKhachHang" :key="khachHang.id">
-                <td
-                  style="text-align: center; padding: 12px 10px; border-bottom: 1px solid #eee; font-size: 13.5px; vertical-align: middle;">
+              <tr v-for="(khachHang, index) in pagedKhachHang" :key="khachHang.id || 'cust-' + index">
+                <td style="text-align: center; padding: 12px 10px; border-bottom: 1px solid #eee; font-size: 13.5px; vertical-align: middle;">
                   {{ (currentPage - 1) * pageSize + index + 1 }}
                 </td>
-                <td
-                  style="padding: 12px 10px; border-bottom: 1px solid #eee; text-align: center; vertical-align: middle;">
-                  <div class="avatar-placeholder"
-                    style="width: 40px; height: 40px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 0 auto;">
-                    <img v-if="khachHang.avatar" :src="khachHang.avatar" alt="avatar"
-                      style="width: 100%; height: 100%; object-fit: cover;" />
+                <td style="padding: 12px 10px; border-bottom: 1px solid #eee; text-align: center; vertical-align: middle;">
+                  <div class="avatar-placeholder" style="width: 40px; height: 40px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 0 auto;">
+                    <img v-if="khachHang.avatar" :src="khachHang.avatar" alt="avatar" style="width: 100%; height: 100%; object-fit: cover;" />
                     <i v-else class="fas fa-user" style="font-size: 18px; color: #a0a0a0;"></i>
                   </div>
                 </td>
                 <td style="padding: 12px 10px; border-bottom: 1px solid #eee; vertical-align: middle;">
-                  <div class="fw-bold"
-                    style="font-weight: bold; color: #1a2942; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  <div class="fw-bold" style="font-weight: bold; color: #1a2942; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                     {{ khachHang.hoTen || 'Chưa cập nhật' }}
                   </div>
                 </td>
-                <td
-                  style="padding: 12px 10px; border-bottom: 1px solid #eee; font-size: 13.5px; vertical-align: middle;">
+                <td style="padding: 12px 10px; border-bottom: 1px solid #eee; font-size: 13.5px; vertical-align: middle;">
                   {{ formatGioiTinh(khachHang.gioiTinh) }}
                 </td>
-                <td
-                  style="padding: 12px 10px; border-bottom: 1px solid #eee; font-size: 13.5px; vertical-align: middle;">
+                <td style="padding: 12px 10px; border-bottom: 1px solid #eee; font-size: 13.5px; vertical-align: middle;">
                   {{ khachHang.ngaySinh || '-' }}
                 </td>
-                <td class="phone-text"
-                  style="padding: 12px 10px; border-bottom: 1px solid #eee; font-weight: 500; color: #222; font-size: 13.5px; vertical-align: middle;">
+                <td class="phone-text" style="padding: 12px 10px; border-bottom: 1px solid #eee; font-weight: 500; color: #222; font-size: 13.5px; vertical-align: middle;">
                   {{ khachHang.sdt }}
                 </td>
-                <td class="email-text"
-                  style="padding: 12px 10px; border-bottom: 1px solid #eee; color: #555; font-size: 13.5px; vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                <td class="email-text" style="padding: 12px 10px; border-bottom: 1px solid #eee; color: #555; font-size: 13.5px; vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                   {{ khachHang.email || '-' }}
                 </td>
-                <td class="address-text"
-                  style="padding: 12px 10px; border-bottom: 1px solid #eee; color: #555; font-size: 13px; line-height: 1.4; vertical-align: middle; word-break: break-word;">
+                <td class="address-text" style="padding: 12px 10px; border-bottom: 1px solid #eee; color: #555; font-size: 13px; line-height: 1.4; vertical-align: middle; word-break: break-word;">
                   {{ getDefaultAddressText(khachHang) }}
                 </td>
-
-                <td
-                  style="text-align: center; padding: 12px 10px; border-bottom: 1px solid #eee; vertical-align: middle;">
-                  <span
-                    :class="['status-badge', (khachHang.trangThai === true || Number(khachHang.trangThai) === 1) ? 'active' : 'inactive']"
-                    style="cursor: pointer; display: inline-block;" @click="toggleStatus(khachHang)"
-                    title="Bấm để đổi trạng thái">
+                <td style="text-align: center; padding: 12px 10px; border-bottom: 1px solid #eee; vertical-align: middle;">
+                  <span :class="['status-badge', (khachHang.trangThai === true || khachHang.trangThai === 1) ? 'active' : 'inactive']"
+                    style="cursor: pointer; display: inline-block;" @click="toggleStatus(khachHang)" title="Bấm để đổi trạng thái">
                     {{ formatTrangThai(khachHang.trangThai) }}
                   </span>
                 </td>
-
-                <td
-                  style="padding: 12px 10px; border-bottom: 1px solid #eee; text-align: center; vertical-align: middle;">
-                  <div class="table-actions"
-                    style="display: flex; gap: 6px; align-items: center; justify-content: center;">
-                    <button class="btn-view" title="Xem chi tiết" @click="viewDetail(khachHang)"
-                      style="background: #e6f7ff; border: 1px solid #91d5ff; color: #1890ff; padding: 5px 8px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
+                <td style="padding: 12px 10px; border-bottom: 1px solid #eee; text-align: center; vertical-align: middle;">
+                  <div class="table-actions" style="display: flex; gap: 6px; align-items: center; justify-content: center;">
+                    <button class="btn-view" title="Xem chi tiết" @click="viewDetail(khachHang)" style="background: #e6f7ff; border: 1px solid #91d5ff; color: #1890ff; padding: 5px 8px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
                       <i class="far fa-eye"></i>
                     </button>
-                    <button class="btn-history" title="Địa chỉ" @click="openAddressModal(khachHang)"
-                      style="background: #f6ffed; border: 1px solid #b7eb8f; color: #52c41a; padding: 5px 8px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
+                    <button class="btn-history" title="Địa chỉ" @click="openAddressModal(khachHang)" style="background: #f6ffed; border: 1px solid #b7eb8f; color: #52c41a; padding: 5px 8px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
                       <i class="fas fa-map-marker-alt"></i>
                     </button>
-                    <button class="btn-edit" title="Sửa thông tin" @click="openEditForm(khachHang)"
-                      style="background: #fff7e6; border: 1px solid #ffd591; color: #fa8c16; padding: 5px 8px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
+                    <button class="btn-edit" title="Sửa thông tin" @click="openEditForm(khachHang)" style="background: #fff7e6; border: 1px solid #ffd591; color: #fa8c16; padding: 5px 8px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
                       <i class="far fa-edit"></i>
                     </button>
                   </div>
                 </td>
               </tr>
-
               <tr v-if="filteredKhachHang.length === 0">
-                <td colspan="10" class="no-data"
-                  style="text-align: center; color: #999; font-style: italic; padding: 30px;">Không tìm thấy khách hàng
-                  phù hợp</td>
+                <td colspan="10" class="no-data" style="text-align: center; color: #999; font-style: italic; padding: 30px;">Không tìm thấy khách hàng phù hợp</td>
               </tr>
             </tbody>
           </table>
@@ -451,19 +394,11 @@
         style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; font-size: 13px; color: #555; padding-top: 10px;">
         <span>Tổng số <strong>{{ filteredKhachHang.length }}</strong> khách hàng</span>
         <div class="page-controls" style="display: flex; align-items: center; gap: 5px;">
-          <button :disabled="currentPage === 1" @click="currentPage--"
-            style="background: white; border: 1px solid #ddd; padding: 4px 10px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;"><i
-              class="fas fa-chevron-left"></i></button>
-
-          <button v-for="page in totalPages" :key="page" :class="['page-num', { active: currentPage === page }]"
-            @click="currentPage = page">
+          <button :disabled="currentPage === 1" @click="currentPage--" style="background: white; border: 1px solid #ddd; padding: 4px 10px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;"><i class="fas fa-chevron-left"></i></button>
+          <button v-for="page in totalPages" :key="'page-' + page" :class="['page-num', { active: currentPage === page }]" @click="currentPage = page">
             {{ page }}
           </button>
-
-          <button :disabled="currentPage === totalPages" @click="currentPage++"
-            style="background: white; border: 1px solid #ddd; padding: 4px 10px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;"><i
-              class="fas fa-chevron-right"></i></button>
-
+          <button :disabled="currentPage === totalPages" @click="currentPage++" style="background: white; border: 1px solid #ddd; padding: 4px 10px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;"><i class="fas fa-chevron-right"></i></button>
           <select class="page-size-select" v-model="pageSize" @change="currentPage = 1">
             <option :value="5">5 / trang</option>
             <option :value="10">10 / trang</option>
@@ -489,7 +424,6 @@
         <div class="modal-body-layout">
           <div class="left-section">
             <h4 class="section-title"><span class="icon">📍</span> Danh sách địa chỉ hiện có</h4>
-
             <div class="address-table-wrapper">
               <table class="sub-table">
                 <thead>
@@ -501,7 +435,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(addr, idx) in pagedAddresses" :key="addr.id">
+                  <tr v-for="(addr, idx) in pagedAddresses" :key="addr.id || 'modal-addr-' + idx">
                     <td>{{ (subCurrentPage - 1) * subPageSize + idx + 1 }}</td>
                     <td>
                       <div class="address-detail-text">
@@ -509,8 +443,7 @@
                       </div>
                     </td>
                     <td class="text-center">
-                      <span class="star-icon" :class="{ active: addr.isDefault }" @click="setAsDefaultAddress(addr.id)"
-                        :title="addr.isDefault ? 'Địa chỉ mặc định' : 'Đặt làm mặc định'">
+                      <span class="star-icon" :class="{ active: addr.isDefault }" @click="setAsDefaultAddress(addr.id)" :title="addr.isDefault ? 'Địa chỉ mặc định' : 'Đặt làm mặc định'">
                         {{ addr.isDefault ? '⭐' : '☆' }}
                       </span>
                     </td>
@@ -525,14 +458,12 @@
               </table>
             </div>
 
-            <div class="sub-pagination" v-if="selectedCustomer?.addresses?.length > 0">
+            <div class="sub-pagination" v-if="selectedCustomer?.addresses && selectedCustomer.addresses.length > 0">
               <span>Tổng {{ selectedCustomer.addresses.length }} địa chỉ</span>
               <div class="sub-page-controls">
                 <button :disabled="subCurrentPage === 1" @click="subCurrentPage--">&lt;</button>
                 <span class="sub-page-display">{{ subCurrentPage }} / {{ subTotalPages }}</span>
-                <button :disabled="subTotalPages === 0 || subCurrentPage === subTotalPages"
-                  @click="subCurrentPage++">&gt;</button>
-
+                <button :disabled="subTotalPages === 0 || subCurrentPage === subTotalPages" @click="subCurrentPage++">&gt;</button>
                 <select class="mini-select" v-model="subPageSize" @change="subCurrentPage = 1">
                   <option :value="2">2 / page</option>
                   <option :value="5">5 / page</option>
@@ -544,7 +475,6 @@
 
           <div class="right-section">
             <h4 class="section-title"><span class="icon">📝</span> Thêm nhanh địa chỉ</h4>
-
             <div class="form-grid">
               <div class="form-group">
                 <label>Tỉnh / Thành phố <span class="required">*</span></label>
@@ -555,7 +485,6 @@
                   <option value="Hồ Chí Minh">Hồ Chí Minh</option>
                 </select>
               </div>
-
               <div class="form-group">
                 <label>Phường / Xã <span class="required">*</span></label>
                 <select v-model="newAddress.phuongXa" :disabled="!newAddress.tinhThanh">
@@ -569,8 +498,7 @@
 
             <div class="form-group full-width">
               <label>Địa chỉ chi tiết <span class="required">*</span></label>
-              <input type="text" v-model="newAddress.chiTiet"
-                placeholder="Nhập địa chỉ chi tiết (VD: Số nhà, số ngõ, ngách...)" />
+              <input type="text" v-model="newAddress.chiTiet" placeholder="Nhập địa chỉ chi tiết (VD: Số nhà, số ngõ, ngách...)" />
             </div>
 
             <div class="form-group checkbox-group">
@@ -594,13 +522,12 @@
 <script setup>
 import MainLayout from '../layouts/MainLayout.vue'
 import { onMounted, ref, computed, reactive } from 'vue'
-// 🛠️ Đã import thêm hàm addKhachHang và updateKhachHang từ Service của bạn
+// Import các hàm tương tác từ Service
 import { fetchAllKhachHang, addKhachHang, updateKhachHang } from '@/service/KhachHangService'
-// 💡 Khuyến khích cài đặt thư viện xlsx để xuất file: npm install xlsx
+// Thư viện xlsx xuất file Excel
 import * as XLSX from 'xlsx'
 
 const listKhachHang = ref([])
-
 const currentPage = ref(1)
 const pageSize = ref(5)
 
@@ -612,10 +539,9 @@ const filterParams = ref({
 })
 
 // =================================================================
-// 📸 CHỨC NĂNG CHỌN VÀ CHUYỂN ĐỔI ẢNH ĐẠI DIỆN (ĐÃ SỬA LỖI)
+// 📸 CHỨC NĂNG CHỌN VÀ CHUYỂN ĐỔI ẢNH ĐẠI DIỆN
 // =================================================================
 const formFileInputRef = ref(null)
-const fileInputRef = ref(null) // Đã bổ sung ref này để tránh lỗi crash form
 
 const triggerFormFileInput = () => {
   if (formFileInputRef.value) {
@@ -643,7 +569,6 @@ const handleFormAvatarChange = (event) => {
   // Đọc file sang chuỗi Base64 để hiển thị trực tiếp lên khung preview đại diện
   const reader = new FileReader()
   reader.onload = (e) => {
-    // 🔥 SỬA LỖI: Thay nhanVienForm thành customerForm để đồng bộ dữ liệu
     customerForm.value.avatar = e.target.result
   }
   reader.readAsDataURL(file)
@@ -651,7 +576,7 @@ const handleFormAvatarChange = (event) => {
 
 
 // =================================================================
-// 🌟 CHỨC NĂNG IN VÀ XUẤT FILE (ĐÃ SỬA LỖI)
+// 🌟 CHỨC NĂNG IN VÀ XUẤT FILE 
 // =================================================================
 
 // 1. Hàm xử lý In ấn danh sách khách hàng
@@ -669,7 +594,7 @@ const handleExport = () => {
   const dataToExport = filteredKhachHang.value.map((item, index) => {
     return {
       'STT': index + 1,
-      'Mã Khách Hàng': item.id || 'N/A',
+      'Mã Khách Hàng': item.maKhachHang || item.id || 'N/A',
       'Họ và Tên': item.hoTen || '',
       'Số Điện Thoại': item.sdt || '',
       'Email': item.email || '',
@@ -683,9 +608,8 @@ const handleExport = () => {
   const worksheet = XLSX.utils.json_to_sheet(dataToExport)
   const workbook = XLSX.utils.book_new()
   
-  // 🔥 SỬA LỖI: Đổi XXLSX thành XLSX chính xác theo thư viện import
-  XXLSX.utils.book_append_sheet(workbook, worksheet, 'Danh Sách Khách Hàng')
-  XXLSX.writeFile(workbook, 'Danh_Sach_Khach_Hang.xlsx')
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Danh Sách Khách Hàng')
+  XLSX.writeFile(workbook, 'Danh_Sach_Khach_Hang.xlsx')
 }
 
 
@@ -760,8 +684,7 @@ const openAddForm = () => {
       { id: Date.now(), tinhThanh: '', phuongXa: '', chiTiet: '', isDefault: true, diaChi: '' }
     ]
   }
-  if (fileInputRef.value) fileInputRef.value.value = '' 
-  if (formFileInputRef.value) formFileInputRef.value.value = '' // Reset luôn input chọn avatar
+  if (formFileInputRef.value) formFileInputRef.value.value = ''
   isFormMode.value = true
 }
 
@@ -801,7 +724,6 @@ const openEditForm = (khachHang) => {
     avatar: khachHang.avatar || '', 
     addresses: parsedAddresses
   }
-  if (fileInputRef.value) fileInputRef.value.value = '' 
   if (formFileInputRef.value) formFileInputRef.value.value = ''
   isFormMode.value = true
 }
@@ -844,19 +766,20 @@ const handleSubmitForm = async () => {
 
   const cleanSdt = customerForm.value.sdt.trim()
   const cleanEmail = customerForm.value.email ? customerForm.value.email.trim() : ''
-
   const isEditing = !!customerForm.value.id
 
+  // Kiểm tra trùng SĐT ở Client
   const isSdtDuplicate = listKhachHang.value.some(kh => {
     if (isEditing && kh.id === customerForm.value.id) return false
     return kh.sdt && kh.sdt.trim() === cleanSdt
   })
 
   if (isSdtDuplicate) {
-    alert(`Thao tác thất bại: Số điện thoại đã tồn tại trong hệ thống!`)
+    alert(`Số điện thoại đã tồn tại trong hệ thống!`)
     return
   }
 
+  // Kiểm tra trùng Email ở Client
   if (cleanEmail) {
     const isEmailDuplicate = listKhachHang.value.some(kh => {
       if (isEditing && kh.id === customerForm.value.id) return false
@@ -864,7 +787,7 @@ const handleSubmitForm = async () => {
     })
 
     if (isEmailDuplicate) {
-      alert(`Thao tác thất bại: Địa chỉ Email đã tồn tại trong hệ thống!`)
+      alert(`Địa chỉ Email đã tồn tại trong hệ thống!`)
       return
     }
   }
@@ -885,11 +808,12 @@ const handleSubmitForm = async () => {
     processedAddresses[0]?.diaChi ||
     null
 
+  // Chuẩn hóa payload chuẩn dữ liệu gửi lên API
   const customerPayload = {
     hoTen: customerForm.value.hoTen.trim(),
     sdt: cleanSdt,
     email: cleanEmail || null,
-    ngaySinh: customerForm.value.ngaySinh,
+    ngaySinh: customerForm.value.ngaySinh || null,
     gioiTinh: Number(customerForm.value.gioiTinh),
     trangThai: Number(customerForm.value.trangThai),
     avatar: customerForm.value.avatar || null, 
@@ -914,26 +838,14 @@ const handleSubmitForm = async () => {
     isFormMode.value = false
   } catch (error) {
     console.error('Lỗi khi lưu dữ liệu xuống cơ sở dữ liệu:', error)
-
     let errorMsg = 'Thao tác thất bại! Vui lòng kiểm tra lại kết nối hệ thống.'
-    let errorText = ''
-
-    if (typeof error === 'string') {
-      errorText = error
-    } else if (error && error.message) {
-      errorText = error.message
-    } else if (error && error.response && error.response.data) {
-      errorText = typeof error.response.data === 'object'
-        ? JSON.stringify(error.response.data)
-        : String(error.response.data)
-    }
+    let errorText = error?.response?.data ? (typeof error.response.data === 'object' ? JSON.stringify(error.response.data) : String(error.response.data)) : (error?.message || String(error))
 
     if (errorText.includes('Số điện thoại đã tồn tại')) {
       errorMsg = 'Thêm thất bại: Số điện thoại này đã tồn tại trên cơ sở dữ liệu server!'
     } else if (errorText.includes('Email đã tồn tại')) {
       errorMsg = 'Thêm thất bại: Địa chỉ Email này đã tồn tại trên cơ sở dữ liệu server!'
     }
-
     alert(errorMsg)
   }
 }
@@ -968,24 +880,14 @@ const handleFetchAllData = async () => {
 
       if (Array.isArray(kh.addresses) && kh.addresses.length > 0) {
         activeAddresses = kh.addresses.map(addr => {
-          const fullAddress =
-            addr.diaChi ||
-            [
-              addr.chiTiet,
-              addr.phuongXa,
-              addr.tinhThanh
-            ]
-              .filter(Boolean)
-              .join(', ')
-
+          const fullAddress = addr.diaChi || [addr.chiTiet, addr.phuongXa, addr.tinhThanh].filter(Boolean).join(', ')
           return {
             ...addr,
             diaChi: fullAddress,
-            isDefault: addr.isDefault ?? true
+            isDefault: addr.isDefault ?? false
           }
         })
-      }
-      else if (kh.diaChi) {
+      } else if (kh.diaChi) {
         activeAddresses = [
           {
             id: Date.now() + index,
@@ -1098,7 +1000,6 @@ const setAsDefaultAddress = async (addressId) => {
   if (!selectedCustomer.value || !selectedCustomer.value.addresses) return
 
   let primaryAddressText = ''
-
   const updatedAddresses = selectedCustomer.value.addresses.map(addr => {
     if (addr.id === addressId) {
       primaryAddressText = addr.diaChi || `${addr.chiTiet}, ${addr.phuongXa}, ${addr.tinhThanh}`
@@ -1107,10 +1008,14 @@ const setAsDefaultAddress = async (addressId) => {
     return { ...addr, isDefault: false }
   })
 
+  // Loại bỏ các trường thừa lồng nhau trước khi đẩy payload lên API
   const updatePayload = {
-    ...selectedCustomer.value,
+    hoTen: selectedCustomer.value.hoTen,
+    sdt: selectedCustomer.value.sdt,
+    email: selectedCustomer.value.email,
+    ngaySinh: selectedCustomer.value.ngaySinh,
+    avatar: selectedCustomer.value.avatar,
     diaChi: primaryAddressText,
-    addresses: updatedAddresses,
     trangThai: (selectedCustomer.value.trangThai === true || Number(selectedCustomer.value.trangThai) === 1) ? 1 : 0,
     gioiTinh: Number(selectedCustomer.value.gioiTinh)
   }
@@ -1135,7 +1040,6 @@ const handleSaveAddress = async () => {
 
   const fullString = `${newAddress.value.chiTiet.trim()}, ${newAddress.value.phuongXa}, ${newAddress.value.tinhThanh}`
   const targetAddressId = Date.now()
-
   let currentAddresses = selectedCustomer.value.addresses ? [...selectedCustomer.value.addresses] : []
 
   if (newAddress.value.isDefault) {
@@ -1150,17 +1054,17 @@ const handleSaveAddress = async () => {
     chiTiet: newAddress.value.chiTiet.trim(),
     isDefault: newAddress.value.isDefault || currentAddresses.length === 0
   }
-
   currentAddresses.push(createdAddressItem)
 
-  const customerMainAddress = createdAddressItem.isDefault
-    ? fullString
-    : (selectedCustomer.value.diaChi || fullString)
+  const customerMainAddress = createdAddressItem.isDefault ? fullString : (selectedCustomer.value.diaChi || fullString)
 
   const updatePayload = {
-    ...selectedCustomer.value,
+    hoTen: selectedCustomer.value.hoTen,
+    sdt: selectedCustomer.value.sdt,
+    email: selectedCustomer.value.email,
+    ngaySinh: selectedCustomer.value.ngaySinh,
+    avatar: selectedCustomer.value.avatar,
     diaChi: customerMainAddress,
-    addresses: currentAddresses,
     trangThai: (selectedCustomer.value.trangThai === true || Number(selectedCustomer.value.trangThai) === 1) ? 1 : 0,
     gioiTinh: Number(selectedCustomer.value.gioiTinh)
   }
@@ -1171,7 +1075,7 @@ const handleSaveAddress = async () => {
     selectedCustomer.value.diaChi = customerMainAddress
     newAddress.value = { tinhThanh: '', phuongXa: '', chiTiet: '', isDefault: false }
     subCurrentPage.value = Math.ceil(currentAddresses.length / subPageSize.value)
-    alert('Thêm nhanh địa chỉ mới và lưu SQL thành công!')
+    alert('Thêm nhanh địa chỉ mới thành công!')
     await handleFetchAllData()
   } catch (error) {
     console.error('Lỗi lưu địa chỉ mới:', error)
@@ -1191,14 +1095,19 @@ const toggleStatus = async (khachHang) => {
   const currentStatus = Number(khachHang.trangThai) === 1
   const newStatus = currentStatus ? 0 : 1
 
+  const updatePayload = {
+    hoTen: khachHang.hoTen,
+    sdt: khachHang.sdt,
+    email: khachHang.email,
+    ngaySinh: khachHang.ngaySinh,
+    gioiTinh: Number(khachHang.gioiTinh),
+    avatar: khachHang.avatar,
+    diaChi: khachHang.diaChi,
+    trangThai: newStatus
+  }
+
   try {
-    await updateKhachHang(
-      khachHang.id,
-      {
-        ...khachHang,
-        trangThai: newStatus
-      }
-    )
+    await updateKhachHang(khachHang.id, updatePayload)
     khachHang.trangThai = newStatus
     alert('Thay đổi trạng thái khách hàng thành công!')
   } catch (error) {
