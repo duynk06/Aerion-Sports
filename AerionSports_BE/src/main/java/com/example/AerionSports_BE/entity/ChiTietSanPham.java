@@ -1,5 +1,6 @@
 package com.example.AerionSports_BE.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -13,8 +14,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Getter
@@ -27,45 +30,56 @@ public class ChiTietSanPham {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_san_pham", nullable = false)
-    private SanPham sanPham;
+    @JsonIgnore
+    private SanPham idSanPham;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_mau_sac")
-    private MauSac mauSac;
+    @JsonIgnore
+    private MauSac idMauSac;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_trong_luong")
-    private TrongLuong trongLuong;
+    @JsonIgnore
+    private TrongLuong idTrongLuong;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_do_cung")
-    private DoCung doCung;
+    @JsonIgnore
+    private DoCung idDoCung;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_diem_can_bang")
-    private DiemCanBang diemCanBang;
+    @JsonIgnore
+    private DiemCanBang idDiemCanBang;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
     @JoinColumn(name = "id_chat_lieu_than_vot")
-    private ChatLieuThanVot chatLieuThanVot;
+    private ChatLieuThanVot idChatLieuThanVot;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
     @JoinColumn(name = "id_chat_lieu_khung_vot")
-    private ChatLieuKhungVot chatLieuKhungVot;
+    private ChatLieuKhungVot idChatLieuKhungVot;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_danh_muc")
-    private DanhMuc danhMuc;
+    @JsonIgnore
+    private DanhMuc idDanhMuc;
 
-    @Column(name = "ma_ctsp", unique = true, length = 100)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
+    @JoinColumn(name = "id_chu_vi_can_vot")
+    private ChuViCanVot idChuViCanVot;
+
+    @Column(name = "ma_ctsp", length = 100)
     private String maCtsp;
-
-    @Column(name = "xuat_xu_chi_tiet", length = 255)
-    private String xuatXuChiTiet;
 
     @Column(name = "gia_nhap", nullable = false, precision = 18, scale = 2)
     private BigDecimal giaNhap;
@@ -73,18 +87,19 @@ public class ChiTietSanPham {
     @Column(name = "gia_ban", nullable = false, precision = 18, scale = 2)
     private BigDecimal giaBan;
 
+    @ColumnDefault("0")
     @Column(name = "so_luong")
-    private Integer soLuong = 0;
+    private Integer soLuong;
 
+    @ColumnDefault("getdate()")
     @Column(name = "ngay_tao")
-    private LocalDateTime ngayTao = LocalDateTime.now();
+    private Instant ngayTao;
 
+    @ColumnDefault("getdate()")
     @Column(name = "ngay_cap_nhat")
-    private LocalDateTime ngayCapNhat = LocalDateTime.now();
+    private Instant ngayCapNhat;
 
-    @Column(name = "chu_vi_can_vot", length = 50)
-    private String chuViCanVot;
-
+    @ColumnDefault("1")
     @Column(name = "trang_thai")
-    private Integer trangThai = 1;
+    private Integer trangThai;
 }

@@ -1,46 +1,39 @@
-package com.example.AerionSports_BE.entity;
+    package com.example.AerionSports_BE.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+    import jakarta.persistence.*;
+    import lombok.Getter;
+    import lombok.Setter;
+    import org.hibernate.annotations.ColumnDefault;
 
-import java.time.LocalDateTime;
+    import java.time.Instant;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Entity
-@Table(name = "hinh_anh_sp")
-public class HinhAnhSp {
+    @Getter
+    @Setter
+    @Entity
+    @Table(name = "hinh_anh_sp")
+    public class HinhAnhSp {
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        @Column(name = "id", nullable = false)
+        private Integer id;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+        @ManyToOne(fetch = FetchType.LAZY, optional = false)
+        @JoinColumn(name = "id_san_pham_chi_tiet", nullable = false)
+        private ChiTietSanPham idSanPhamChiTiet;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_san_pham_chi_tiet", nullable = false)
-    private ChiTietSanPham chiTietSanPham;
+        @ColumnDefault("0")
+        @Column(name = "la_anh_chinh")
+        private Boolean laAnhChinh;
 
-    @Column(name = "la_anh_chinh")
-    private Boolean laAnhChinh = false;
+        @Column(name = "duong_dan_anh", length = 500)
+        private String duongDanAnh;
 
-    @Column(name = "duong_dan_anh", length = 500)
-    private String duongDanAnh;
+        @ColumnDefault("getdate()")
+        @Column(name = "ngay_tao", insertable = false, updatable = false)
+        private Instant ngayTao;
 
-    @Column(name = "ngay_tao")
-    private LocalDateTime ngayTao = LocalDateTime.now();
+        @ColumnDefault("1")
+        @Column(name = "trang_thai")
+        private Integer trangThai;
 
-    @Column(name = "trang_thai")
-    private Integer trangThai = 1;
-}
+    }

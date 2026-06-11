@@ -1,34 +1,38 @@
 package com.example.AerionSports_BE.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Nationalized;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "chat_lieu_than_vot")
 public class ChatLieuThanVot {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Integer id;
 
-    @Column(name = "ma_chat_lieu_than_vot", nullable = false, unique = true, length = 50)
+    @Column(name = "ma_chat_lieu_than_vot", nullable = false, length = 50)
     private String maChatLieuThanVot;
 
-    @Column(name = "ten_chat_lieu_than_vot", nullable = false, length = 255)
+    @Nationalized
+    @Column(name = "ten_chat_lieu_than_vot", nullable = false)
     private String tenChatLieuThanVot;
 
+    @ColumnDefault("1")
     @Column(name = "trang_thai")
-    private Integer trangThai = 1;
+    private Integer trangThai;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "idChatLieuThanVot")
+    private Set<ChiTietSanPham> chiTietSanPhams = new LinkedHashSet<>();
+
 }

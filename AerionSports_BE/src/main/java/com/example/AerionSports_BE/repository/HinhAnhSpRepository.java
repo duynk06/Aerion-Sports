@@ -11,11 +11,8 @@ import java.util.List;
 @Repository
 public interface HinhAnhSpRepository extends JpaRepository<HinhAnhSp, Integer> {
 
-    @Query("SELECT h.chiTietSanPham.id, h.duongDanAnh " +
-           "FROM HinhAnhSp h " +
-           "WHERE h.trangThai = 1 " +
-           "AND h.laAnhChinh = true " +
-           "AND h.chiTietSanPham.id IN :chiTietSanPhamIds")
-    List<Object[]> findMainImagePathsByChiTietSanPhamIds(
-            @Param("chiTietSanPhamIds") List<Integer> chiTietSanPhamIds);
+    @Query("SELECT h FROM HinhAnhSp h WHERE " +
+            "(:idCT IS NULL OR h.idSanPhamChiTiet.id = :idCT) " +
+            "AND (:tt IS NULL OR h.trangThai = :tt)")
+    List<HinhAnhSp> findImages(@Param("idCT") Integer idSanPhamChiTiet, @Param("tt") Integer trangThai);
 }

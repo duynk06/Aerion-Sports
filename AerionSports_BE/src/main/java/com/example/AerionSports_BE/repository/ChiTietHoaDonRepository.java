@@ -11,7 +11,7 @@ import java.util.List;
 @Repository
 public interface ChiTietHoaDonRepository extends JpaRepository<ChiTietHoaDon, Integer> {
     @Query("""
-SELECT new com.example.AerionSports_BE.response.ChiTietHoaDonResponse(
+SELECT new com.example.AerionSports_BE.dto.response.ChiTietHoaDonResponse(
     cthd.id,
     sp.maSanPham,
     sp.tenSanPham,
@@ -23,9 +23,9 @@ SELECT new com.example.AerionSports_BE.response.ChiTietHoaDonResponse(
 )
 FROM ChiTietHoaDon cthd
 JOIN cthd.chiTietSanPham ctsp
-JOIN ctsp.sanPham sp
-LEFT JOIN ctsp.mauSac ms
-LEFT JOIN ctsp.trongLuong tl
+JOIN ctsp.idSanPham sp
+LEFT JOIN ctsp.idMauSac ms
+LEFT JOIN ctsp.idTrongLuong tl
 WHERE cthd.hoaDon.id = :idHoaDon
 """)
     List<ChiTietHoaDonResponse> getChiTietHoaDon(Integer idHoaDon);
