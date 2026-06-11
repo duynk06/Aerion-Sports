@@ -29,7 +29,7 @@ public class LichSuThanhToan {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_hoa_don", nullable = false)
     private HoaDon hoaDon;
 
