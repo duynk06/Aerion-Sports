@@ -29,15 +29,15 @@ public class HoaDon {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_khach_hang")
     private KhachHang khachHang;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_phieu_giam_gia")
     private PhieuGiamGia phieuGiamGia;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_nhan_vien")
     private NhanVien nhanVien;
 
@@ -81,5 +81,5 @@ public class HoaDon {
     private String nguoiCapNhat;
 
     @Column(name = "trang_thai")
-    private Integer trangThai = 1;
+    private Integer trangThai;
 }
