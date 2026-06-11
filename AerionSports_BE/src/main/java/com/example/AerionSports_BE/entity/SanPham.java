@@ -1,59 +1,67 @@
 package com.example.AerionSports_BE.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Nationalized;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "san_pham")
+@org.hibernate.annotations.BatchSize(size = 20)
 public class SanPham {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_thuong_hieu")
-    private ThuongHieu thuongHieu;
+    @JsonIgnore
+    private ThuongHieu idThuongHieu;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_xuat_xu")
-    private XuatXu xuatXu;
+    @JsonIgnore
+    private XuatXu idXuatXu;
 
-    @Column(name = "ma_san_pham", nullable = false, unique = true, length = 50)
+    @Column(name = "ma_san_pham", nullable = false, length = 50)
     private String maSanPham;
 
-    @Column(name = "ten_san_pham", nullable = false, length = 255)
+    @Nationalized
+    @Column(name = "ten_san_pham", nullable = false)
     private String tenSanPham;
 
+    @Nationalized
     @Column(name = "mo_ta", length = 1000)
     private String moTa;
 
+    @ColumnDefault("1")
     @Column(name = "trang_thai")
-    private Integer trangThai = 1;
+    private Integer trangThai;
 
+    @ColumnDefault("getdate()")
     @Column(name = "ngay_tao")
-    private LocalDateTime ngayTao = LocalDateTime.now();
+    private Instant ngayTao;
 
+    @ColumnDefault("getdate()")
     @Column(name = "ngay_sua")
-    private LocalDateTime ngaySua = LocalDateTime.now();
+    private Instant ngaySua;
 
+    @Nationalized
     @Column(name = "bao_hanh", length = 100)
     private String baoHanh;
+
+    @OneToMany(mappedBy = "idSanPham", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("idSanPham")
+    private Set<ChiTietSanPham> chiTietSanPhams = new LinkedHashSet<>();
+
 }

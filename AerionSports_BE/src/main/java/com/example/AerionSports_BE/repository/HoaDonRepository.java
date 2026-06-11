@@ -26,37 +26,24 @@ public interface HoaDonRepository  extends JpaRepository<HoaDon, Integer> {
 
 
 
-    @Query("""
-SELECT hd
-FROM HoaDon hd
-WHERE
-
-(:keyword IS NULL OR :keyword = '' OR
-LOWER(hd.maHoaDon) LIKE LOWER(CONCAT('%', :keyword, '%'))
-OR LOWER(hd.nhanVien.tenNv) LIKE LOWER(CONCAT('%', :keyword, '%'))
-OR LOWER(hd.khachHang.hoTen) LIKE LOWER(CONCAT('%', :keyword, '%'))
-OR hd.khachHang.sdt LIKE CONCAT('%', :keyword, '%'))
-
-AND
-
-(:loaiHoaDon IS NULL OR :loaiHoaDon = ''
-OR hd.loaiHoaDon = :loaiHoaDon)
-
-AND
-
-(:trangThai IS NULL
-OR hd.trangThai = :trangThai)
-
-AND
-(:tuNgay IS NULL
-OR CAST(hd.ngayTao AS date) >= :tuNgay)
-
-AND
-
-(:denNgay IS NULL
-OR CAST(hd.ngayTao AS date) <= :denNgay)
-ORDER BY hd.id DESC
-""")
+    @Query(value = """
+    SELECT hd
+    FROM HoaDon hd
+    JOIN FETCH hd.khachHang
+    LEFT JOIN FETCH hd.nhanVien
+    WHERE
+        (:keyword IS NULL OR :keyword = '' OR
+        LOWER(hd.maHoaDon) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        OR LOWER(hd.nhanVien.tenNv) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        OR LOWER(hd.khachHang.hoTen) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        OR hd.khachHang.sdt LIKE CONCAT('%', :keyword, '%'))
+        AND (:loaiHoaDon IS NULL OR :loaiHoaDon = '' OR hd.loaiHoaDon = :loaiHoaDon)
+        AND (:trangThai IS NULL OR hd.trangThai = :trangThai)
+        AND (:tuNgay IS NULL OR CAST(hd.ngayTao AS date) >= :tuNgay)
+        AND (:denNgay IS NULL OR CAST(hd.ngayTao AS date) <= :denNgay)
+    ORDER BY hd.id DESC
+    """,
+            countQuery = "SELECT COUNT(hd) FROM HoaDon hd")
     Page<HoaDon> filterHoaDon(
             @Param("keyword") String keyword,
             @Param("loaiHoaDon") String loaiHoaDon,
