@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: BeDatn
+
+  datasource:
+    url: jdbc:sqlserver://localhost;databaseName=TEST;trustServerCertificate=true;
+    username: sa
+    password: 123456
+
+  jpa:
+    generate-ddl: true
+    defer-datasource-initialization: true
+    show-sql: true
+    hibernate:
+      ddl-auto: create
+
+  sql:
+    init:
+      mode: always
+
+  security:
+    user:
+      name: admin
+      password: 123456

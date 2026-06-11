@@ -1,0 +1,76 @@
+INSERT INTO phieu_giam_gia
+(
+    ma_phieu_giam_gia,
+    ten_phieu_giam_gia,
+    loai_phieu_giam_gia,
+    dot_luong_su_dung,
+    gia_tri_giam,
+    gia_tri_don_toi_thieu,
+    gia_tri_giam_toi_da,
+    so_luong,
+    so_luong_da_su_dung,
+    ngay_bat_dau,
+    ngay_ket_thuc,
+    trang_thai_phieu_giam_gia,
+    mo_ta,
+    ngay_tao,
+    ngay_cap_nhat,
+    trang_thai
+)
+VALUES
+    (
+        'PGG001',
+        N'Giam 10%',
+        'Sale %',
+        1,
+        10,
+        500000,
+        100000,
+        100,
+        0,
+        '2026-08-01 00:00:00',
+        '2026-08-31 23:59:59',
+        1,
+        N'Áp dụng cho đơn từ 500k',
+        GETDATE(),
+        GETDATE(),
+        1
+    ),
+
+    (
+        'PGG002',
+        N'Giam 50K',
+        'Free Ship',
+        1,
+        50000,
+        300000,
+        NULL,
+        200,
+        0,
+        '2026-08-01 00:00:00',
+        '2026-09-30 23:59:59',
+        1,
+        N'Giam truc tiep 50.000 VNĐ',
+        GETDATE(),
+        GETDATE(),
+        1
+    ),
+
+    (
+        'PGG003',
+        N'Voucher khai truong',
+        'Sale %',
+        1,
+        100000,
+        1000000,
+        NULL,
+        50,
+        5,
+        '2026-08-01 00:00:00',
+        '2026-12-31 23:59:59',
+        1,
+        N'Giam 100K cho don tu 1 trieu',
+        GETDATE(),
+        GETDATE(),
+        1
+    );
