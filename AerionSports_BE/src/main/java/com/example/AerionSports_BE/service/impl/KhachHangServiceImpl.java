@@ -1,10 +1,12 @@
 package com.example.AerionSports_BE.service.impl;
 
 import com.example.AerionSports_BE.entity.KhachHang;
+import com.example.AerionSports_BE.entity.DiaChiKhachHang;
 import com.example.AerionSports_BE.repository.KhachHangRepository;
 import com.example.AerionSports_BE.service.KhachHangService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,22 +30,20 @@ public class KhachHangServiceImpl implements KhachHangService {
     }
 
     @Override
+    @Transactional // Đảm bảo an toàn dữ liệu khi lưu nhiều bảng cùng lúc
     public KhachHang add(KhachHang khachHang) {
 
-        // --- ĐOẠN ĐƯỢC SỬA: LOGIC TỰ TĂNG MÃ KHÁCH HÀNG TUẦN TỰ ---
+        // --- LOGIC TỰ TĂNG MÃ KHÁCH HÀNG TUẦN TỰ ---
         if (khachHang.getMaKhachHang() == null || khachHang.getMaKhachHang().trim().isEmpty()) {
-            // Tìm khách hàng có ID lớn nhất vừa được thêm vào hệ thống
             Optional<KhachHang> maxIdCustomer = khachHangRepository.findAll()
                     .stream()
                     .max((kh1, kh2) -> kh1.getId().compareTo(kh2.getId()));
 
-            int nextId = 1; // Nếu chưa có khách hàng nào, mặc định bắt đầu từ 1
+            int nextId = 1;
             if (maxIdCustomer.isPresent()) {
-                nextId = maxIdCustomer.get().getId() + 1; // Nếu có rồi thì lấy ID đó cộng thêm 1
+                nextId = maxIdCustomer.get().getId() + 1;
             }
 
-            // Định dạng chuỗi: KH + số thứ tự (ví dụ số 6 thành "KH006", số 15 thành "KH015")
-            // Số 3 ở "%03d" nghĩa là mã sẽ hiển thị tối thiểu 3 chữ số
             String maTuTang = String.format("KH%03d", nextId);
             khachHang.setMaKhachHang(maTuTang);
         }
@@ -67,10 +67,20 @@ public class KhachHangServiceImpl implements KhachHangService {
         khachHang.setNgayTao(LocalDateTime.now());
         khachHang.setNgayCapNhat(LocalDateTime.now());
 
+        // --- ĐOẠN MỚI CẬP NHẬT: Thiết lập mối quan hệ Khóa Ngoại cho danh sách địa chỉ ---
+        if (khachHang.getAddresses() != null) {
+            for (DiaChiKhachHang addr : khachHang.getAddresses()) {
+                addr.setKhachHang(khachHang); // Gắn thực thể khách hàng vào từng địa chỉ con
+                addr.setNgayTao(LocalDateTime.now());
+                addr.setNgayCapNhat(LocalDateTime.now());
+            }
+        }
+
         return khachHangRepository.save(khachHang);
     }
 
     @Override
+    @Transactional // Đảm bảo dọn dẹp và cập nhật địa chỉ cũ/mới đồng bộ dưới DB
     public KhachHang update(Integer id, KhachHang khachHang) {
 
         KhachHang oldKhachHang = getById(id);
@@ -95,7 +105,6 @@ public class KhachHangServiceImpl implements KhachHangService {
         // Không cho mất mã khách hàng
         if (khachHang.getMaKhachHang() != null &&
                 !khachHang.getMaKhachHang().trim().isEmpty()) {
-
             oldKhachHang.setMaKhachHang(khachHang.getMaKhachHang());
         }
 
@@ -123,12 +132,28 @@ public class KhachHangServiceImpl implements KhachHangService {
             oldKhachHang.setAvatar(khachHang.getAvatar());
         }
 
-        if (khachHang.getDiaChi() != null) {
-            oldKhachHang.setDiaChi(khachHang.getDiaChi());
-        }
-
         if (khachHang.getTrangThai() != null) {
             oldKhachHang.setTrangThai(khachHang.getTrangThai());
+        }
+
+        // --- ĐOẠN MỚI CẬP NHẬT: Đồng bộ mảng danh sách địa chỉ ---
+        // 1. Xóa các liên kết địa chỉ cũ trong phiên làm việc hiện tại
+        oldKhachHang.getAddresses().clear();
+
+        // 2. Map lại toàn bộ danh sách địa chỉ mới gửi lên từ Front-end
+        if (khachHang.getAddresses() != null) {
+            for (DiaChiKhachHang addr : khachHang.getAddresses()) {
+                addr.setKhachHang(oldKhachHang); // Trỏ khóa ngoại về khách hàng hiện tại
+
+                // Nếu là địa chỉ mới thêm từ giao diện (chưa có id dưới DB)
+                if (addr.getId() == null || String.valueOf(addr.getId()).startsWith("NEW_")) {
+                    addr.setId(null); // Reset lại null để SQL tự sinh IDENTITY tăng dần
+                    addr.setNgayTao(LocalDateTime.now());
+                }
+
+                addr.setNgayCapNhat(LocalDateTime.now());
+                oldKhachHang.getAddresses().add(addr); // Nạp vào list quản lý của KhachHang
+            }
         }
 
         oldKhachHang.setNgayCapNhat(LocalDateTime.now());

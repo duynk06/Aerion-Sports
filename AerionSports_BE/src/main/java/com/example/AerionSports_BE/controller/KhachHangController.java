@@ -1,6 +1,7 @@
 package com.example.AerionSports_BE.controller;
 
 import com.example.AerionSports_BE.entity.KhachHang;
+
 import com.example.AerionSports_BE.service.KhachHangService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -10,15 +11,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/public/khach-hang")
-@CrossOrigin(
-        origins = "http://localhost:5173",
-        allowedHeaders = "*",
-        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS}
-)
+@CrossOrigin("*")
 public class KhachHangController {
 
     @Autowired
     private KhachHangService khachHangService;
+
+
 
     @GetMapping("/hien-thi")
     public ResponseEntity<List<KhachHang>> getAll() {
@@ -27,29 +26,42 @@ public class KhachHangController {
         return ResponseEntity.ok(list);
     }
 
-    // ĐÃ SỬA: Thêm :\\d+ để chỉ chấp nhận ID là số, tránh nuốt mất request /add hoặc các request dạng chữ khác
     @GetMapping("/{id:\\d+}")
     public ResponseEntity<KhachHang> getById(@PathVariable Integer id) {
         return ResponseEntity.ok(khachHangService.getById(id));
     }
 
     @PostMapping("/add")
-    public ResponseEntity<KhachHang> add(@RequestBody KhachHang khachHang) {
-        return ResponseEntity.ok(khachHangService.add(khachHang));
+    public ResponseEntity<?> add(@RequestBody KhachHang khachHang) {
+        try {
+            // Bọc try-catch để nếu trùng mã, trùng SĐT, trùng Email thì Vue nhận được thông báo lỗi trực quan
+            KhachHang savedKhachHang = khachHangService.add(khachHang);
+            return ResponseEntity.ok(savedKhachHang);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
-    // ĐÃ SỬA: Thêm :\\d+ tương tự để đồng bộ và an toàn hơn
     @PutMapping("/update/{id:\\d+}")
-    public ResponseEntity<KhachHang> update(
+    public ResponseEntity<?> update(
             @PathVariable Integer id,
             @RequestBody KhachHang khachHang) {
-        return ResponseEntity.ok(khachHangService.update(id, khachHang));
+        try {
+            // Đồng bộ xử lý lỗi ràng buộc cho hàm cập nhật
+            KhachHang updatedKhachHang = khachHangService.update(id, khachHang);
+            return ResponseEntity.ok(updatedKhachHang);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
-    // ĐÃ SỬA: Thêm :\\d+ tương tự để đồng bộ và an toàn hơn
     @DeleteMapping("/delete/{id:\\d+}")
     public ResponseEntity<String> delete(@PathVariable Integer id) {
-        khachHangService.delete(id);
-        return ResponseEntity.ok("Xóa khách hàng thành công");
+        try {
+            khachHangService.delete(id);
+            return ResponseEntity.ok("Xóa khách hàng thành công");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }
