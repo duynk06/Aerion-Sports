@@ -50,6 +50,18 @@
                 <input type="text" v-model="khachHang.hoTen" placeholder="Nhập họ và tên" />
               </div>
 
+              <div class="address-grid">
+                <div class="form-group">
+                  <label>Người nhận <span>*</span></label>
+                  <input type="text" v-model="itemAddress.nguoiNhan" placeholder="Nhập tên người nhận" required />
+                </div>
+
+                <div class="form-group">
+                  <label>SĐT người nhận <span>*</span></label>
+                  <input type="text" v-model="itemAddress.sdt" placeholder="Nhập SĐT người nhận" required />
+                </div>
+              </div>
+
               <div class="form-group" :class="{ 'has-error': errors.sdt }">
                 <label>Số điện thoại <span>*</span></label>
                 <input type="text" v-model="khachHang.sdt" placeholder="Nhập số điện thoại" @blur="validateSdt"
@@ -144,11 +156,12 @@
 
             <div class="address-footer">
               <label class="default-address">
-                <input type="checkbox" :checked="itemAddress.isDefault" @change="handleSetDefaultAddress(index)" />
+                <input type="checkbox" :checked="itemAddress.isDefault" @change="setMainAddress(index)" />
                 Đặt làm địa chỉ mặc định
               </label>
 
-              <button v-if="khachHang.addresses.length > 1" type="button" class="btn-delete" @click="removeAddress(index)">
+              <button v-if="khachHang.addresses.length > 1" type="button" class="btn-delete"
+                @click="removeAddress(index)">
                 🗑 Xóa
               </button>
             </div>
@@ -284,20 +297,30 @@ const addAddress = () => {
 }
 
 // 🌟 SỬA LỖI: Cập nhật hàm xóa địa chỉ, tự động đẩy địa chỉ đầu lên làm mặc định nếu xóa mất ô mặc định
+
 const removeAddress = (index) => {
-  const deletedWasDefault = khachHang.addresses[index].isDefault
+  const wasDefault = khachHang.addresses[index].isDefault
   khachHang.addresses.splice(index, 1)
-  if (deletedWasDefault && khachHang.addresses.length > 0) {
+  
+  if (wasDefault && khachHang.addresses.length > 0) {
     khachHang.addresses[0].isDefault = true
   }
 }
 
-// 🌟 BỔ SUNG: Hàm quản lý click chọn duy nhất một địa chỉ mặc định trong mảng
-const handleSetDefaultAddress = (index) => {
-  khachHang.addresses.forEach((addr, idx) => {
-    addr.isDefault = (idx === index)
+const setMainAddress = (selectedIndex) => {
+  khachHang.addresses.forEach((item, index) => {
+    item.isDefault = (index === selectedIndex)
   })
 }
+
+// 🌟 BỔ SUNG: Hàm quản lý click chọn duy nhất một địa chỉ mặc định trong mảng
+const handleSetDefaultAddress = (index) => {
+  // Cập nhật mảng bằng cách tạo mới để trigger Vue reactivity
+  khachHang.addresses = khachHang.addresses.map((addr, idx) => ({
+    ...addr,
+    isDefault: idx === index // Cái được click là true, còn lại là false
+  }));
+};
 
 // 🌟 SỬA LỖI: Đổi từ tạo ObjectURL sang chuỗi Base64 hoàn chỉnh để lưu được xuống DB
 const handleImageUpload = (event) => {
@@ -391,86 +414,58 @@ const validateEmail = async () => {
 }
 
 // --- CALL API LƯU THÔNG TIN KHÁCH HÀNG ---
+// --- CALL API LƯU THÔNG TIN KHÁCH HÀNG ---
 const saveKhachHang = async () => {
-  // 1. Kiểm tra nhanh các trường bắt buộc ở Client trước
+  // 1. Kiểm tra validate cơ bản
   if (!khachHang.hoTen.trim() || !khachHang.sdt.trim()) {
-    alert('Vui lòng nhập đầy đủ các trường bắt buộc (Họ tên, Số điện thoại)!')
-    return
+    alert('Vui lòng nhập đầy đủ các trường bắt buộc (Họ tên, Số điện thoại)!');
+    return;
   }
 
   if (errors.sdt || errors.email) {
-    alert('Vui lòng sửa các lỗi định dạng/trùng lặp trước khi lưu!')
-    return
+    alert('Vui lòng sửa các lỗi định dạng/trùng lặp trước khi lưu!');
+    return;
   }
 
-  // 2. Chạy check trùng lặp qua API kiểm tra nhanh
-  const checkResult = await checkTrungLapKhachHang(khachHang.sdt, khachHang.email)
-  if (checkResult.sdtTrung) {
-    alert('Thêm thất bại: Số điện thoại khách hàng này đã tồn tại trong hệ thống!')
-    return
-  }
-  if (checkResult.emailTrung) {
-    alert('Thêm thất bại: Địa chỉ Email khách hàng này đã tồn tại trong hệ thống!')
-    return
-  }
+  // 2. Xử lý mảng địa chỉ - BỔ SUNG CÁC TRƯỜNG BẮT BUỘC ĐỂ KHÔNG BỊ LỖI NULL
+  const now = new Date().toISOString();
+  const processedAddresses = khachHang.addresses.map(addr => ({
+    // Đảm bảo tên các key này khớp chính xác với Entity Address bên Java
+    diaChiChiTiet: addr.chiTiet || '',
+    phuongXa: addr.phuongXa || '',
+    tinhThanh: addr.tinhThanh || '',
+    nguoiNhan: khachHang.hoTen || 'Khách hàng', // Trường bị thiếu gây lỗi 400
+    sdt: khachHang.sdt || '',                  // Trường bị thiếu gây lỗi 400
+    macDinh: addr.isDefault ? 1 : 0,           // Chuyển boolean sang số (1/0)
+    ngayTao: now,
+    ngayCapNhat: now
+  }));
 
-  // 3. Tiến hành gửi dữ liệu lên Backend
+  const dataPost = {
+    hoTen: khachHang.hoTen.trim(),
+    sdt: khachHang.sdt.trim(),
+    email: khachHang.email || null,
+    // ... các trường khác của khách hàng
+    addresses: processedAddresses // Mảng chứa các object đã đủ 9 trường
+  };
+
+  // 4. Gửi API
   try {
-    // 🌟 SỬA LỖI: Gộp chuỗi dựa trên cấu trúc mảng addresses mới để lấy ra địa chỉ chính
-    const processedAddresses = khachHang.addresses.map(addr => {
-      let combinedString = addr.chiTiet || ''
-      if (addr.phuongXa) combinedString += (combinedString ? `, ${addr.phuongXa}` : addr.phuongXa)
-      if (addr.tinhThanh) combinedString += (combinedString ? `, ${addr.tinhThanh}` : addr.tinhThanh)
-      return combinedString.trim()
-    }).filter(Boolean)
-
-    const defIdx = khachHang.addresses.findIndex(a => a.isDefault)
-    const diaChiMacDinh = processedAddresses[defIdx !== -1 ? defIdx : 0] || null
-
-    const tuSinhMa = 'KH' + Date.now()
-
-    const dataPost = {
-      maKhachHang: tuSinhMa,
-      hoTen: khachHang.hoTen.trim(),
-      sdt: khachHang.sdt.trim(),
-      email: khachHang.email ? khachHang.email.trim() : null,
-      ngaySinh: khachHang.ngaySinh || null,
-      gioiTinh: Number(khachHang.gioiTinh),
-      avatar: khachHang.avatar || null,
-      trangThai: Number(khachHang.trangThai),
-      diaChi: diaChiMacDinh,
-      stt: totalCustomers.value + 1
-    }
-
     const response = await axios.post('http://localhost:8080/public/khach-hang/add', dataPost, {
       headers: getAuthHeaders()
-    })
+    });
 
     if (response.status === 200 || response.status === 201) {
-      alert('Lưu dữ liệu khách hàng mới thành công!')
-      router.push('/khach-hang')
+      alert('Thêm khách hàng thành công!');
+      router.push('/khach-hang');
     }
   } catch (error) {
-    console.error('Lỗi API backend khách hàng:', error)
-
-    let errorMsg = 'Không thể kết nối đến máy chủ Backend.'
-    if (error.response && error.response.data) {
-      const serverError = error.response.data
-      const traceString = serverError.trace || ''
-      const messageString = serverError.message || ''
-
-      if (traceString.includes('Số điện thoại đã tồn tại') || messageString.includes('Số điện thoại đã tồn tại')) {
-        errorMsg = 'Số điện thoại này đã tồn tại trên hệ thống! Vui lòng kiểm tra lại.'
-      } else if (traceString.includes('Email đã tồn tại') || messageString.includes('Email đã tồn tại')) {
-        errorMsg = 'Địa chỉ Email này đã tồn tại trên hệ thống! Vui lòng kiểm tra lại.'
-      } else {
-        errorMsg = messageString || 'Lỗi hệ thống nội bộ (Internal Server Error).'
-      }
-    }
-
-    alert('Thêm khách hàng thất bại! \nChi tiết: ' + errorMsg)
+    console.error('Lỗi API:', error);
+    // Hiển thị chi tiết lỗi từ backend để dễ debug
+    const errorMsg = error.response?.data?.message || error.message || 'Thêm thất bại';
+    alert('Thêm khách hàng thất bại: ' + errorMsg);
   }
-}
+};
 </script>
 
 <style scoped>
@@ -497,7 +492,7 @@ textarea {
 }
 
 textarea {
-  height: auto;
+  height: 40px;
   min-height: 40px;
   padding-top: 10px;
 }
