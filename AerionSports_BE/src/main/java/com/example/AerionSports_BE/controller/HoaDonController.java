@@ -12,7 +12,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.util.List;
 
-@CrossOrigin("http://localhost:5173")
+@CrossOrigin("*")
 @RestController
 @RequestMapping("/hoa-don")
 public class HoaDonController {
