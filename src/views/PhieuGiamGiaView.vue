@@ -16,8 +16,8 @@
             <label>Trạng thái:</label>
             <select v-model="trangThai">
               <option value="">Tất cả</option>
-              <option value="1">Hết hạn</option>
-              <option value="0">Còn hạn</option>
+              <option value="1">Hoạt động</option>
+              <option value="0">Ngừng hoạt động</option>
             </select>
           </div>
           <div class="form-group">
@@ -56,19 +56,7 @@
           Thêm mới
         </button>
       </div>
-      <div class="status-tabs">
-        <button :class="{ active: loaiGiam === '' }" @click="loaiGiam = ''">
-          Tất cả
-        </button>
 
-        <button :class="{ active: loaiGiam === 'Sale %' }" @click="loaiGiam = 'Sale %'">
-          Sale %
-        </button>
-
-        <button :class="{ active: loaiGiam === 'Free Ship' }" @click="loaiGiam = 'Free Ship'">
-          Free Ship
-        </button>
-      </div>
       <table>
         <thead>
           <tr>
@@ -108,20 +96,29 @@
 
             <td>
               <span class="status" :class="{
-                active: getTrangThai(phieu),
-                inactive: !getTrangThai(phieu)
+                inactive: phieu.trangThai === 0,
+                active: phieu.trangThai === 1
               }">
-                {{ getTrangThai(phieu) ? 'Hết hạn' : 'Còn hạn' }}
+                {{ phieu.trangThai === 1 ? 'Hoạt động' : 'Ngừng hoạt động' }}
               </span>
             </td>
 
             <td>
+              <button
+  class="action-btn view-btn"
+  @click="router.push(`/phieu-giam-gia/xem/${phieu.id}`)"
+>
+  👁️
+</button>
+
               <button class="action-btn edit-btn" @click="router.push(`/phieu-giam-gia/sua/${phieu.id}`)">
                 ✏️
               </button>
 
-              <button class="action-btn delete-btn" @click="handleDelete(phieu.id)">
-                🗑️
+              <button class="action-btn toggle-btn" @click="handleToggle(phieu)">
+                <i :class="phieu.trangThai
+                  ? 'fa-solid fa-toggle-on'
+                  : 'fa-solid fa-toggle-off'"></i>
               </button>
             </td>
           </tr>
@@ -148,7 +145,7 @@
 import MainLayout from '../layouts/MainLayout.vue'
 import {
   fetchAllPhieuGiamGia,
-  deletePhieuGiamGia
+  updatePhieuGiamGia
 } from '@/service/PhieuGiamGiaService'
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
@@ -180,8 +177,18 @@ const handleFetchAllData = async () => {
     listPhieuGiamGia.value = []
   }
 }
+
 const getTrangThai = (phieu) => {
-  return new Date() > new Date(phieu.ngayKetThuc)
+  return phieu.trangThai === 1
+}
+const handleToggle = async (phieu) => {
+  const data = {
+    ...phieu,
+    trangThai: phieu.trangThai === 1 ? 0 : 1
+  }
+
+  await updatePhieuGiamGia(phieu.id, data)
+  await handleFetchAllData()
 }
 const handleResetFilter = () => {
   keyword.value = ''
@@ -236,13 +243,9 @@ const filteredPhieuGiamGia = computed(() => {
       !loaiGiam.value ||
       phieu.loaiPhieuGiamGia === loaiGiam.value
 
-    let matchTrangThai = true
-
-    if (trangThai.value === '1') {
-      matchTrangThai = getTrangThai(phieu)
-    } else if (trangThai.value === '0') {
-      matchTrangThai = !getTrangThai(phieu)
-    }
+    const matchTrangThai =
+      trangThai.value === '' ||
+      phieu.trangThai === Number(trangThai.value)
 
     const matchTuNgay =
       !tuNgay.value ||
@@ -326,12 +329,12 @@ td {
 }
 
 .status.active {
-  background: #da3131;
+  background: #2bae1f;
   color: white;
 }
 
 .status.inactive {
-  background: #0cab1b;
+  background: #e84444;
   color: white;
 }
 
@@ -536,5 +539,29 @@ tbody td {
 .pagination button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.action-btn {
+  border: none;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin: 0 3px;
+}
+
+.view-btn {
+  background: #3b82f6;
+  color: white;
+}
+
+.edit-btn {
+  background: #f59e0b;
+  color: white;
+}
+
+.toggle-btn {
+  height: 33px;
+  background: #10b981;
+  color: white;
 }
 </style>

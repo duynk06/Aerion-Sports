@@ -34,6 +34,10 @@ const routes = [
     name: 'SuaPhieuGiamGia',
     component: () => import('@/views/SuaPhieuGiamGia.vue')
   },
+  {
+    path: '/phieu-giam-gia/xem/:id',
+    component: () => import('@/views/ViewPhieuGiamGia.vue')
+  },
   { path: '/dot-giam-gia', component: DotGiamGia },
   { path: '/nhan-vien', component: NhanVien },
   { path: '/khach-hang', component: KhachHang }
