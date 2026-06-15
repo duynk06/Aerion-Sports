@@ -12,20 +12,21 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.util.List;
-
 @Service
 public class HoaDonServiceImpl implements HoaDonService {
 
     @Autowired
     private HoaDonRepository hoaDonRepository;
+
     @Override
     public List<HoaDonResponse> hienThi() {
         return hoaDonRepository
                 .findAll()
                 .stream()
-                .map(HoaDonResponse :: new)
+                .map(HoaDonResponse::new)
                 .toList();
     }
+
     @Override
     public List<HoaDonResponse> search(String keyword) {
         return hoaDonRepository.search(keyword)
@@ -34,20 +35,18 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .toList();
     }
 
-
     @Override
     public Page<HoaDonResponse> filterHoaDon(
             String keyword,
-            String loaiHoaDon,
+            Integer loaiHoaDon, // Đã đổi từ String sang Integer
             Integer trangThai,
             LocalDate tuNgay,
             LocalDate denNgay,
             int page,
             int size
     ) {
-
-        Pageable pageable =
-                PageRequest.of(page, size);
+        // Sử dụng Pageable với tham số page và size
+        Pageable pageable = PageRequest.of(page, size);
 
         return hoaDonRepository
                 .filterHoaDon(
@@ -60,15 +59,12 @@ public class HoaDonServiceImpl implements HoaDonService {
                 )
                 .map(HoaDonResponse::new);
     }
+
     @Override
     public HoaDonResponse detail(Integer id) {
-
-        HoaDon hoaDon =
-                hoaDonRepository
-                        .findById(id)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Không tìm thấy hóa đơn"));
+        HoaDon hoaDon = hoaDonRepository
+                .findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn với ID: " + id));
 
         return new HoaDonResponse(hoaDon);
     }

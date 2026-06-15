@@ -45,7 +45,7 @@ public class HoaDon {
     private String maHoaDon;
 
     @Column(name = "loai_hoa_don", length = 50)
-    private String loaiHoaDon;
+    private Integer loaiHoaDon;
 
     @Column(name = "ten_nguoi_nhan", length = 255)
     private String tenNguoiNhan;

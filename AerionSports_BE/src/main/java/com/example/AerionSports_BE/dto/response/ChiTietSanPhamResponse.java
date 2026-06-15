@@ -15,7 +15,7 @@ import java.time.Instant;
 public class ChiTietSanPhamResponse {
     private Integer id;
     private Integer idSanPham;
-    private String tenSanPham;
+    private String maSanPham;
     private String maCtsp;
     private String tenMauSac;
     private String tenTrongLuong;
@@ -31,4 +31,7 @@ public class ChiTietSanPhamResponse {
     private Integer trangThai;
     private Instant ngayTao;
     private Instant ngayCapNhat;
+    private String hinhAnh;
+    private BigDecimal giaDaGiam;
+    private BigDecimal phanTramGiam;
 }

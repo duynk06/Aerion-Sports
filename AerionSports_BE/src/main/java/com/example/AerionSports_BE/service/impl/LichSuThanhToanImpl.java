@@ -1,9 +1,8 @@
 package com.example.AerionSports_BE.service.impl;
 
+import com.example.AerionSports_BE.dto.response.LichSuThanhToanResponse;
 import com.example.AerionSports_BE.entity.LichSuThanhToan;
 import com.example.AerionSports_BE.repository.LichSuThanhToanRepository;
-import com.example.AerionSports_BE.dto.response.LichSuHoaDonResponse;
-import com.example.AerionSports_BE.dto.response.LichSuThanhToanResponse;
 import com.example.AerionSports_BE.service.LichSuThanhToanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

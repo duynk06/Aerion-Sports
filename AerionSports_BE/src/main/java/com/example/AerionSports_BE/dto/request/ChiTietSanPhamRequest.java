@@ -1,5 +1,6 @@
 package com.example.AerionSports_BE.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -10,6 +11,7 @@ import java.math.BigDecimal;
 
 @Setter
 @Getter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ChiTietSanPhamRequest {
     @NotNull(message = "Sản phẩm cha không được để trống")
     private Integer idSanPham;

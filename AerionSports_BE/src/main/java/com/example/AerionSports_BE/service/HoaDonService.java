@@ -1,31 +1,27 @@
 package com.example.AerionSports_BE.service;
 
 import com.example.AerionSports_BE.dto.response.HoaDonResponse;
-import com.example.AerionSports_BE.entity.HoaDon;
-import com.example.AerionSports_BE.repository.HoaDonRepository;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
 
-
 public interface HoaDonService {
 
+    List<HoaDonResponse> hienThi();
 
-
-    public List<HoaDonResponse> hienThi();
     List<HoaDonResponse> search(String keyword);
+
+    // Đã cập nhật loaiHoaDon từ String sang Integer để khớp với DB
     Page<HoaDonResponse> filterHoaDon(
             String keyword,
-            String loaiHoaDon,
+            Integer loaiHoaDon,
             Integer trangThai,
             LocalDate tuNgay,
             LocalDate denNgay,
             int page,
             int size
     );
+
     HoaDonResponse detail(Integer id);
 }

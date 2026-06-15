@@ -102,4 +102,8 @@ public class ChiTietSanPham {
     @ColumnDefault("1")
     @Column(name = "trang_thai")
     private Integer trangThai;
+
+    @jakarta.persistence.OneToMany(mappedBy = "idSanPhamChiTiet", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private java.util.List<HinhAnhSp> hinhAnhs;
 }

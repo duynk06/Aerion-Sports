@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -35,6 +36,8 @@ public class DotGiamGiaService {
     private final ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
     private final ChiTietSanPhamRepository chiTietSanPhamRepository;
     private static final int TRANG_THAI_DANG_DIEN_RA = 2;
+    // Khai báo ZoneId Việt Nam dùng chung toàn hệ thống Service
+    private static final ZoneId ZONE_VIETNAM = ZoneId.of("Asia/Ho_Chi_Minh");
 
     public Page<DotGiamGiaDTO> getDanhSach(
             String keyword,
@@ -143,8 +146,11 @@ public class DotGiamGiaService {
             throw new IllegalArgumentException("ID sản phẩm chi tiết không được để trống");
         }
 
+        // ⚡ ĐÃ SỬA: Ép cứng múi giờ Việt Nam khi quét đợt giảm giá cao nhất tránh lệch giờ RAM dữ liệu
+        LocalDateTime gioHienTaiVN = LocalDateTime.now(ZONE_VIETNAM);
+
         List<ChiTietDotGiamGia> activeDiscounts =
-                chiTietDotGiamGiaRepository.findBestActiveByChiTietSanPhamId(chiTietSanPhamId, LocalDateTime.now());
+                chiTietDotGiamGiaRepository.findBestActiveByChiTietSanPhamId(chiTietSanPhamId, gioHienTaiVN);
 
         if (activeDiscounts.isEmpty()) {
             return null;
@@ -160,7 +166,8 @@ public class DotGiamGiaService {
     }
 
     private Integer calculateTrangThai(LocalDateTime ngayBatDau, LocalDateTime ngayKetThuc) {
-        LocalDateTime now = LocalDateTime.now();
+        // ⚡ ĐÃ SỬA: Ép giờ Việt Nam khi chạy tính trạng thái lưu xuống database
+        LocalDateTime now = LocalDateTime.now(ZONE_VIETNAM);
         if (ngayBatDau != null && now.isBefore(ngayBatDau)) {
             return 1;
         }
@@ -284,7 +291,8 @@ public class DotGiamGiaService {
     }
 
     private LocalDateTime currentMinute() {
-        return LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+        // ⚡ ĐÃ SỬA: Ép cứng múi giờ Việt Nam khi so sánh phút để chặn lỗi validate ngược giờ
+        return LocalDateTime.now(ZONE_VIETNAM).truncatedTo(ChronoUnit.MINUTES);
     }
 
     private boolean isSameMinute(LocalDateTime left, LocalDateTime right) {
@@ -410,4 +418,3 @@ public class DotGiamGiaService {
         return dto;
     }
 }
-

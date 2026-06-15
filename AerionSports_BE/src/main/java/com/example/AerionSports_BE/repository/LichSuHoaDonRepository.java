@@ -9,6 +9,11 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface LichSuHoaDonRepository extends JpaRepository<LichSuHoaDon, Integer> {
-    List<LichSuHoaDon> findByHoaDon_IdOrderByThoiGianHanhDongDesc(Integer idHoaDon);
+public interface LichSuHoaDonRepository
+        extends JpaRepository<LichSuHoaDon, Integer> {
+
+    List<LichSuHoaDon>
+    findByHoaDon_IdOrderByThoiGianHanhDongDesc(
+            Integer idHoaDon
+    );
 }
