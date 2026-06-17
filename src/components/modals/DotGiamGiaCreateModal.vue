@@ -71,7 +71,7 @@
 
             <div class="create-summary">
               <strong>Sản phẩm đã chọn:</strong>
-              <span>{{ selectedProductsCount }} sản phẩm</span>
+              <span>{{ selectedProductsCount }} biến thể</span>
             </div>
 
             <p v-if="errorMessage" class="create-error">{{ errorMessage }}</p>
@@ -102,79 +102,89 @@
           </div>
 
           <div class="product-meta">
-            <span>Đã chọn {{ selectedProductsCount }} sản phẩm</span>
+            <span>Hiển thị {{ visibleProducts.length }} dòng sản phẩm cha</span>
           </div>
 
           <div class="product-table-wrap">
             <table class="product-table">
               <thead>
                 <tr>
-                  <th scope="col">
+                  <th style="width: 50px; text-align: center;">#</th>
+                  <th style="width: 40px; text-align: center;">
                     <input
                       type="checkbox"
-                      :checked="isAllVisibleSelected"
+                      :checked="isAllVisibleGroupSelected"
                       :disabled="!visibleProducts.length"
-                      @change="$emit('toggle-select-all-visible')"
+                      @change="toggleSelectAllVisibleGroups"
                     />
                   </th>
-                  <th scope="col">STT</th>
-                  <th scope="col">Mã CTSP</th>
-                  <th scope="col">Tên sản phẩm</th>
-                  <th scope="col">Giá bán</th>
-                  <th scope="col">Số lượng</th>
+                  <th style="width: 140px; text-align: left;">Mã Sản Phẩm</th>
+                  <th style="text-align: left;">Tên sản phẩm / Biến thể thuộc tính</th>
                 </tr>
               </thead>
 
               <tbody>
                 <tr v-if="productLoading">
-                  <td colspan="6" class="state-cell">Đang tải sản phẩm...</td>
+                  <td colspan="4" class="state-cell">Đang tải cấu trúc sản phẩm...</td>
                 </tr>
-
                 <tr v-else-if="productError">
-                  <td colspan="6" class="state-cell error-cell">{{ productError }}</td>
+                  <td colspan="4" class="state-cell error-cell">{{ productError }}</td>
+                </tr>
+                <tr v-else-if="!visibleProducts.length">
+                  <td colspan="4" class="state-cell">Không có sản phẩm phù hợp</td>
                 </tr>
 
-                <template v-else-if="visibleProducts.length">
-                  <tr v-for="(product, index) in visibleProducts" :key="product.idChiTietSanPham">
-                    <td>
+                <template v-else v-for="(spCha, index) in visibleProducts" :key="spCha.idSanPhamCha">
+                  <tr class="parent-row-tr">
+                    <td style="text-align: center;">
+                      <button type="button" class="btn-toggle-accordion" @click="toggleGroupExpand(spCha.idSanPhamCha)">
+                        <i :class="['fa-solid', expandedGroupIds.includes(spCha.idSanPhamCha) ? 'fa-minus' : 'fa-plus']"></i>
+                      </button>
+                    </td>
+                    <td style="text-align: center;">
                       <input
                         type="checkbox"
-                        :checked="selectedProductIds.includes(product.idChiTietSanPham)"
-                        @change="$emit('toggle-product-selection', product)"
+                        :checked="isAllChildrenSelected(spCha)"
+                        @change="toggleSelectAllChildren($event, spCha)"
                       />
                     </td>
-                    <td>{{ productPage * productPageSize + index + 1 }}</td>
-                    <td>{{ product.maCtsp || product.maSanPham || '-' }}</td>
-                    <td>{{ product.tenSanPham || '-' }}</td>
-                    <td>{{ formatMoney(product.giaBan) }}</td>
-                    <td>{{ product.soLuong ?? product.soLuongTon ?? '-' }}</td>
+                    <td style="text-align: left; font-weight: bold; color: #475569;">{{ spCha.maSanPham || '-' }}</td>
+                    <td style="text-align: left; font-weight: 600;">{{ spCha.tenSanPham || '-' }}</td>
                   </tr>
-                </template>
 
-                <tr v-else>
-                  <td colspan="6" class="state-cell">Không có sản phẩm phù hợp</td>
-                </tr>
+                  <template v-if="expandedGroupIds.includes(spCha.idSanPhamCha)">
+                    <tr v-for="btCon in spCha.mangBienTheCon" :key="btCon.idChiTietSanPham" class="child-row-tr">
+                      <td></td>
+                      <td style="text-align: center;">
+                        <input
+                          type="checkbox"
+                          :checked="selectedProductIds.includes(btCon.idChiTietSanPham)"
+                          @change="$emit('toggle-product-selection', btCon)"
+                        />
+                      </td>
+                      <td style="text-align: left; padding-left: 20px;" class="product-code-text">{{ btCon.maCtsp }}</td>
+                      <td style="text-align: left;">
+                        <div class="child-variant-details-flex">
+                          <span class="variant-spec-label">Màu: {{ btCon.tenMauSac || 'Mặc định' }}</span>
+                          <span class="variant-spec-label">Size: {{ btCon.tenTrongLuong || 'Mặc định' }}</span>
+                          <span class="variant-spec-label" v-if="btCon.tenDoCung">Độ cứng: {{ btCon.tenDoCung }}</span>
+                          <span class="variant-spec-price">{{ formatMoney(btCon.giaBan) }}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  </template>
+                </template>
               </tbody>
             </table>
           </div>
 
           <div class="pagination">
             <div class="page-center">
-              <button
-                type="button"
-                @click="$emit('prev-product-page')"
-                :disabled="productPage === 0"
-              >
+              <button type="button" @click="$emit('prev-product-page')" :disabled="productPage === 0">
                 <i class="fa-solid fa-chevron-left"></i>
               </button>
-
               <span>Trang {{ productPage + 1 }} / {{ productTotalPagesDisplay }}</span>
-
-              <button
-                type="button"
-                @click="$emit('next-product-page')"
-                :disabled="productPage + 1 >= productTotalPages"
-              >
+              <button type="button" @click="$emit('next-product-page')" :disabled="productPage + 1 >= productTotalPages">
                 <i class="fa-solid fa-chevron-right"></i>
               </button>
             </div>
@@ -184,11 +194,8 @@
 
       <section v-if="selectedProductDetails.length" class="selected-details">
         <div class="selected-details-header">
-          <h4>Chi tiết sản phẩm đã chọn</h4>
-          <span
-            >{{ filteredSelectedProducts.length }} / {{ selectedProductDetails.length }} sản
-            phẩm</span
-          >
+          <h4>Chi tiết sản phẩm đã chọn áp dụng ({{ filteredSelectedProducts.length }} biến thể)</h4>
+          <span>{{ filteredSelectedProducts.length }} / {{ selectedProductDetails.length }} sản phẩm</span>
         </div>
 
         <div class="selected-filter-bar">
@@ -274,7 +281,7 @@
                 <th scope="col">Trọng lượng</th>
                 <th scope="col">Độ cứng</th>
                 <th scope="col">Điểm cân bằng</th>
-                <th scope="col">Chất liệu than</th>
+                <th scope="col">Chất liệu thân</th>
                 <th scope="col">Chất liệu khung</th>
                 <th scope="col">Chu vi</th>
                 <th scope="col">Xuất xứ</th>
@@ -288,10 +295,7 @@
                 <td class="state-cell" colspan="15">Không có sản phẩm phù hợp bộ lọc</td>
               </tr>
 
-              <tr
-                v-for="(product, index) in filteredSelectedProducts"
-                :key="product.idChiTietSanPham"
-              >
+              <tr v-for="(product, index) in filteredSelectedProducts" :key="product.idChiTietSanPham">
                 <td>
                   <input
                     type="checkbox"
@@ -301,7 +305,7 @@
                 </td>
                 <td>{{ index + 1 }}</td>
                 <td>{{ product.maCtsp || product.maSanPham || '-' }}</td>
-                <td>{{ product.tenSanPham || '-' }}</td>
+                <td style="text-align: left; font-weight: 500;">{{ product.tenSanPham || '-' }}</td>
                 <td>{{ formatText(product.tenThuongHieu) }}</td>
                 <td>{{ formatText(product.tenMauSac) }}</td>
                 <td>{{ formatText(product.tenTrongLuong) }}</td>
@@ -311,8 +315,8 @@
                 <td>{{ formatText(product.tenChatLieuKhungVot) }}</td>
                 <td>{{ formatText(product.tenChuViCanVot || product.chuViCanVot) }}</td>
                 <td>{{ formatText(product.tenXuatXu || product.xuatXuChiTiet) }}</td>
-                <td>{{ formatText(product.soLuong ?? product.soLuongTon) }}</td>
-                <td>{{ formatMoney(product.giaBan) }}</td>
+                <td style="font-weight: bold;">{{ formatText(product.soLuong ?? product.soLuongTon) }}</td>
+                <td style="font-weight: 700; color: #2563eb;">{{ formatMoney(product.giaBan) }}</td>
               </tr>
             </tbody>
           </table>
@@ -323,80 +327,29 @@
 </template>
 
 <script setup>
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
 const props = defineProps({
-  errorMessage: {
-    type: String,
-    default: '',
-  },
-  form: {
-    type: Object,
-    required: true,
-  },
-  isAllVisibleSelected: {
-    type: Boolean,
-    default: false,
-  },
-  minDateTime: {
-    type: String,
-    default: '',
-  },
-  productError: {
-    type: String,
-    default: '',
-  },
-  productKeyword: {
-    type: String,
-    default: '',
-  },
-  productLoading: {
-    type: Boolean,
-    default: false,
-  },
-  productPage: {
-    type: Number,
-    default: 0,
-  },
-  productPageSize: {
-    type: Number,
-    default: 5,
-  },
-  productTotalPages: {
-    type: Number,
-    default: 1,
-  },
-  productTotalPagesDisplay: {
-    type: Number,
-    default: 1,
-  },
-  selectedProductDetails: {
-    type: Array,
-    default: () => [],
-  },
-  selectedProductIds: {
-    type: Array,
-    default: () => [],
-  },
-  selectedProductsCount: {
-    type: Number,
-    default: 0,
-  },
-  isAllSelected: {
-    type: Boolean,
-    default: false,
-  },
-  submitting: {
-    type: Boolean,
-    default: false,
-  },
-  visibleProducts: {
-    type: Array,
-    default: () => [],
-  },
+  errorMessage: { type: String, default: '' },
+  form: { type: Object, required: true },
+  isAllVisibleSelected: { type: Boolean, default: false },
+  minDateTime: { type: String, default: '' },
+  productError: { type: String, default: '' },
+  productKeyword: { type: String, default: '' },
+  productLoading: { type: Boolean, default: false },
+  productPage: { type: Number, default: 0 },
+  productPageSize: { type: Number, default: 5 },
+  productTotalPages: { type: Number, default: 1 },
+  productTotalPagesDisplay: { type: Number, default: 1 },
+  selectedProductDetails: { type: Array, default: () => [], },
+  selectedProductIds: { type: Array, default: () => [], },
+  selectedProductsCount: { type: Number, default: 0 },
+  isAllSelected: { type: Boolean, default: false },
+  submitting: { type: Boolean, default: false },
+  visibleProducts: { type: Array, default: () => [], },
 })
 
-defineEmits([
+const emit = defineEmits([
   'back',
   'next-product-page',
   'prev-product-page',
@@ -408,19 +361,66 @@ defineEmits([
   'update:productKeyword',
 ])
 
-const formatText = (value) => {
-  if (value === null || value === undefined || value === '') {
-    return '-'
-  }
+// Mảng theo dõi ID các sản phẩm cha đang được bấm mở rộng (+)
+const expandedGroupIds = ref([])
 
+// Hàm hỗ trợ Đóng/Mở danh mục con khi nhấn vào nút cộng/trừ
+const toggleGroupExpand = (idCha) => {
+  const index = expandedGroupIds.value.indexOf(idCha)
+  if (index > -1) {
+    expandedGroupIds.value.splice(index, 1) // Đóng lại
+  } else {
+    expandedGroupIds.value.push(idCha) // Mở rộng ra
+  }
+}
+
+// Kiểm tra xem toán bộ biến thể con của 1 nhóm sản phẩm cha cụ thể đã được chọn chưa
+const isAllChildrenSelected = (spCha) => {
+  if (!spCha.mangBienTheCon || !spCha.mangBienTheCon.length) return false
+  return spCha.mangBienTheCon.every(bt => props.selectedProductIds.includes(bt.idChiTietSanPham))
+}
+
+// Logic Tích/Bỏ tích dòng sản phẩm cha tổng quát -> Tự động kích hoạt hàng loạt con
+const toggleSelectAllChildren = (event, spCha) => {
+  const isChecked = event.target.checked
+  if (!spCha.mangBienTheCon) return
+  
+  spCha.mangBienTheCon.forEach(bt => {
+    const isCurrentlySelected = props.selectedProductIds.includes(bt.idChiTietSanPham)
+    if ((isChecked && !isCurrentlySelected) || (!isChecked && isCurrentlySelected)) {
+      emit('toggle-product-selection', bt)
+    }
+  })
+}
+
+// Kiểm tra xem tất cả các nhóm sản phẩm đang hiển thị trên trang hiện tại đã được chọn sạch chưa
+const isAllVisibleGroupSelected = computed(() => {
+  if (!props.visibleProducts.length) return false
+  return props.visibleProducts.every(group => isAllChildrenSelected(group))
+})
+
+// Tích chọn hàng loạt tất cả các nhóm và biến thể đang xuất hiện trên trang hiện hành
+const toggleSelectAllVisibleGroups = (event) => {
+  const isChecked = event.target.checked
+  props.visibleProducts.forEach(group => {
+    if (group.mangBienTheCon) {
+      group.mangBienTheCon.forEach(bt => {
+        const isCurrentlySelected = props.selectedProductIds.includes(bt.idChiTietSanPham)
+        if ((isChecked && !isCurrentlySelected) || (!isChecked && isCurrentlySelected)) {
+          emit('toggle-product-selection', bt)
+        }
+      })
+    }
+  })
+}
+
+const formatText = (value) => {
+  if (value === null || value === undefined || value === '') return '-'
   return String(value)
 }
 
 const formatMoney = (value) => {
-  if (value === null || value === undefined || value === '') {
-    return '-'
-  }
-
+  if (value === null || value === undefined || value === '') return '-'
   return `${Number(value).toLocaleString('vi-VN')} đ`
 }
 
@@ -447,75 +447,34 @@ const uniqueOptions = (values) =>
     a.localeCompare(b, 'vi'),
   )
 
-const brandOptions = computed(() =>
-  uniqueOptions(props.selectedProductDetails.map((product) => product.tenThuongHieu)),
-)
-
-const colorOptions = computed(() =>
-  uniqueOptions(props.selectedProductDetails.map((product) => product.tenMauSac)),
-)
-
-const frameMaterialOptions = computed(() =>
-  uniqueOptions(props.selectedProductDetails.map((product) => product.tenChatLieuKhungVot)),
-)
-
-const hardnessOptions = computed(() =>
-  uniqueOptions(props.selectedProductDetails.map((product) => product.tenDoCung)),
-)
+const brandOptions = computed(() => uniqueOptions(props.selectedProductDetails.map((product) => product.tenThuongHieu)))
+const colorOptions = computed(() => uniqueOptions(props.selectedProductDetails.map((product) => product.tenMauSac)))
+const frameMaterialOptions = computed(() => uniqueOptions(props.selectedProductDetails.map((product) => product.tenChatLieuKhungVot)))
+const hardnessOptions = computed(() => uniqueOptions(props.selectedProductDetails.map((product) => product.tenDoCung)))
 
 const matchesPriceFilter = (price, filter) => {
   if (!filter) return true
-
   const value = Number(price ?? 0)
-
   switch (filter) {
-    case 'under-2000000':
-      return value < 2000000
-    case '2000000-3000000':
-      return value >= 2000000 && value <= 3000000
-    case 'over-3000000':
-      return value > 3000000
-    default:
-      return true
+    case 'under-2000000': return value < 2000000
+    case '2000000-3000000': return value >= 2000000 && value <= 3000000
+    case 'over-3000000': return value > 3000000
+    default: return true
   }
 }
 
 const filteredSelectedProducts = computed(() => {
   const keyword = normalizeText(selectedFilters.keyword)
-
   return props.selectedProductDetails.filter((product) => {
     if (keyword) {
-      const searchable = normalizeText(
-        `${product.maCtsp || product.maSanPham || ''} ${product.tenSanPham || ''} ${product.tenThuongHieu || ''}`,
-      )
-      if (!searchable.includes(keyword)) {
-        return false
-      }
+      const searchable = normalizeText(`${product.maCtsp || product.maSanPham || ''} ${product.tenSanPham || ''} ${product.tenThuongHieu || ''}`)
+      if (!searchable.includes(keyword)) return false
     }
-
-    if (selectedFilters.thuongHieu && product.tenThuongHieu !== selectedFilters.thuongHieu) {
-      return false
-    }
-
-    if (selectedFilters.mauSac && product.tenMauSac !== selectedFilters.mauSac) {
-      return false
-    }
-
-    if (
-      selectedFilters.chatLieuKhung &&
-      product.tenChatLieuKhungVot !== selectedFilters.chatLieuKhung
-    ) {
-      return false
-    }
-
-    if (selectedFilters.doCung && product.tenDoCung !== selectedFilters.doCung) {
-      return false
-    }
-
-    if (!matchesPriceFilter(product.giaBan, selectedFilters.giaBan)) {
-      return false
-    }
-
+    if (selectedFilters.thuongHieu && product.tenThuongHieu !== selectedFilters.thuongHieu) return false
+    if (selectedFilters.mauSac && product.tenMauSac !== selectedFilters.mauSac) return false
+    if (selectedFilters.chatLieuKhung && product.tenChatLieuKhungVot !== selectedFilters.chatLieuKhung) return false
+    if (selectedFilters.doCung && product.tenDoCung !== selectedFilters.doCung) return false
+    if (!matchesPriceFilter(product.giaBan, selectedFilters.giaBan)) return false
     return true
   })
 })
@@ -534,6 +493,73 @@ const isAllFilteredSelected = computed(
 </script>
 
 <style scoped>
+/* ==========================================================================
+   ⚡ CSS ĐỒNG BỘ: Thiết lập giao diện Accordion đóng mở lồng bảng con chuẩn SevenStrike
+   ========================================================================== */
+.btn-toggle-accordion {
+  background: none;
+  border: 1px solid #cbd5e1;
+  color: #64748b;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  transition: all 0.2s;
+}
+
+.btn-toggle-accordion:hover {
+  background-color: #f1f5f9;
+  color: #1e293b;
+  border-color: #94a3b8;
+}
+
+/* Định hình giao diện hàng cha (Dòng Sản phẩm) */
+.parent-row-tr {
+  background-color: #fff7ed !important; /* Phủ cam nhạt nền */
+}
+.parent-row-tr td {
+  border-bottom: 1px solid #fed7aa !important;
+  font-size: 12.5px !important;
+}
+
+/* Định hình giao diện hàng con (Dòng biến thể cấu hình) */
+.child-row-tr {
+  background-color: #ffffff !important;
+}
+.child-row-tr:hover {
+  background-color: #f8fafc !important;
+}
+.child-row-tr td {
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding: 10px 8px !important;
+}
+
+.child-variant-details-flex {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.variant-spec-label {
+  background-color: #f1f5f9;
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.variant-spec-price {
+  font-weight: 600;
+  color: #2563eb;
+  margin-left: auto; /* Đẩy giá bán dạt sang góc phải cho gọn */
+}
+
+/* Các thuộc tính cấu trúc bảng và bộ lọc gốc của bạn */
 .selected-details {
   margin-top: 20px;
   border-top: 1px solid #e5e7eb;
@@ -611,6 +637,7 @@ const isAllFilteredSelected = computed(
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   overflow: auto;
+  max-height: 480px;
 }
 
 .create-product-panel .product-table,
@@ -621,6 +648,11 @@ const isAllFilteredSelected = computed(
   font-size: 12px;
 }
 
+.create-product-panel .product-table {
+  min-width: 500px;
+}
+
+.create-product-panel .product-table countries th,
 .create-product-panel .product-table thead th,
 .selected-details .selected-group-table thead th {
   background: #f79b66 !important;
@@ -638,58 +670,10 @@ const isAllFilteredSelected = computed(
   white-space: nowrap;
 }
 
-.create-product-panel .product-table tbody tr:hover,
-.selected-details .selected-group-table tbody tr:hover {
-  background: #fafafa;
-}
-
-.create-product-panel .product-table th,
-.selected-details .selected-group-table th {
-  font-size: 11px;
-}
-
-.create-product-panel .product-table td,
-.selected-details .selected-group-table td {
-  font-size: 11px;
-}
-
-.selected-group {
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  padding: 14px 16px;
-  background: #fafafa;
-  margin-bottom: 12px;
-}
-
-.selected-group-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-
-.selected-group-header h5 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.selected-group-header p {
-  margin: 4px 0 0;
-  color: #6b7280;
-  font-size: 0.9rem;
-}
-
-.selected-group-header span {
-  color: #2563eb;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
 .selected-details .selected-group-table-wrap {
   overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
 }
 
 .selected-details .selected-group-table {
@@ -706,68 +690,5 @@ const isAllFilteredSelected = computed(
   border-bottom: 1px solid #e5e7eb;
   white-space: nowrap;
   font-size: 11px;
-}
-
-.selected-details .selected-group-table thead th {
-  color: #ffffff;
-  font-weight: 700;
-  background: #f79b66;
-}
-
-.selected-details .selected-group-table tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-.selected-details .selected-group-table td:last-child,
-.selected-details .selected-group-table th:last-child {
-  text-align: center;
-}
-
-.selected-detail-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  padding: 14px 16px;
-  background: #fafafa;
-}
-
-.selected-detail-main {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.selected-detail-badge {
-  min-width: 92px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: #eff6ff;
-  color: #2563eb;
-  font-weight: 700;
-  text-align: center;
-}
-
-.selected-detail-main h5 {
-  margin: 0;
-  font-size: 0.98rem;
-  font-weight: 700;
-}
-
-.selected-detail-main p {
-  margin: 4px 0 0;
-  color: #6b7280;
-  font-size: 0.9rem;
-}
-
-.selected-detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 16px;
-  font-size: 0.92rem;
-  color: #374151;
-}
-
-.selected-detail-grid strong {
-  color: #111827;
 }
 </style>

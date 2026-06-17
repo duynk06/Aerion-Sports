@@ -13,7 +13,7 @@ export const printInvoice = async (
     const printWindow = window.open('', '_blank')
     const qrData = `
 Mã hóa đơn: ${hoaDon.maHoaDon}
-Khách hàng: ${hoaDon.hoTen}
+Khách hàng: ${hoaDon.tenNguoiNhan}
 Tổng tiền: ${hoaDon.tongTienThanhToan}
 `
 
@@ -116,12 +116,12 @@ const qrImage = await QRCode.toDataURL(qrData)
   
           <p>
             <b>Khách hàng:</b>
-            ${hoaDon.hoTen}
+            ${hoaDon.tenNguoiNhan}
           </p>
   
           <p>
             <b>SĐT:</b>
-            ${hoaDon.sdt}
+            ${hoaDon.sdtNguoiNhan}
           </p>
   
           <table>

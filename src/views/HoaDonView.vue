@@ -22,13 +22,13 @@
         </div>
 
         <div>
-          <label>Loại hóa đơn</label>
-          <select v-model="loaiHoaDonFilter">
-  <option value="">Tất cả</option>
-  <option value="Tại quầy">Tại quầy</option>
-  <option value="Online">Online</option>
-</select>
-        </div>
+  <label>Loại hóa đơn</label>
+  <select v-model="loaiHoaDonFilter">
+    <option :value="null">Tất cả</option>
+    <option :value="0">Tại quầy</option>
+    <option :value="1">Online</option>
+  </select>
+</div>
 
         <div>
           <label>Từ ngày</label>
@@ -140,6 +140,18 @@
 >
   Đã hủy
 </button>
+<button
+  :class="{ active: trangThaiFilter === 7 }"
+  @click="trangThaiFilter = 7"
+>
+  Yêu cầu huỷ
+</button>
+<button
+  :class="{ active: trangThaiFilter === 8 }"
+  @click="trangThaiFilter = 8"
+>
+  Đã hoàn tiền
+</button>
 </div>
 
 <table>
@@ -181,14 +193,14 @@
       <td>{{ (page * size) + index + 1 }}</td>
     <td>{{ hoaDon.maHoaDon }}</td>
     <td>{{ hoaDon.tenNv }}</td>
-    <td>{{ hoaDon.hoTen }}</td>
-    <td>{{ hoaDon.sdt }}</td>
+    <td>{{ hoaDon.tenNguoiNhan }}</td>
+    <td>{{ hoaDon.sdtNguoiNhan }}</td>
     <td>
   <span
     class="invoice-badge"
     :class="getLoaiHoaDonClass(hoaDon.loaiHoaDon)"
   >
-    {{ hoaDon.loaiHoaDon }}
+    {{ hoaDon.loaiHoaDon === 1 ? 'Online' : 'Tại quầy' }}
   </span>
 </td>
 <td class="money">
@@ -285,7 +297,7 @@ const router = useRouter()
 const listHoaDon = ref([])
 
 const keyword = ref('')
-const loaiHoaDonFilter = ref('')
+const loaiHoaDonFilter = ref(null)
 const trangThaiFilter = ref('')
 
 const tuNgay = ref('')
@@ -347,18 +359,20 @@ const loadData = async () => {
   }
 }
 const exportExcel = () => {
+  const data = listHoaDon.value.map((hd, index) => ({
+    STT: index + 1,
+    'Mã hóa đơn': hd.maHoaDon,
+    'Nhân viên': hd.tenNv,
+    'Người nhận': hd.tenNguoiNhan,
+    'Số điện thoại': hd.sdtNguoiNhan,
+    // Sửa logic ở đây
+    'Loại hóa đơn': hd.loaiHoaDon === 1 ? 'Online' : 'Tại quầy', 
+    'Tổng tiền': formatCurrency(hd.tongTienThanhToan),
+    'Ngày tạo': formatDate(hd.ngayTao),
+    'Trạng thái': getTrangThaiText(hd.trangThai)
+  }));
+  // ... phần còn lại giữ nguyên
 
-const data = listHoaDon.value.map((hd, index) => ({
-  STT: index + 1,
-  'Mã hóa đơn': hd.maHoaDon,
-  'Nhân viên': hd.tenNv,
-  'Khách hàng': hd.hoTen,
-  'Số điện thoại': hd.sdt,
-  'Loại hóa đơn': hd.loaiHoaDon,
-  'Tổng tiền': hd.tongTienThanhToan,
-  'Ngày tạo': formatDate(hd.ngayTao),
-  'Trạng thái': getTrangThaiText(hd.trangThai)
-}))
 
 const worksheet = XLSX.utils.aoa_to_sheet([
   ['DANH SÁCH HÓA ĐƠN'],
@@ -470,41 +484,43 @@ const formatCurrency = (value) => {
 
 const getTrangThaiText = (status) => {
   switch (status) {
-    case 0: return 'Chờ xác nhận'
-    case 1: return 'Đã xác nhận'
-    case 2: return 'Chờ giao hàng'
-    case 3: return 'Đang giao hàng'
-    case 4: return 'Đã giao hàng'
-    case 5: return 'Đã hoàn thành'
-    case 6: return 'Đã hủy'
-    default: return 'Không xác định'
+    case 0: return 'Chờ xác nhận';
+    case 1: return 'Đã xác nhận';
+    case 2: return 'Chờ giao hàng';
+    case 3: return 'Đang giao hàng';
+    case 4: return 'Đã giao hàng';
+    case 5: return 'Đã hoàn thành';
+    case 6: return 'Đã hủy';
+    case 7: return 'Yêu cầu hủy';
+    case 8: return 'Đã hoàn tiền';
   }
 }
 
 const getStatusClass = (status) => {
   switch (status) {
-    case 0: return 'status-wait-confirm'
-    case 1: return 'status-confirmed'
-    case 2: return 'status-wait-delivery'
-    case 3: return 'status-delivering'
-    case 4: return 'status-delivered'
-    case 5: return 'status-completed'
-    case 6: return 'status-cancel'
-    default: return ''
+    case 0: return 'status-wait-confirm';
+    case 1: return 'status-confirmed';
+    case 2: return 'status-wait-delivery';
+    case 3: return 'status-delivering';
+    case 4: return 'status-delivered';
+    case 5: return 'status-completed';
+    case 6: return 'status-cancel';
+    case 7: return 'status-request-cancel'; // Bạn cần thêm style cho class này trong CSS
+    case 8: return 'status-refunded';       // Thêm style cho class này
+    default: return 'status-badge';
   }
 }
 
 
 const getLoaiHoaDonClass = (loai) => {
+  // loai bây giờ là Integer (0 hoặc 1)
   switch (loai) {
-    case 'Tại quầy':
-      return 'invoice-offline'
-
-    case 'Online':
-      return 'invoice-online'
-
+    case 0:
+      return 'invoice-offline'; // Class cho 'Tại quầy'
+    case 1:
+      return 'invoice-online';  // Class cho 'Online'
     default:
-      return ''
+      return 'invoice-badge';
   }
 }
 

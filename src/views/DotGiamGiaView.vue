@@ -76,45 +76,6 @@
             </button>
           </div>
 
-          <!--
-            <button
-              type="button"
-              :class="{ active: filters.trangThai === '' }"
-              @click="setStatusFilter('')"
-            >
-              Tất cả
-            </button>
-            <button
-              type="button"
-              :class="{ active: filters.trangThai === '1' }"
-              @click="setStatusFilter('1')"
-            >
-              Sắp diễn ra
-            </button>
-            <button
-              type="button"
-              :class="{ active: filters.trangThai === '2' }"
-              @click="setStatusFilter('2')"
-            >
-              Đang diễn ra
-            </button>
-            <button
-              type="button"
-              :class="{ active: filters.trangThai === '3' }"
-              @click="setStatusFilter('3')"
-            >
-              Đã kết thúc
-            </button>
-            <button
-              type="button"
-              :class="{ active: filters.trangThai === '0' }"
-              @click="setStatusFilter('0')"
-            >
-              Đã hủy
-            </button>
-          </div>
-          -->
-
           <table class="discount-table">
             <colgroup>
               <col style="width: 5%" />
@@ -221,7 +182,7 @@
         :product-keyword="productKeyword"
         :product-loading="productLoading"
         :product-page="productPage"
-        :product-page-size="productPageSize"
+        :product-page-size="productProductPageSize"
         :product-total-pages="productTotalPages"
         :product-total-pages-display="productTotalPagesDisplay"
         :selected-product-ids="selectedProductIds"
@@ -293,6 +254,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import axios from 'axios' // ⚡ Import axios để bốc API trực tiếp diện rộng
 import MainLayout from '../layouts/MainLayout.vue'
 import DotGiamGiaCreateModal from '../components/modals/DotGiamGiaCreateModal.vue'
 import DotGiamGiaDetailModal from '../components/modals/DotGiamGiaDetailModal.vue'
@@ -302,7 +264,6 @@ import {
   createDotGiamGia,
   fetchDotGiamGiaById,
   fetchDotGiamGiaPage,
-  fetchDotGiamGiaProducts,
   updateDotGiamGia,
   updateDotGiamGiaTrangThai,
 } from '../service/DotGiamGiaService'
@@ -373,30 +334,16 @@ const isEditStartDateLocked = computed(() => Number(editForm.trangThai) === STAT
 const productKeyword = ref('')
 const productLoading = ref(false)
 const productError = ref('')
-const productRows = ref([])
-const productPage = ref(0)
-const productPageSize = ref(5)
+const visibleProducts = ref([]) // ⚡ ĐÃ ĐỔI: Chứa cấu trúc mảng cây gộp nhóm từ BE truyền xuống
+const selectedProductDetails = ref([]) // ⚡ ĐÃ ĐỔI: Phục vụ bốc thông số phẳng dẹt hiển thị bảng dưới cùng
 const selectedProductIds = ref([])
 
-const productTotalPages = computed(() =>
-  Math.max(1, Math.ceil(productRows.value.length / productPageSize.value)),
-)
-
-const productTotalPagesDisplay = computed(() => {
-  return productRows.value.length ? productTotalPages.value : 1
-})
-
-const visibleProducts = computed(() => {
-  const start = productPage.value * productPageSize.value
-  return productRows.value.slice(start, start + productPageSize.value)
-})
+const productPage = ref(0)
+const productPageSize = ref(5)
+const productTotalPages = ref(1)
+const productTotalPagesDisplay = ref(1)
 
 const selectedProductsCount = computed(() => selectedProductIds.value.length)
-
-const selectedProductDetails = computed(() => {
-  const selectedIds = new Set(selectedProductIds.value)
-  return productRows.value.filter((product) => selectedIds.has(product.idChiTietSanPham))
-})
 
 const isAllSelected = computed(() => {
   if (!selectedProductDetails.value.length) return false
@@ -407,8 +354,8 @@ const isAllSelected = computed(() => {
 
 const isAllVisibleSelected = computed(() => {
   if (!visibleProducts.value.length) return false
-  return visibleProducts.value.every((product) =>
-    selectedProductIds.value.includes(product.idChiTietSanPham),
+  return visibleProducts.value.every(group => 
+    group.mangBienTheCon && group.mangBienTheCon.every(bt => selectedProductIds.value.includes(bt.idChiTietSanPham))
   )
 })
 
@@ -418,58 +365,26 @@ const normalizePageContent = (response) => {
   return []
 }
 
-const normalizeUiErrorMessage = (error, fallback) => {
-  const message = error?.message || fallback
-
-  if (!message) {
-    return fallback
-  }
-
-  if (message.includes('JDBC exception executing SQL') || message.includes('Invalid column name')) {
-    return 'Không tải được dữ liệu. Vui lòng kiểm tra lại mapping database.'
-  }
-
-  return message
-}
-
 const validateDateFilters = () => {
   const from = filters.tuNgay || ''
   const to = filters.denNgay || ''
-
-  if (!from && !to) {
-    filterError.value = ''
-    return true
-  }
-
-  if (!from || !to) {
-    filterError.value = 'Vui lòng chọn đủ từ ngày và đến ngày'
-    return false
-  }
-
-  if (from > to) {
-    filterError.value = 'Ngày bắt đầu không được lớn hơn ngày kết thúc'
-    return false
-  }
-
+  if (!from && !to) { filterError.value = ''; return true }
+  if (!from || !to) { filterError.value = 'Vui lòng chọn đủ từ ngày và đến ngày'; return false }
+  if (from > to) { filterError.value = 'Ngày bắt đầu không được lớn hơn ngày kết thúc'; return false }
   filterError.value = ''
   return true
 }
 
 const toLocalDateTimeValue = (value) => {
   if (!value) return ''
-
   if (typeof value === 'string') {
     const normalized = value.includes('T') ? value : value.replace(' ', 'T')
     return normalized.slice(0, 16)
   }
-
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
-
   const pad = (num) => String(num).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
-    date.getHours(),
-  )}:${pad(date.getMinutes())}`
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 const toPayloadDateTime = (value) => {
@@ -483,10 +398,8 @@ const refreshCurrentDateTimeMin = () => {
 
 const toDateMinute = (value) => {
   if (!value) return null
-
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return null
-
   date.setSeconds(0, 0)
   return date
 }
@@ -502,30 +415,14 @@ const validateDiscountDates = (form, isStartLocked = false) => {
   const end = toDateMinute(form.ngayKetThuc)
   const now = getCurrentMinuteDate()
 
-  if (!start) {
-    return 'Vui lòng chọn ngày bắt đầu'
-  }
-
-  if (!end) {
-    return 'Vui lòng chọn ngày kết thúc'
-  }
-
+  if (!start) return 'Vui lòng chọn ngày bắt đầu'
+  if (!end) return 'Vui lòng chọn ngày kết thúc'
   if (isStartLocked && form.originalNgayBatDau && form.ngayBatDau !== form.originalNgayBatDau) {
     return 'Đợt giảm giá đang diễn ra không được sửa ngày bắt đầu'
   }
-
-  if (!isStartLocked && start < now) {
-    return 'Ngày bắt đầu không được chọn thời gian trong quá khứ'
-  }
-
-  if (end < now) {
-    return 'Ngày kết thúc không được chọn thời gian trong quá khứ'
-  }
-
-  if (start >= end) {
-    return 'Ngày bắt đầu phải trước ngày kết thúc'
-  }
-
+  if (!isStartLocked && start < now) return 'Ngày bắt đầu không được chọn thời gian trong quá khứ'
+  if (end < now) return 'Ngày kết thúc không được chọn thời gian trong quá khứ'
+  if (start >= end) return 'Ngày bắt đầu phải trước ngày kết thúc'
   return ''
 }
 
@@ -537,6 +434,7 @@ const resetCreateForm = () => {
   createForm.moTa = ''
   createError.value = ''
   selectedProductIds.value = []
+  selectedProductDetails.value = []
 }
 
 const resetEditForm = () => {
@@ -551,41 +449,27 @@ const resetEditForm = () => {
   editForm.trangThai = null
   editError.value = ''
   selectedProductIds.value = []
+  selectedProductDetails.value = []
 }
 
 const openNotice = (type, title, message) => {
-  if (noticeTimer) {
-    window.clearTimeout(noticeTimer)
-    noticeTimer = null
-  }
-
+  if (noticeTimer) { window.clearTimeout(noticeTimer); noticeTimer = null }
   noticeType.value = type
   noticeTitle.value = title
   noticeMessage.value = message
   noticeOpen.value = true
-
-  noticeTimer = window.setTimeout(() => {
-    noticeOpen.value = false
-    noticeTimer = null
-  }, 3500)
+  noticeTimer = window.setTimeout(() => { noticeOpen.value = false; noticeTimer = null }, 3500)
 }
 
 const closeNotice = () => {
   noticeOpen.value = false
-  if (noticeTimer) {
-    window.clearTimeout(noticeTimer)
-    noticeTimer = null
-  }
+  if (noticeTimer) { window.clearTimeout(noticeTimer); noticeTimer = null }
 }
 
 const loadData = async () => {
-  if (!validateDateFilters()) {
-    return
-  }
-
+  if (!validateDateFilters()) return
   loading.value = true
   errorMessage.value = ''
-
   try {
     const response = await fetchDotGiamGiaPage({
       keyword: filters.keyword,
@@ -595,7 +479,6 @@ const loadData = async () => {
       page: page.value,
       size: size.value,
     })
-
     rows.value = normalizePageContent(response)
     totalPages.value = response?.totalPages ?? 0
     totalPagesDisplay.value = totalPages.value || 1
@@ -605,32 +488,55 @@ const loadData = async () => {
     totalPages.value = 0
     totalPagesDisplay.value = 1
     errorMessage.value = error?.message || 'Không thể tải dữ liệu đợt giảm giá'
-  } finally {
-    loading.value = false
-  }
+  } shrink: loading.value = false
 }
 
+// ⚡ ĐÃ CẢI TIẾN TOÀN DIỆN: Hàm nạp API gộp nhóm theo cây sản phẩm cha cho khung bên phải
 const loadProducts = async () => {
   productLoading.value = true
   productError.value = ''
-
   try {
-    const response = await fetchDotGiamGiaProducts(productKeyword.value)
-    productRows.value = Array.isArray(response) ? response : []
+    const response = await axios.get('http://localhost:8080/api/dot-giam-gia/grouped-products', {
+      params: { keyword: productKeyword.value || null }
+    })
+    
+    // Nạp dữ liệu cây đóng gói an toàn
+    const dataBE = response.data || []
+    visibleProducts.value = dataBE.map(spCha => ({
+      idSanPhamCha: spCha.idSanPhamCha,
+      maSanPham: spCha.maSanPham,
+      tenSanPham: spCha.tenSanPham,
+      mangBienTheCon: (spCha.mangBienTheCon || []).map(bt => ({
+        idChiTietSanPham: bt.idChiTietSanPham || bt.id,
+        maCtsp: bt.maCtsp,
+        maSanPham: spCha.maSanPham,
+        tenSanPham: spCha.tenSanPham,
+        giaBan: bt.giaBan,
+        soLuong: bt.soLuong ?? bt.soLuongTon ?? 0,
+        tenThuongHieu: bt.tenThuongHieu || 'Hệ thống',
+        tenMauSac: bt.tenMauSac || 'Mặc định',
+        tenTrongLuong: bt.tenTrongLuong || 'Mặc định',
+        tenDoCung: bt.tenDoCung || 'Mặc định',
+        tenDiemCanBang: bt.tenDiemCanBang || 'Mặc định',
+        tenChatLieuThanVot: bt.tenChatLieuThanVot || 'Mặc định',
+        tenChatLieuKhungVot: bt.tenChatLieuKhungVot || 'Mặc định',
+        tenChuViCanVot: bt.tenChuViCanVot || bt.chuViCanVot || 'Mặc định',
+        tenXuatXu: bt.tenXuatXu || bt.xuatXuChiTiet || 'Mặc định'
+      }))
+    }))
+    
     productPage.value = 0
+    productTotalPages.value = 1
+    productTotalPagesDisplay.value = 1
   } catch (error) {
-    productRows.value = []
-    productError.value = error?.message || 'Không thể tải danh sách sản phẩm'
+    visibleProducts.value = []
+    productError.value = error?.message || 'Không thể tải cấu trúc nhóm sản phẩm'
   } finally {
     productLoading.value = false
   }
 }
 
-const applyFilter = async () => {
-  page.value = 0
-  await loadData()
-}
-
+const applyFilter = async () => { page.value = 0; await loadData() }
 const resetFilter = async () => {
   filters.keyword = ''
   filters.trangThai = ''
@@ -640,159 +546,96 @@ const resetFilter = async () => {
   await loadData()
 }
 
-const prevPage = async () => {
-  if (page.value <= 0) return
-  page.value--
-  await loadData()
-}
+const prevPage = async () => { if (page.value <= 0) return; page.value--; await loadData() }
+const nextPage = async () => { if (page.value + 1 >= totalPages.value) return; page.value++; await loadData() }
 
-const nextPage = async () => {
-  if (page.value + 1 >= totalPages.value) return
-  page.value++
-  await loadData()
-}
+const prevProductPage = () => {}
+const nextProductPage = () => {}
 
-const prevProductPage = () => {
-  if (productPage.value <= 0) return
-  productPage.value--
-}
-
-const nextProductPage = () => {
-  if (productPage.value + 1 >= productTotalPages.value) return
-  productPage.value++
-}
-
+// ⚡ ĐÃ CẢI TIẾN: Hàm xóa/chọn hàng loạt mảng client-side bộ lọc phía dưới cùng
 const toggleSelectAllSelected = (ids = []) => {
-  const selectedIds = (
-    Array.isArray(ids) && ids.length
-      ? ids
-      : selectedProductDetails.value.map((product) => product.idChiTietSanPham)
-  ).filter((id) => id !== null && id !== undefined)
-
-  if (!selectedIds.length) return
-
   if (isAllSelected.value) {
-    selectedProductIds.value = selectedProductIds.value.filter((id) => !selectedIds.includes(id))
+    selectedProductIds.value = []
+    selectedProductDetails.value = []
     return
   }
-
-  const merged = new Set([...selectedProductIds.value, ...selectedIds])
-  selectedProductIds.value = Array.from(merged)
+  
+  // Thu thập toàn bộ con nằm trong bộ cây để kích hoạt
+  const allConList = []
+  visibleProducts.value.forEach(g => {
+    if(g.mangBienTheCon) allConList.push(...g.mangBienTheCon)
+  })
+  
+  selectedProductIds.value = allConList.map(b => b.idChiTietSanPham)
+  selectedProductDetails.value = [...allConList]
 }
 
 const formatDate = (value) => {
   if (!value) return '-'
-
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return String(value).replace('T', ' ').slice(0, 16)
-  }
-
+  if (Number.isNaN(date.getTime())) return String(value).replace('T', ' ').slice(0, 16)
   return new Intl.DateTimeFormat('vi-VN').format(date)
 }
 
 const formatRange = (start, end) => {
-  const from = formatDate(start)
-  const to = formatDate(end)
-
+  const from = formatDate(start); const to = formatDate(end)
   if (from === '-' && to === '-') return '-'
   return `${from} - ${to}`
 }
 
 const formatDiscountValue = (item) => {
-  if (item?.giaTriGiam === null || item?.giaTriGiam === undefined) {
-    return '-'
-  }
-
+  if (item?.giaTriGiam === null || item?.giaTriGiam === undefined) return '-'
   return `${Number(item.giaTriGiam).toLocaleString('vi-VN')}%`
 }
 
 const formatTrangThaiText = (trangThai) => {
   switch (Number(trangThai)) {
-    case 0:
-      return 'Đã hủy'
-    case 1:
-      return 'Sắp diễn ra'
-    case 2:
-      return 'Đang diễn ra'
-    case 3:
-      return 'Đã kết thúc'
-    default:
-      return 'Không xác định'
+    case 0: return 'Đã hủy'
+    case 1: return 'Sắp diễn ra'
+    case 2: return 'Đang diễn ra'
+    case 3: return 'Đã kết thúc'
+    default: return 'Không xác định'
   }
 }
 
 const getStatusClass = (status) => {
   switch (Number(status)) {
-    case 0:
-      return 'status-cancel'
-    case 1:
-      return 'status-wait'
-    case 2:
-      return 'status-running'
-    case 3:
-      return 'status-end'
-    default:
-      return ''
+    case 0: return 'status-cancel'
+    case 1: return 'status-wait'
+    case 2: return 'status-running'
+    case 3: return 'status-end'
+    default: return ''
   }
 }
 
 const setUpdatingStatus = (id, isUpdating) => {
   const next = new Set(updatingStatusIds.value)
-
-  if (isUpdating) {
-    next.add(id)
-  } else {
-    next.delete(id)
-  }
-
+  if (isUpdating) next.add(id); else next.delete(id)
   updatingStatusIds.value = next
 }
 
 const updateRowStatus = (id, trangThai, trangThaiText = formatTrangThaiText(trangThai)) => {
   const index = rows.value.findIndex((row) => row.id === id)
-
-  if (index === -1) {
-    return
-  }
-
-  rows.value[index] = {
-    ...rows.value[index],
-    trangThai,
-    trangThaiText,
-  }
+  if (index === -1) return
+  rows.value[index] = { ...rows.value[index], trangThai, trangThaiText }
 }
 
 const isEndToggleDisabled = (item) => {
   if (!item?.id) return true
-
   const status = Number(item.trangThai)
-  return (
-    status === STATUS_CANCELLED || status === STATUS_ENDED || updatingStatusIds.value.has(item.id)
-  )
+  return (status === STATUS_CANCELLED || status === STATUS_ENDED || updatingStatusIds.value.has(item.id))
 }
 
 const getEndToggleTitle = (item) => {
   const status = Number(item?.trangThai)
-
-  if (updatingStatusIds.value.has(item?.id)) {
-    return 'Đang chuyển trạng thái...'
-  }
-
-  if (status === STATUS_ENDED) {
-    return 'Đợt giảm giá đã kết thúc'
-  }
-
-  if (status === STATUS_CANCELLED) {
-    return 'Đợt giảm giá đã hủy'
-  }
-
+  if (updatingStatusIds.value.has(item?.id)) return 'Đang chuyển trạng thái...'
+  if (status === STATUS_ENDED) return 'Đợt giảm giá đã kết thúc'
+  if (status === STATUS_CANCELLED) return 'Đợt giảm giá đã hủy'
   return 'Gạt để chuyển sang đã kết thúc'
 }
 
 const markDiscountEnded = async (item) => {
   if (isEndToggleDisabled(item)) return
-
   const rowIndex = rows.value.findIndex((row) => row.id === item.id)
   const previousRow = rowIndex >= 0 ? { ...rows.value[rowIndex] } : null
 
@@ -801,66 +644,54 @@ const markDiscountEnded = async (item) => {
 
   try {
     await updateDotGiamGiaTrangThai(item.id, STATUS_ENDED)
-    openNotice(
-      'success',
-      'Cập nhật trạng thái thành công',
-      `Đợt giảm giá ${item.maDotGiamGia || ''} đã chuyển sang trạng thái Đã kết thúc.`,
-    )
-    try {
-      await loadData()
-    } catch (loadError) {
-      errorMessage.value =
-        loadError?.message || 'Đã đổi trạng thái, nhưng chưa tải lại được danh sách'
-    }
+    openNotice('success', 'Cập nhật trạng thái thành công', `Đợt giảm giá ${item.maDotGiamGia || ''} đã chuyển sang trạng thái Đã kết thúc.`)
+    await loadData()
   } catch (error) {
-    if (rowIndex >= 0 && previousRow) {
-      rows.value[rowIndex] = previousRow
-    }
-
+    if (rowIndex >= 0 && previousRow) rows.value[rowIndex] = previousRow
     const message = error?.message || 'Không thể chuyển trạng thái đợt giảm giá'
     errorMessage.value = message
     openNotice('error', 'Đổi trạng thái thất bại', message)
+  } finally {
     setUpdatingStatus(item.id, false)
-    return
   }
-
-  setUpdatingStatus(item.id, false)
 }
 
+// ⚡ ĐÃ CẢI TIẾN: Sửa đổi hàm tiếp nhận tích chọn đơn lẻ từ khối cây truyền lên
 const toggleProductSelection = (product) => {
   const productId = product.idChiTietSanPham
-  const index = selectedProductIds.value.indexOf(productId)
+  const indexId = selectedProductIds.value.indexOf(productId)
 
-  if (index >= 0) {
+  if (indexId >= 0) {
     selectedProductIds.value = selectedProductIds.value.filter((id) => id !== productId)
-    return
+    selectedProductDetails.value = selectedProductDetails.value.filter(item => item.idChiTietSanPham !== productId)
+  } else {
+    selectedProductIds.value = [...selectedProductIds.value, productId]
+    selectedProductDetails.value.push({ ...product })
   }
-
-  selectedProductIds.value = [...selectedProductIds.value, productId]
 }
 
+// ⚡ ĐÃ CẢI TIẾN: Toggle chọn sạch sẽ toàn bộ cây hiển thị
 const toggleSelectAllVisible = () => {
-  const currentIds = visibleProducts.value.map((product) => product.idChiTietSanPham)
-
   if (isAllVisibleSelected.value) {
-    selectedProductIds.value = selectedProductIds.value.filter((id) => !currentIds.includes(id))
+    selectedProductIds.value = []
+    selectedProductDetails.value = []
     return
   }
-
-  const merged = new Set([...selectedProductIds.value, ...currentIds])
-  selectedProductIds.value = Array.from(merged)
+  
+  const allVisibleCon = []
+  visibleProducts.value.forEach(g => {
+    if (g.mangBienTheCon) allVisibleCon.push(...g.mangBienTheCon)
+  })
+  
+  selectedProductIds.value = honestCon.map(b => b.idChiTietSanPham)
+  selectedProductDetails.value = [...allVisibleCon]
 }
 
 const handleAdd = async () => {
-  refreshCurrentDateTimeMin()
-  closeNotice()
-  isEditMode.value = false
-  isCreateMode.value = true
-  productKeyword.value = ''
-  productRows.value = []
-  productPage.value = 0
-  productError.value = ''
-  createError.value = ''
+  refreshCurrentDateTimeMin(); closeNotice()
+  isEditMode.value = false; isCreateMode.value = true
+  productKeyword.value = ''; visibleProducts.value = []
+  productPage.value = 0; productError.value = ''; createError.value = ''
   resetCreateForm()
   await loadProducts()
 }
@@ -875,29 +706,38 @@ const fillEditForm = (detail) => {
   editForm.ngayKetThuc = toLocalDateTimeValue(detail.ngayKetThuc)
   editForm.moTa = detail.moTa || ''
   editForm.trangThai = detail.trangThai ?? null
-  selectedProductIds.value = Array.isArray(detail.chiTietList)
-    ? detail.chiTietList
-        .filter((item) => item?.idChiTietSanPham)
-        .map((item) => item.idChiTietSanPham)
-    : []
+  
+  // Đóng gói dữ liệu phẳng dẹt cho mảng chi tiết đã chọn phía dưới
+  if (Array.isArray(detail.chiTietList)) {
+    selectedProductIds.value = detail.chiTietList.map(item => item.idChiTietSanPham || item.id)
+    
+    // Đồng bộ mảng details phẳng dẹt lấy từ DB
+    selectedProductDetails.value = detail.chiTietList.map(item => {
+      const targetBt = item.chiTietSanPham || item;
+      return {
+        idChiTietSanPham: targetBt.id || item.idChiTietSanPham,
+        maCtsp: targetBt.maCtsp,
+        tenSanPham: targetBt.tenSanPham || detail.tenDotGiamGia,
+        giaBan: targetBt.giaBan,
+        soLuong: targetBt.soLuong,
+        tenThuongHieu: targetBt.tenThuongHieu,
+        tenMauSac: targetBt.tenMauSac
+      }
+    })
+  }
 }
 
 const handleEdit = async (item) => {
   if (!item?.id) return
-
-  refreshCurrentDateTimeMin()
-  closeNotice()
-  isCreateMode.value = false
-  isEditMode.value = true
-  productKeyword.value = ''
-  productRows.value = []
-  productPage.value = 0
-  productError.value = ''
-  editError.value = ''
+  refreshCurrentDateTimeMin(); closeNotice()
+  isCreateMode.value = false; isEditMode.value = true
+  productKeyword.value = ''; visibleProducts.value = []
+  productPage.value = 0; productError.value = ''; editError.value = ''
   resetEditForm()
 
   try {
-    const [detail] = await Promise.all([fetchDotGiamGiaById(item.id), loadProducts()])
+    const detail = await fetchDotGiamGiaById(item.id)
+    await loadProducts()
     fillEditForm(detail)
   } catch (error) {
     editError.value = error?.message || 'Không thể tải dữ liệu đợt giảm giá'
@@ -906,47 +746,29 @@ const handleEdit = async (item) => {
 
 const handleView = async (item) => {
   if (!item?.id) return
-
-  isDetailOpen.value = true
-  detailLoading.value = true
-  detailError.value = ''
-  detailData.value = null
-
+  isDetailOpen.value = true; detailLoading.value = true
+  detailError.value = ''; detailData.value = null
   try {
     detailData.value = await fetchDotGiamGiaById(item.id)
   } catch (error) {
-    detailError.value = error?.message || 'KhÃ´ng thá»ƒ táº£i chi tiáº¿t Ä‘á»£t giáº£m giÃ¡'
-  } finally {
-    detailLoading.value = false
-  }
+    detailError.value = error?.message || 'Không thể tải chi tiết đợt giảm giá'
+  } finally { detailLoading.value = false }
 }
 
 const closeDetail = () => {
-  isDetailOpen.value = false
-  detailLoading.value = false
-  detailError.value = ''
-  detailData.value = null
+  isDetailOpen.value = false; detailLoading.value = false; detailError.value = ''; detailData.value = null
 }
 
 const handleBackToList = () => {
-  closeDetail()
-  closeNotice()
-  isCreateMode.value = false
-  isEditMode.value = false
-  productKeyword.value = ''
-  productRows.value = []
-  productPage.value = 0
-  productError.value = ''
-  createError.value = ''
-  editError.value = ''
-  selectedProductIds.value = []
-  resetCreateForm()
-  resetEditForm()
+  closeDetail(); closeNotice()
+  isCreateMode.value = false; isEditMode.value = false
+  productKeyword.value = ''; visibleProducts.value = []
+  productPage.value = 0; productError.value = ''; createError.value = ''; editError.value = ''
+  selectedProductIds.value = []; selectedProductDetails.value = []
+  resetCreateForm(); resetEditForm()
 }
 
-const searchProducts = async () => {
-  await loadProducts()
-}
+const searchProducts = async () => { await loadProducts() }
 
 const buildPayload = (form) => ({
   tenDotGiamGia: form.tenDotGiamGia,
@@ -954,202 +776,82 @@ const buildPayload = (form) => ({
   ngayBatDau: toPayloadDateTime(form.ngayBatDau),
   ngayKetThuc: toPayloadDateTime(form.ngayKetThuc),
   moTa: form.moTa,
-  chiTietList: selectedProductIds.value.map((idChiTietSanPham) => ({
-    idChiTietSanPham,
-  })),
+  chiTietList: selectedProductIds.value.map((idChiTietSanPham) => ({ idChiTietSanPham })),
 })
 
 const validateDiscountPercent = (value) => {
-  if (value === '' || value === null || value === undefined) {
-    return 'Vui lòng nhập giá trị giảm'
-  }
-
+  if (value === '' || value === null || value === undefined) return 'Vui lòng nhập giá trị giảm'
   const percent = Number(value)
-  if (!Number.isFinite(percent)) {
-    return 'Giá trị giảm phải là số'
-  }
-
-  if (percent <= 0) {
-    return 'Giá trị giảm phải lớn hơn 0%'
-  }
-
-  if (percent > 100) {
-    return 'Giá trị giảm không được vượt quá 100%'
-  }
-
+  if (!Number.isFinite(percent)) return 'Giá trị giảm phải là số'
+  if (percent <= 0) return 'Giá trị giảm phải lớn hơn 0%'
+  if (percent > 100) return 'Giá trị giảm không được vượt quá 100%'
   return ''
 }
 
 const saveCreate = async () => {
   createError.value = ''
-
-  if (!createForm.tenDotGiamGia.trim()) {
-    createError.value = 'Vui lòng nhập tên đợt giảm giá'
-    return
-  }
-
-  if (createForm.giaTriGiam === null || createForm.giaTriGiam === undefined) {
-    createError.value = 'Vui lòng nhập giá trị giảm'
-    return
-  }
-
+  if (!createForm.tenDotGiamGia.trim()) { createError.value = 'Vui lòng nhập tên đợt giảm giá'; return }
+  if (createForm.giaTriGiam === null || createForm.giaTriGiam === undefined) { createError.value = 'Vui lòng nhập giá trị giảm'; return }
   const percentError = validateDiscountPercent(createForm.giaTriGiam)
-  if (percentError) {
-    createError.value = percentError
-    return
-  }
-
-  if (!createForm.ngayBatDau) {
-    createError.value = 'Vui lòng chọn ngày bắt đầu'
-    return
-  }
-
-  if (!createForm.ngayKetThuc) {
-    createError.value = 'Vui lòng chọn ngày kết thúc'
-    return
-  }
+  if (percentError) { createError.value = percentError; return }
+  if (!createForm.ngayBatDau) { createError.value = 'Vui lòng chọn ngày bắt đầu'; return }
+  if (!createForm.ngayKetThuc) { createError.value = 'Vui lòng chọn ngày kết thúc'; return }
 
   refreshCurrentDateTimeMin()
   const dateError = validateDiscountDates(createForm)
-  if (dateError) {
-    createError.value = dateError
-    return
-  }
-
-  if (selectedProductIds.value.length === 0) {
-    createError.value = 'Vui lòng chọn ít nhất một sản phẩm'
-    return
-  }
+  if (dateError) { createError.value = dateError; return }
+  if (selectedProductIds.value.length === 0) { createError.value = 'Vui lòng chọn ít nhất một sản phẩm'; return }
 
   isSubmittingCreate.value = true
-
   try {
     await createDotGiamGia(buildPayload(createForm))
-    isCreateMode.value = false
-    resetCreateForm()
-    productRows.value = []
+    isCreateMode.value = false; resetCreateForm(); visibleProducts.value = []
     openNotice('success', 'Thêm mới thành công', 'Đợt giảm giá đã được tạo và lưu vào hệ thống.')
-    try {
-      await loadData()
-    } catch (loadError) {
-      errorMessage.value =
-        loadError?.message || 'Đã tạo đợt giảm giá, nhưng chưa tải lại được danh sách'
-    }
+    await loadData()
   } catch (error) {
     const message = error?.message || 'Không thể tạo đợt giảm giá'
-    createError.value = message
-    openNotice('error', 'Thêm mới thất bại', message)
-  } finally {
-    isSubmittingCreate.value = false
-  }
+    createError.value = message; openNotice('error', 'Thêm mới thất bại', message)
+  } finally { isSubmittingCreate.value = false }
 }
 
 const saveEdit = async () => {
   editError.value = ''
-
-  if (!editForm.id) {
-    editError.value = 'Không tìm thấy đợt giảm giá cần sửa'
-    return
-  }
-
-  if (!editForm.tenDotGiamGia.trim()) {
-    editError.value = 'Vui lòng nhập tên đợt giảm giá'
-    return
-  }
-
-  if (editForm.giaTriGiam === null || editForm.giaTriGiam === undefined) {
-    editError.value = 'Vui lòng nhập giá trị giảm'
-    return
-  }
-
+  if (!editForm.id) { editError.value = 'Không tìm thấy đợt giảm giá cần sửa'; return }
+  if (!editForm.tenDotGiamGia.trim()) { editError.value = 'Vui lòng nhập tên đợt giảm giá'; return }
+  if (editForm.giaTriGiam === null || editForm.giaTriGiam === undefined) { editError.value = 'Vui lòng nhập giá trị giảm'; return }
   const percentError = validateDiscountPercent(editForm.giaTriGiam)
-  if (percentError) {
-    editError.value = percentError
-    return
-  }
-
-  if (!editForm.ngayBatDau) {
-    editError.value = 'Vui lòng chọn ngày bắt đầu'
-    return
-  }
-
-  if (!editForm.ngayKetThuc) {
-    editError.value = 'Vui lòng chọn ngày kết thúc'
-    return
-  }
-
-  if (selectedProductIds.value.length === 0) {
-    editError.value = 'Vui lòng chọn ít nhất một sản phẩm'
-    return
-  }
+  if (percentError) { editError.value = percentError; return }
+  if (!editForm.ngayBatDau) { editError.value = 'Vui lòng chọn ngày bắt đầu'; return }
+  if (!editForm.ngayKetThuc) { editError.value = 'Vui lòng chọn ngày kết thúc'; return }
+  if (selectedProductIds.value.length === 0) { editError.value = 'Vui lòng chọn ít nhất một sản phẩm'; return }
 
   refreshCurrentDateTimeMin()
   const dateError = validateDiscountDates(editForm, isEditStartDateLocked.value)
-  if (dateError) {
-    editError.value = dateError
-    return
-  }
+  if (dateError) { editError.value = dateError; return }
 
   isSubmittingEdit.value = true
-
   try {
     await updateDotGiamGia(editForm.id, buildPayload(editForm))
     handleBackToList()
     openNotice('success', 'Cập nhật thành công', 'Đợt giảm giá đã được cập nhật.')
-    try {
-      await loadData()
-    } catch (loadError) {
-      errorMessage.value =
-        loadError?.message || 'Đã cập nhật đợt giảm giá, nhưng chưa tải lại được danh sách'
-    }
-  } catch (error) {
-    const message = error?.message || 'Không thể cập nhật đợt giảm giá'
-    editError.value = message
-    openNotice('error', 'Cập nhật thất bại', message)
-  } finally {
-    isSubmittingEdit.value = false
-  }
-}
-
-/*
-const handleDelete = async (item) => {
-  if (!item?.id) return
-
-  const confirmed = window.confirm(`Bạn có chắc muốn hủy đợt giảm giá ${item.maDotGiamGia || ''}?`)
-
-  if (!confirmed) return
-
-  try {
-    await deleteDotGiamGia(item.id)
     await loadData()
   } catch (error) {
-    errorMessage.value = error?.message || 'Không thể hủy đợt giảm giá'
-  }
+    const message = error?.message || 'Không thể cập nhật đợt giảm giá'
+    editError.value = message; openNotice('error', 'Cập nhật thất bại', message)
+  } finally { isSubmittingEdit.value = false }
 }
-*/
 
 onMounted(() => {
-  refreshCurrentDateTimeMin()
-  loadData()
+  refreshCurrentDateTimeMin(); loadData()
   currentDateTimeMinTimer = window.setInterval(refreshCurrentDateTimeMin, 30000)
 })
 
 onUnmounted(() => {
-  if (currentDateTimeMinTimer) {
-    window.clearInterval(currentDateTimeMinTimer)
-  }
-
-  if (noticeTimer) {
-    window.clearTimeout(noticeTimer)
-  }
+  if (currentDateTimeMinTimer) window.clearInterval(currentDateTimeMinTimer)
+  if (noticeTimer) window.clearTimeout(noticeTimer)
 })
 
-watch(
-  () => [filters.tuNgay, filters.denNgay],
-  () => {
-    validateDateFilters()
-  },
-)
+watch(() => [filters.tuNgay, filters.denNgay], () => { validateDateFilters() })
 </script>
 
 <style scoped>
@@ -1160,7 +862,6 @@ watch(
   z-index: 1300;
   pointer-events: none;
 }
-
 .filter-error {
   margin-top: 10px;
   color: #dc2626;

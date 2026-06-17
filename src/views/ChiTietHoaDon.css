@@ -4,7 +4,52 @@
   justify-content:space-between;
   align-items:center;
 }
+.shipping-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.step-icon.active {
+  background: #dc3545;
+  color: white;
+}
+.action-group {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
 
+.change-status-btn {
+  border: none;
+  background: #f79b66;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.change-status-btn:hover {
+  background: #f79b66;
+  transform: translateY(-1px);
+}
+
+.history-btn {
+  border: none;
+  background: #10b981;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.shipping-logo {
+  width: 45px;
+  height: 20px;
+  object-fit: contain;
+}
 .history-btn{
   border:none;
   background:#f79b66;
@@ -275,7 +320,113 @@ justify-content:center;
 z-index:2;
 position:relative;
 }
+.status-modal{
+  width: 520px;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0,0,0,.2);
+}
 
+.modal-body{
+  padding:20px;
+}
+
+.form-group{
+  margin-bottom:16px;
+}
+
+.form-group label{
+  display:block;
+  font-weight:600;
+  margin-bottom:6px;
+}
+
+.form-group textarea{
+  width:100%;
+  border:1px solid #ddd;
+  border-radius:6px;
+  padding:10px;
+  resize:none;
+}
+
+.status-preview{
+  margin:20px 0;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:14px;
+}
+
+.status-old{
+  background:#6c757d;
+  color:white;
+  padding:4px 10px;
+  border-radius:20px;
+}
+
+.status-new{
+  background:#0d6efd;
+  color:white;
+  padding:4px 10px;
+  border-radius:20px;
+}
+
+.status-flow{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  margin:20px 0;
+  flex-wrap:wrap;
+}
+
+.status-box{
+  padding:6px 14px;
+  border-radius:20px;
+  color:white;
+  font-size:13px;
+  font-weight:600;
+}
+
+.status-box.old{
+  background:#6c757d;
+}
+
+.status-box.new{
+  background:#0d6efd;
+}
+
+.warning-text{
+  font-size:13px;
+  color:#666;
+  margin-top:15px;
+}
+
+.modal-footer{
+  border-top:1px solid #eee;
+  padding:15px 20px;
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+}
+
+.btn-cancel{
+  border:none;
+  background:#e5e7eb;
+  padding:8px 16px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.btn-confirm{
+  border:none;
+  background:#0d6efd;
+  color:white;
+  padding:8px 16px;
+  border-radius:6px;
+  cursor:pointer;
+}
 .step.active .step-icon {
     background: #f79b66;
     color: white;

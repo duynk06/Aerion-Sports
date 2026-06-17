@@ -13,6 +13,7 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.2.0",
     "axios": "^1.16.1",
+    "bootstrap": "^5.3.8",
     "file-saver": "^2.0.5",
     "html5-qrcode": "^2.3.8",
     "lucide-vue-next": "^1.0.0",

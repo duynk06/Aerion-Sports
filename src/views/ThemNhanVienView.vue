@@ -1,5 +1,5 @@
 <template>
-  <MainLayout title="Nhân viên">
+  <MainLayout title="Quản Lý Nhân Viên">
     <div class="customer-card">
 
       <div class="page-header">
@@ -15,7 +15,7 @@
 
       <div class="qr-control-section" style="margin-bottom: 25px;">
         <button v-if="!isScanning" type="button" class="btn-trigger-camera" @click="startScan">
-          📷 Bật Camera quét QR thông tin nhanh (CCCD)
+          Quét QR lấy thông tin
         </button>
         <button v-else type="button" class="btn-close-camera" @click="stopScan">
           ✕ Tắt Camera
@@ -43,7 +43,7 @@
               id="employee-avatar-input"
               type="file" 
               style="display: none;" 
-              accept="image/*" 
+              accept="image/jpeg, image/jpg, image/png" 
               @change="handleImageUpload" 
             />
             
@@ -51,36 +51,45 @@
           </div>
 
           <div class="form-content">
-            <h3>Thông tin khách hàng</h3>
+            <h3>Thông tin nhân viên</h3> 
             <div class="form-grid">
               
               <div class="form-group">
                 <label>Họ và tên <span>*</span></label>
-                <input type="text" v-model="nhanVien.tenNv" placeholder="Nhập họ và tên" />
+                <input 
+                  type="text" 
+                  v-model="nhanVien.tenNv" 
+                  placeholder="Nhập họ và tên" 
+                  :class="{ 'input-error': errors.tenNv }"
+                  @input="errors.tenNv = ''"
+                />
+                <span v-if="errors.tenNv" class="error-text">{{ errors.tenNv }}</span>
               </div>
 
               <div class="form-group">
                 <label>Số điện thoại <span>*</span></label>
                 <input 
-                  type="text" 
                   v-model="nhanVien.sdt" 
-                  placeholder="Nhập số điện thoại" 
+                  type="text" 
+                  maxlength="20" 
+                  placeholder="Nhập số điện thoại"
                   :class="{ 'input-error': errors.sdt }"
                   @input="errors.sdt = ''"
                 />
-                <span v-if="errors.sdt" class="error-text">{{ errors.sdt }}</span>
+                <small v-if="errors.sdt" style="color: red; margin-top: 5px;">{{ errors.sdt }}</small>
               </div>
 
               <div class="form-group">
-                <label>Email</label>
+                <label>Email <span>*</span></label> 
                 <input 
-                  type="email" 
+                  type="text" 
                   v-model="nhanVien.email" 
-                  placeholder="Nhập email" 
+                  placeholder="Nhập email nhân viên" 
                   :class="{ 'input-error': errors.email }"
                   @input="errors.email = ''"
                 />
                 <span v-if="errors.email" class="error-text">{{ errors.email }}</span>
+                <small style="color: #64748b; font-size: 11px; margin-top: 4px;">* Mật khẩu hệ thống sẽ tự sinh ngẫu nhiên và gửi về email này.</small>
               </div>
 
               <div class="form-group">
@@ -92,28 +101,28 @@
                 <label>Giới tính</label>
                 <div class="radio-group">
                   <label class="radio-label">
-                    <input type="radio" value="1" v-model="nhanVien.gioiTinh" /> Nam
+                    <input type="radio" :value="1" v-model="nhanVien.gioiTinh" /> Nam
                   </label>
                   <label class="radio-label">
-                    <input type="radio" value="0" v-model="nhanVien.gioiTinh" /> Nữ
+                    <input type="radio" :value="0" v-model="nhanVien.gioiTinh" /> Nữ
                   </label>
                 </div>
               </div>
 
               <div class="form-group">
                 <label>Vai trò <span>*</span></label>
-                <select v-model="nhanVien.idVaiTro">
-                  <option value="3">Nhân viên</option>
-                  <option value="2">Quản lý</option>
-                  <option value="1">Quản trị viên (Admin)</option>
+                <select v-model="nhanVien.vaiTro">
+                  <option :value="3">Nhân viên</option>
+                  <option :value="2">Quản lý</option>
+                  <option :value="1">Quản trị viên (Admin)</option>
                 </select>
               </div>
 
               <div class="form-group-full">
                 <label>Trạng thái</label>
                 <select v-model="nhanVien.trangThai">
-                  <option :value="true">Hoạt động</option>
-                  <option :value="false">Ngừng hoạt động</option>
+                  <option :value="1">Hoạt động</option>
+                  <option :value="0">Ngừng hoạt động</option>
                 </select>
               </div>
 
@@ -122,44 +131,34 @@
         </div>
 
         <div class="address-card">
-          <div class="address-header">
-            <h3>Danh sách địa chỉ</h3>
-            <button type="button" class="btn-add-address" @click="addAddress">
-              + Thêm địa chỉ
-            </button>
-          </div>
-
           <div 
             v-for="(item, index) in nhanVien.listDiaChi" 
             :key="index" 
             class="address-item"
           >
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-              <div class="address-title">📍 Địa chỉ {{ index + 1 }}</div>
-              <button 
-                v-if="nhanVien.listDiaChi.length > 1" 
-                type="button" 
-                class="btn-delete-addr"
-                @click="removeAddress(index)"
-              >
-                🗑 Xóa địa chỉ
-              </button>
+            <div style="align-items: center; margin-bottom: 15px;">
+              <div class="address-title">Địa chỉ nhân viên liên hệ</div>
             </div>
 
             <div class="form-grid" style="margin-bottom: 15px;">
               <div class="form-group">
                 <label>Tỉnh / Thành phố <span>*</span></label>
-                <select v-model="item.tinhThanh">
+                <select v-model="item.tinhThanh" class="form-select-control" required>
                   <option value="">-- Chọn Tỉnh / Thành phố --</option>
-                  <option value="Hà Nội">Hà Nội</option>
-                  <option value="Hồ Chí Minh">Hồ Chí Minh</option>
-                  <option value="Đà Nẵng">Đà Nẵng</option>
+                  <option value="Hà Nội">Thành phố Hà Nội</option>
+                  <option value="Hồ Chí Minh">Thành phố Hồ Chí Minh</option>
+                  <option value="Đà Nẵng">Thành phố Đà Nẵng</option>
                 </select>
               </div>
 
               <div class="form-group">
                 <label>Phường / Xã <span>*</span></label>
-                <input type="text" v-model="item.phuongXa" placeholder="Nhập phường / xã" />
+                <select v-model="item.phuongXa" class="form-select-control" required>
+                  <option value="">-- Chọn Phường / Xã --</option>
+                  <option value="Văn Quán">Phường Văn Quán</option>
+                  <option value="Mộ Lao">Phường Mộ Lao</option>
+                  <option value="Dịch Vọng">Phường Dịch Vọng</option>
+                </select>
               </div>
             </div>
 
@@ -167,17 +166,12 @@
               <label>Địa chỉ chi tiết <span>*</span></label>
               <input 
                 type="text" 
-                v-model="item.diaChiChiTiet" 
+                v-model="item.chiTietCuThe" 
                 placeholder="Nhập số nhà, tên đường, ngõ ngách..." 
+                required
               />
             </div>
 
-            <div>
-              <label class="checkbox-label">
-                <input type="checkbox" :checked="item.macDinh" @change="setMainAddress(index)" />
-                Đặt làm địa chỉ mặc định
-              </label>
-            </div>
           </div>
         </div>
 
@@ -199,30 +193,36 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { Html5QrcodeScanner } from 'html5-qrcode'
 import MainLayout from '../layouts/MainLayout.vue'
+import { createNhanVien } from '@/service/NhanVienService'
 
 const router = useRouter()
+
+const validatePhoneNumber = (phone) => {
+  const vnf_regex = /^(0[3|5|7|8|9])([0-9]{8})$/;
+  return vnf_regex.test(phone);
+};
 
 const nhanVien = reactive({
   tenNv: '',
   sdt: '',
   email: '',
   ngaySinh: '',
-  gioiTinh: '1', 
-  idVaiTro: '2', 
-  trangThai: true, 
-  avatar: '',
+  gioiTinh: 1, 
+  vaiTro: 3,   
+  trangThai: 1, 
+  avatar: '',   
   listDiaChi: [
     {
       tinhThanh: '',
       phuongXa: '',
-      diaChiChiTiet: '',
-      macDinh: true
+      chiTietCuThe: '', 
+      isDefault: true   
     }
   ]
 })
 
-// Biến quản lý trạng thái hiển thị thông báo lỗi cục bộ
 const errors = reactive({
+  tenNv: '',
   sdt: '',
   email: ''
 })
@@ -253,24 +253,28 @@ const stopScan = () => {
 }
 
 const onScanSuccess = (decodedText) => {
-  alert('Quét thành công QR!')
+  alert('Quét thành công QR CCCD!')
   stopScan()
+  
   if (decodedText.includes('|')) {
     const parts = decodedText.split('|')
     if (parts.length >= 6) {
       nhanVien.tenNv = parts[2]
+      
       const rawDate = parts[3]
       if (rawDate && rawDate.length === 8) {
         nhanVien.ngaySinh = `${rawDate.substring(4, 8)}-${rawDate.substring(2, 4)}-${rawDate.substring(0, 2)}`
       }
-      nhanVien.gioiTinh = parts[4] === 'Nam' ? '1' : '0'
+      
+      nhanVien.gioiTinh = parts[4] === 'Nam' ? 1 : 0
+      
       if (nhanVien.listDiaChi.length > 0) {
-        nhanVien.listDiaChi[0].diaChiChiTiet = parts[5]
+        nhanVien.listDiaChi[0].chiTietCuThe = parts[5]
       }
     }
   } else {
     if (nhanVien.listDiaChi.length > 0) {
-      nhanVien.listDiaChi[0].diaChiChiTiet = decodedText
+      nhanVien.listDiaChi[0].chiTietCuThe = decodedText
     }
   }
 }
@@ -281,131 +285,144 @@ onBeforeUnmount(() => {
   if (qrScanner) qrScanner.clear()
 })
 
-// --- LOGIC MẢNG ĐỊA CHỈ ---
-const addAddress = () => {
-  nhanVien.listDiaChi.push({
-    tinhThanh: '',
-    phuongXa: '',
-    diaChiChiTiet: '',
-    macDinh: false
-  })
-}
-
-const removeAddress = (index) => {
-  nhanVien.listDiaChi.splice(index, 1)
-  if (!nhanVien.listDiaChi.some(a => a.macDinh) && nhanVien.listDiaChi.length > 0) {
-    nhanVien.listDiaChi[0].macDinh = true
-  }
-}
-
-const setMainAddress = (selectedIndex) => {
-  nhanVien.listDiaChi.forEach((item, index) => {
-    item.macDinh = (index === selectedIndex)
-  })
-}
-
 // --- XỬ LÝ ĐỌC FILE ẢNH SANG CHUỖI BASE64 ---
 const handleImageUpload = (event) => {
   const file = event.target.files[0]
-  if (file) {
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Kích thước ảnh không được vượt quá 2MB!')
-      return
-    }
-    
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      nhanVien.avatar = e.target.result 
-    }
-    reader.onerror = (err) => {
-      console.error("Lỗi khi đọc file ảnh:", err)
-    }
-    reader.readAsDataURL(file)
+  if (!file) return
+
+  if (file.size > 2 * 1024 * 1024) {
+    alert('Kích thước ảnh không được vượt quá 2MB!')
+    return
   }
+  
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    nhanVien.avatar = e.target.result 
+  }
+  reader.onerror = (err) => {
+    console.error("Lỗi khi đọc file ảnh:", err)
+  }
+  reader.readAsDataURL(file)
 }
 
-// --- SUBMIT LƯU DỮ LIỆU CHUẨN HOÁ PHÍA FRONTEND ---
+// --- SUBMIT LƯU DỮ LIỆU ĐỒNG BỘ BACKEND ---
 const saveNhanVien = async () => {
-  // Reset lại toàn bộ thông báo lỗi trước đó
+  errors.tenNv = ''
   errors.sdt = ''
   errors.email = ''
 
-  if (!nhanVien.tenNv.trim() || !nhanVien.sdt.trim()) {
-    alert('Vui lòng điền đủ Họ và tên, Số điện thoại!')
-    return
+  let hasError = false
+  if (!nhanVien.tenNv.trim()) {
+    errors.tenNv = 'Vui lòng không để trống Họ và tên!'
+    hasError = true
   }
+  if (!nhanVien.sdt.trim()) {
+    errors.sdt = 'Vui lòng không để trống Số điện thoại!'
+    hasError = true
+  } else if (!validatePhoneNumber(nhanVien.sdt.trim())) {
+    errors.sdt = 'Số điện thoại không hợp lệ'
+    hasError = true
+  }
+  if (!nhanVien.email.trim()) {
+    errors.email = 'Vui lòng cung cấp Email để nhận thông báo mật khẩu!'
+    hasError = true
+  }
+  
+  if (hasError) return
 
   try {
-    const activeAddr = nhanVien.listDiaChi.find(a => a.macDinh) || nhanVien.listDiaChi[0]
-    const stringDiaChi = `${activeAddr?.diaChiChiTiet || ''}, ${activeAddr?.phuongXa || ''}, ${activeAddr?.tinhThanh || ''}`
+    const activeAddr = nhanVien.listDiaChi.find(a => a.isDefault) || nhanVien.listDiaChi[0]
+    
+    let stringDiaChi = ''
+    if (activeAddr) {
+      stringDiaChi = `Số ${activeAddr.chiTietCuThe || ''}, Phường ${activeAddr.phuongXa || ''}, ${activeAddr.tinhThanh || ''}`
+    }
 
+    const processedAddresses = nhanVien.listDiaChi.map(addr => ({
+      tinhThanh: addr.tinhThanh,
+      phuongXa: addr.phuongXa,
+      chiTietCuThe: addr.chiTietCuThe,
+      isDefault: addr.isDefault,
+      chiTiet: `Số ${addr.chiTietCuThe || ''}, Phường ${addr.phuongXa || ''}, ${addr.tinhThanh || ''}`
+    }))
+
+    // Đóng gói dataPayload sạch sẽ đồng bộ cấu trúc Object DTO gửi lên Backend
     const dataPayload = {
-      maNv: 'NV' + Math.floor(100000 + Math.random() * 900000),
       tenNv: nhanVien.tenNv.trim(),
       sdt: nhanVien.sdt.trim(),
-      email: nhanVien.email.trim() || "", 
+      email: nhanVien.email.trim(), 
       gioiTinh: Number(nhanVien.gioiTinh),
       avatar: nhanVien.avatar || null, 
       ngaySinh: nhanVien.ngaySinh || null, 
       diaChi: stringDiaChi, 
-      trangThai: nhanVien.trangThai ? 1 : 0,
+      trangThai: Number(nhanVien.trangThai),
+      addresses: processedAddresses, 
       vaiTro: {
-        id: Number(nhanVien.idVaiTro)
+        id: Number(nhanVien.vaiTro) // Gửi dạng object lồng chứa ID vai trò để JPA map dữ liệu
       }
     }
 
-    console.log("Dữ liệu gửi lên API kiểm tra:", dataPayload)
+    // Gửi dữ liệu tới API Thêm mới của Backend
+    
 
-    const response = await axios.post('http://localhost:8080/nhan-vien/add', dataPayload)
+const response = await createNhanVien(dataPayload);
 
     if (response.status === 200 || response.status === 201) {
-      alert('Thêm nhân viên mới thành công!')
+      alert('🎉 Thêm nhân viên mới thành công! Mật khẩu truy cập hệ thống đã được gửi về Gmail của họ.')
       router.push('/nhan-vien')
     }
   } catch (error) {
     console.error("Chi tiết phản hồi lỗi mạng:", error)
     
-    // Xử lý hứng lỗi validation từ Backend (Ví dụ lỗi trùng mã 400 hoặc 422)
-    if (error.response && (error.response.status === 400 || error.response.status === 422)) {
+    if (error.response && (error.response.status === 400 || error.response.status === 422 || error.response.status === 500)) {
       const serverMessage = error.response.data?.message || error.response.data
       const messageStr = String(serverMessage).toLowerCase()
       
-      // Kiểm tra từ khóa trong message do Backend trả về để map vào ô lỗi tương ứng
       if (messageStr.includes('số điện thoại') || messageStr.includes('sdt') || messageStr.includes('phone')) {
-        errors.sdt = 'Số điện thoại này đã được sử dụng!'
+        errors.sdt = 'Số điện thoại này đã được sử dụng trong hệ thống!'
         return
       } 
-      
       if (messageStr.includes('email')) {
-        errors.email = 'Địa chỉ email này đã được sử dụng!'
+        errors.email = 'Địa chỉ email này đã được sử dụng trong hệ thống!'
         return
       }
     }
     
-    // Các lỗi khác không phải lỗi trùng lặp (Lỗi hệ thống 500, lỗi mạng...)
     const errDetail = error.response?.data?.message || error.response?.data || error.message
-    alert('Lưu thất bại ' + errDetail)
+    alert('Lưu nhân viên thất bại: ' + errDetail)
   }
 }
 </script>
 
 <style scoped>
-/* CSS bổ sung để hiển thị giao diện báo lỗi tinh tế */
+.form-select-control {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  height: 38px; 
+  background-color: #fff;
+  font-size: 14px;
+  color: #334155;
+  cursor: pointer;
+  box-sizing: border-box; 
+  outline: none;
+}
+.form-select-control:focus {
+  border-color: #f79b66; 
+}
 .error-text {
   color: #ef4444;
   font-size: 13px;
   margin-top: 5px;
   display: block;
 }
-
 .input-error {
   border-color: #ef4444 !important;
   background-color: #fef2f2;
 }
-</style>
 
-<style scoped>
-/* Toàn bộ CSS đồng bộ tuyệt đối theo layout mẫu mượt mà của Khách hàng */
+/* Toàn bộ CSS đồng bộ theo layout mẫu mượt mà cá tính của Khách hàng */
 .customer-card {
   background: #ffffff;
   padding: 24px;
@@ -442,7 +459,7 @@ const saveNhanVien = async () => {
   padding: 20px;
   text-align: center;
 }
-.avatar-box h3, .form-content h3, .address-header h3 {
+.avatar-box h3, .form-content h3 {
   font-size: 15px;
   font-weight: 600;
   color: #1e293b;
@@ -519,7 +536,7 @@ const saveNhanVien = async () => {
   height: 38px;
   align-items: center;
 }
-.radio-label, .checkbox-label {
+.radio-label {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -533,47 +550,21 @@ const saveNhanVien = async () => {
   padding: 20px;
   margin-bottom: 24px;
 }
-.address-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-.address-header h3 { margin: 0; }
-.btn-add-address {
-  background: #f97316;
-  color: white;
-  border: none;
-  padding: 6px 14px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 13px;
-}
 .address-item {
   border: 1px solid #e2e8f0;
   padding: 16px;
   border-radius: 6px;
-  margin-bottom: 16px;
 }
 .address-title {
   font-size: 13px;
   font-weight: 600;
-  color: #f97316;
-}
-.btn-delete-addr {
-  background: none;
-  border: none;
-  color: #ef4444;
-  cursor: pointer;
-  font-size: 13px;
 }
 .button-group {
   display: flex;
   gap: 12px;
 }
 .btn-save {
-  background: #f97316;
+  background: #f79b66;
   color: white;
   border: none;
   padding: 10px 24px;

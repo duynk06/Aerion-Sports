@@ -5,17 +5,27 @@ import ThongKeView from '../views/ThongKeView.vue'
 import BanHang from '../views/BanHangView.vue'
 import HoaDon from '../views/HoaDonView.vue'
 import HoaDonDetail from '../views/ChiTietHoaDon.vue'
-import SanPham from '../views/SanPhamView.vue'
+import SanPham from '../views/sanpham/SanPhamView.vue'
 import PhieuGiamGia from '../views/PhieuGiamGiaView.vue'
 import DotGiamGia from '../views/DotGiamGiaView.vue'
 import NhanVienView from '../views/NhanVienView.vue'
 import KhachHangView from '../views/KhachHangView.vue'
-import BienThe from '../views/BienTheView.vue'
-import ThuocTinh from '../views/ThuocTinhView.vue'
+import BienThe from '../views/bienthe/BienTheView.vue'
 import ThemPhieuGiamGia from '../views/ThemPhieuGiamGia.vue'
 import SuaPhieuGiamGia from '../views/SuaPhieuGiamGia.vue'
 import ThemNhanVienView from '../views/ThemNhanVienView.vue'
 import ThemKhachHangView from '../views/ThemKhachHangView.vue'
+import ThemSanPhamView from '../views/sanpham/ThemSanPhamView.vue'
+import ThemBienTheView from '../views/bienthe/ThemBienTheView.vue'
+import SuaBienTheView from '../views/bienthe/SuaBienTheView.vue'
+import MauSacView from '../views/thuoc-tinh/MauSacView.vue'
+import TrongLuongView from '../views/thuoc-tinh/TrongLuongView.vue'
+import DoCungView from '../views/thuoc-tinh/DoCungView.vue'
+import DiemCanBangView from '../views/thuoc-tinh/DiemCanBangView.vue'
+import ChuViCanView from '../views/thuoc-tinh/ChuViCanView.vue'
+import ChatLieuThanView from '../views/thuoc-tinh/ChatLieuThanView.vue'
+import ChatLieuKhungView from '../views/thuoc-tinh/ChatLieuKhungView.vue'
+import DanhSachBienTheView from '../views/bienthe/DanhSachBienTheView.vue'
 const routes = [
   { path: '/', redirect: '/trang-chu' },
 
@@ -27,12 +37,35 @@ const routes = [
   { path: '/hoa-don', component: HoaDon },
   { path: '/hoa-don/:id', component: HoaDonDetail },
   { path: '/san-pham', component: SanPham },
+  { 
+    path: '/san-pham/them-moi', 
+    name: 'ThemMoiSanPham', 
+    component: ThemSanPhamView 
+  },
+  { path: '/san-pham/danh-sach-bien-the', name: 'DanhSachBienThe', component: DanhSachBienTheView },
 { 
     path: '/san-pham/bien-the', 
     component: BienThe,
-    alias: '/bien-the' // <-- Chấp nhận cả đường dẫn này, Router sẽ tự hiểu là một
+    alias: '/bien-the' 
   },
-    { path: '/thuoc-tinh', component: ThuocTinh },
+  {
+  path: '/san-pham/bien-the/them-moi',
+  name: 'ThemMoiBienThe',
+  component: ThemBienTheView
+},
+{
+  path: '/san-pham/bien-the/sua',
+  name: 'SuaBienThe',
+  component: SuaBienTheView
+},
+
+    { path: '/thuoc-tinh/mau-sac', component: MauSacView },
+  { path: '/thuoc-tinh/trong-luong', component: TrongLuongView },
+  { path: '/thuoc-tinh/do-cung', component: DoCungView },
+  { path: '/thuoc-tinh/diem-can-bang', component: DiemCanBangView },
+  { path: '/thuoc-tinh/chu-vi-can', component: ChuViCanView },
+  { path: '/thuoc-tinh/chat-lieu-than', component: ChatLieuThanView },
+  { path: '/thuoc-tinh/chat-lieu-khung', component: ChatLieuKhungView },
  {
     path: '/phieu-giam-gia',
     name: 'PhieuGiamGia',
@@ -47,7 +80,11 @@ const routes = [
   {
     path: '/phieu-giam-gia/sua/:id',
     name: 'SuaPhieuGiamGia',
-    component: () => SuaPhieuGiamGia
+    component: SuaPhieuGiamGia
+  },
+  {
+    path: '/phieu-giam-gia/xem/:id',
+    component: () => import('@/views/ViewPhieuGiamGia.vue')
   },
   { path: '/dot-giam-gia', component: DotGiamGia },
   { path: '/nhan-vien', name: 'nhan-vien', component: NhanVienView },

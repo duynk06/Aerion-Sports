@@ -1,39 +1,21 @@
 
+/* Badge chung: Tất cả về nền xanh lá nhạt, chữ xanh lá đậm */
+.invoice-badge, .status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  
+  /* Thiết lập màu sắc đồng nhất */
+  background: #dcfce7; /* Nền xanh lá nhạt */
+  color: #166534;      /* Chữ xanh lá đậm */
+  
+  /* Đảm bảo border cũng hài hòa */
+  border: 1px solid #bbf7d0;
+}
+ 
 
-  .invoice-badge{
-  display:inline-block;
-  padding:4px 12px;
-  border-radius:999px;
-  font-size:11px;
-  font-weight:600;
-}
-
-.invoice-offline{
-  background:#dbeafe;
-  color:#1d4ed8;
-}
-
-.invoice-online{
-  background:#f3e8ff;
-  color:#7e22ce;
-}
-  .status-badge{
-  display:inline-block;
-  padding:4px 12px;
-  border-radius:999px;
-  font-size:11px;
-  font-weight:600;
-}
-
-.status-paid{
-  background:#dcfce7;
-  color:#15803d;
-}
-
-.status-cancel{
-  background:#fee2e2;
-  color:#dc2626;
-}
 .card{
   background:#fff;
   border-radius:12px;
@@ -80,41 +62,6 @@
   gap:10px;
   margin-top:16px;
 }
-.status-wait-confirm{
-  background:#fef3c7;
-  color:#b45309;
-}
-
-.status-confirmed{
-  background:#dbeafe;
-  color:#1d4ed8;
-}
-
-.status-wait-delivery{
-  background:#ede9fe;
-  color:#6d28d9;
-}
-
-.status-delivering{
-  background:#cffafe;
-  color:#0e7490;
-}
-
-.status-delivered{
-  background:#dcfce7;
-  color:#15803d;
-}
-
-.status-completed{
-  background:#bbf7d0;
-  color:#166534;
-}
-
-.status-cancel{
-  background:#fee2e2;
-  color:#dc2626;
-}
-
 .btn-reset{
   border:none;
   background:#f3f4f6;
@@ -218,20 +165,8 @@ tbody tr:hover{
 
 /* BADGE */
 
-.invoice-type{
-  background:#f4f4f4;
-  padding:4px 10px;
-  border-radius:20px;
-  font-size:11px;
-}
 
-.status-success{
-  background:#28a745;
-  color:white;
-  padding:4px 10px;
-  border-radius:20px;
-  font-size:11px;
-}
+
 
 /* ACTION */
 

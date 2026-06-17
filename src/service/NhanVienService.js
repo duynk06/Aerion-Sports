@@ -26,7 +26,32 @@ export const fetchAllNhanVien = async () => {
 };
 
 /**
- * 2. Cập nhật thông tin nhân viên (Gồm thông tin cá nhân + mảng địa chỉ lồng bên trong)
+ * 2. ⚡ THÊM MỚI: Gọi API thêm nhân viên để kích hoạt luồng tự cấp mật khẩu và gửi Email ngầm
+ */
+export const createNhanVien = async (nhanVienData) => {
+  try {
+    const response = await fetch(`${baseUrl}/nhan-vien/create`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(nhanVienData)
+});
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Lỗi ${response.status}: ${errorText || 'Không thể thêm mới nhân viên'}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Lỗi khi gọi API createNhanVien:", error);
+    throw error;
+  }
+};
+
+/**
+ * 3. Cập nhật thông tin nhân viên (Gồm thông tin cá nhân + mảng địa chỉ lồng bên trong)
  */
 export const updateNhanVien = async (id, nhanVienData) => {
   try {
@@ -51,7 +76,7 @@ export const updateNhanVien = async (id, nhanVienData) => {
 };
 
 /**
- * 3. Thay đổi trạng thái hoạt động nhanh của nhân viên
+ * 4. Thay đổi trạng thái hoạt động nhanh của nhân viên
  */
 export const changeStatusNhanVien = async (id, trangThai) => {
   try {
@@ -75,12 +100,11 @@ export const changeStatusNhanVien = async (id, trangThai) => {
 };
 
 /**
- * 4. Thêm địa chỉ mới trực tiếp cho nhân viên từ Modal
+ * 5. Thêm địa chỉ mới trực tiếp cho nhân viên từ Modal
  * (Tận dụng hàm cập nhật tổng để đồng bộ mảng địa chỉ xuống SQL)
  */
 export const addAddressByNhanVienId = async (nhanVienId, addressPayload) => {
   try {
-    // Tải thông tin hiện tại của toàn bộ nhân viên để tìm đúng đối tượng
     const allNhanVien = await fetchAllNhanVien();
     const currentNv = allNhanVien.find(item => (item.id || item.idNhanVien) === nhanVienId);
     
@@ -88,25 +112,21 @@ export const addAddressByNhanVienId = async (nhanVienId, addressPayload) => {
       throw new Error("Không tìm thấy thông tin nhân viên để thêm địa chỉ!");
     }
 
-    // Khởi tạo mảng địa chỉ nếu chưa có và thêm địa chỉ mới vào
     if (!Array.isArray(currentNv.addresses)) {
       currentNv.addresses = [];
     }
 
-    // Tạo ID giả định tạm thời cho địa chỉ mới nếu Backend cần, hoặc để tự tăng dưới SQL
     const newAddr = {
       ...addressPayload,
-      id: addressPayload.id || Date.now() // tạo tạm id số nếu cần
+      id: addressPayload.id || Date.now() 
     };
 
-    // Nếu địa chỉ mới được đặt làm mặc định, hủy mặc định các địa chỉ cũ
     if (newAddr.isDefault) {
       currentNv.addresses.forEach(addr => addr.isDefault = false);
     }
 
     currentNv.addresses.push(newAddr);
 
-    // Chuẩn hóa cấu trúc vai trò tương thích với Spring Boot Jackson Map giống giao diện view
     let roleId = 3;
     if (currentNv.vaiTro && typeof currentNv.vaiTro === 'object') {
       roleId = currentNv.vaiTro.id;
@@ -119,7 +139,6 @@ export const addAddressByNhanVienId = async (nhanVienId, addressPayload) => {
       vaiTro: { id: Number(roleId) }
     };
 
-    // Gọi hàm update để đẩy dữ liệu mới lên cơ sở dữ liệu
     return await updateNhanVien(nhanVienId, updatedPayload);
   } catch (error) {
     console.error(`Lỗi tại addAddressByNhanVienId (ID NV: ${nhanVienId}):`, error);
@@ -128,14 +147,13 @@ export const addAddressByNhanVienId = async (nhanVienId, addressPayload) => {
 };
 
 /**
- * 5. Đặt địa chỉ làm mặc định hoặc cập nhật một địa chỉ từ Modal
+ * 6. Đặt địa chỉ làm mặc định hoặc cập nhật một địa chỉ từ Modal
  */
 export const updateAddress = async (addressId, addressPayload) => {
   try {
     const allNhanVien = await fetchAllNhanVien();
     let targetNv = null;
 
-    // Tìm xem địa chỉ cần sửa đang thuộc về nhân viên nào
     for (const nv of allNhanVien) {
       if (Array.isArray(nv.addresses) && nv.addresses.some(addr => addr.id === addressId)) {
         targetNv = nv;
@@ -147,12 +165,10 @@ export const updateAddress = async (addressId, addressPayload) => {
       throw new Error("Không tìm thấy nhân viên sở hữu địa chỉ này!");
     }
 
-    // Cập nhật trạng thái hoặc thông tin của địa chỉ trong mảng
     targetNv.addresses = targetNv.addresses.map(addr => {
       if (addr.id === addressId) {
         return { ...addr, ...addressPayload };
       }
-      // Nếu địa chỉ hiện tại được đặt làm mặc định, các địa chỉ khác sẽ hủy mặc định
       if (addressPayload.isDefault) {
         return { ...addr, isDefault: false };
       }
@@ -179,14 +195,13 @@ export const updateAddress = async (addressId, addressPayload) => {
 };
 
 /**
- * 6. Xóa vĩnh viễn một địa chỉ khỏi nhân viên từ Modal
+ * 7. Xóa vĩnh viễn một địa chỉ khỏi nhân viên từ Modal
  */
 export const deleteAddress = async (addressId) => {
   try {
     const allNhanVien = await fetchAllNhanVien();
     let targetNv = null;
 
-    // Tìm nhân viên đang chứa địa chỉ muốn xóa
     for (const nv of allNhanVien) {
       if (Array.isArray(nv.addresses) && nv.addresses.some(addr => addr.id === addressId)) {
         targetNv = nv;
@@ -198,11 +213,9 @@ export const deleteAddress = async (addressId) => {
       throw new Error("Không tìm thấy thông tin nhân viên chứa địa chỉ cần xóa!");
     }
 
-    // Lọc bỏ địa chỉ cần xóa ra khỏi mảng
     const wasDefault = targetNv.addresses.find(addr => addr.id === addressId)?.isDefault;
     targetNv.addresses = targetNv.addresses.filter(addr => addr.id !== addressId);
 
-    // Nếu xóa đúng địa chỉ mặc định, tự động chuyển quyền mặc định sang địa chỉ đầu tiên còn lại
     if (wasDefault && targetNv.addresses.length > 0) {
       targetNv.addresses[0].isDefault = true;
     }

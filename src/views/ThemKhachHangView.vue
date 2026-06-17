@@ -26,29 +26,20 @@
         <div class="info-section">
 
           <div class="avatar-box">
-  <h3>Ảnh đại diện</h3>
-  <div class="avatar-preview">
-    <img
-      v-if="khachHang.avatar"
-      :src="khachHang.avatar"
-      alt="avatar"
-    />
-    <span v-else>👤</span>
-  </div>
+            <h3>Ảnh đại diện</h3>
+            <div class="avatar-preview">
+              <img v-if="khachHang.avatar" :src="khachHang.avatar" alt="avatar" />
+              <span v-else>👤</span>
+            </div>
 
-  <!-- === TEST MODE - Input hiện rõ === -->
-  <div style="margin-top: 10px;">
-    <input
-      id="avatar-file-input"
-      type="file"
-      accept="image/*"
-      @change="handleImageUpload"
-      style="margin-bottom: 8px;"
-    />
-    <br>
-    <small>JPG, PNG (tối đa 2MB)</small>
-  </div>
-</div>
+            <label class="upload-btn" style="cursor: pointer; display: inline-block;">
+              📷 Chọn ảnh
+              <input id="avatar-file-input" type="file" accept="image/*" style="display: none;"
+                @change="handleImageUpload" />
+            </label>
+
+            <small>JPG, PNG (tối đa 2MB)</small>
+          </div>
 
           <div class="form-content">
             <h3>Thông tin khách hàng</h3>
@@ -57,6 +48,18 @@
               <div class="form-group">
                 <label>Họ và tên <span>*</span></label>
                 <input type="text" v-model="khachHang.hoTen" placeholder="Nhập họ và tên" />
+              </div>
+
+              <div class="address-grid">
+                <div class="form-group">
+                  <label>Người nhận <span>*</span></label>
+                  <input type="text" v-model="itemAddress.nguoiNhan" placeholder="Nhập tên người nhận" required />
+                </div>
+
+                <div class="form-group">
+                  <label>SĐT người nhận <span>*</span></label>
+                  <input type="text" v-model="itemAddress.sdt" placeholder="Nhập SĐT người nhận" required />
+                </div>
               </div>
 
               <div class="form-group" :class="{ 'has-error': errors.sdt }">
@@ -96,17 +99,15 @@
 
               <div class="form-group">
                 <label>Trạng thái</label>
-                <div style="display: flex; gap: 20px; margin-top: 8px; content-visibility: auto;">
-                  <label
-                    style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: #333; font-weight: normal;">
+                <div style="display: flex; gap: 20px; margin-top: 8px;">
+                  <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: #333;">
                     <input type="radio" :value="1" v-model="khachHang.trangThai"
-                      style="width: 18px; height: 18px; display: inline-block !important; visibility: visible !important; opacity: 1 !important; accent-color: #007bff; cursor: pointer;" />
+                      style="width: 18px; height: 18px; accent-color: #007bff; cursor: pointer;" />
                     Hoạt động
                   </label>
-                  <label
-                    style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: #333; font-weight: normal;">
+                  <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: #333;">
                     <input type="radio" :value="0" v-model="khachHang.trangThai"
-                      style="width: 18px; height: 18px; display: inline-block !important; visibility: visible !important; opacity: 1 !important; accent-color: #007bff; cursor: pointer;" />
+                      style="width: 18px; height: 18px; accent-color: #007bff; cursor: pointer;" />
                     Ngừng hoạt động
                   </label>
                 </div>
@@ -125,7 +126,7 @@
             </button>
           </div>
 
-          <div v-for="(diaChi, index) in khachHang.diaChi" :key="index" class="address-item">
+          <div v-for="(itemAddress, index) in khachHang.addresses" :key="itemAddress.id || index" class="address-item">
             <div class="address-title">
               📍 Địa chỉ {{ index + 1 }}
             </div>
@@ -133,33 +134,34 @@
             <div class="address-grid">
               <div class="form-group">
                 <label>Tỉnh / Thành phố</label>
-                <select v-model="diaChi.tinhThanh">
+                <select v-model="itemAddress.tinhThanh">
                   <option value="">Chọn Tỉnh / Thành phố</option>
-                  <option>Hà Nội</option>
-                  <option>Hồ Chí Minh</option>
-                  <option>Đà Nẵng</option>
-                  <option>Hải Phòng</option>
+                  <option value="Hà Nội">Hà Nội</option>
+                  <option value="Hồ Chí Minh">Hồ Chí Minh</option>
+                  <option value="Đà Nẵng">Đà Nẵng</option>
+                  <option value="Hải Phòng">Hải Phòng</option>
                 </select>
               </div>
 
               <div class="form-group">
                 <label>Phường / Xã</label>
-                <input type="text" v-model="diaChi.phuongXa" placeholder="Nhập phường/xã" />
+                <input type="text" v-model="itemAddress.phuongXa" placeholder="Nhập phường/xã" />
               </div>
             </div>
 
             <div class="form-group">
               <label>Địa chỉ chi tiết</label>
-              <input type="text" v-model="diaChi.diaChiChiTiet" placeholder="Nhập số nhà, tên đường..." />
+              <input type="text" v-model="itemAddress.chiTiet" placeholder="Nhập số nhà, tên đường..." />
             </div>
 
             <div class="address-footer">
               <label class="default-address">
-                <input type="checkbox" v-model="diaChi.macDinh" />
+                <input type="checkbox" :checked="itemAddress.isDefault" @change="setMainAddress(index)" />
                 Đặt làm địa chỉ mặc định
               </label>
 
-              <button v-if="khachHang.diaChi.length > 1" type="button" class="btn-delete" @click="removeAddress(index)">
+              <button v-if="khachHang.addresses.length > 1" type="button" class="btn-delete"
+                @click="removeAddress(index)">
                 🗑 Xóa
               </button>
             </div>
@@ -196,6 +198,7 @@ const errors = reactive({
   email: ''
 })
 
+// 🌟 SỬA LỖI: Đổi cấu trúc diaChi thành addresses để đồng bộ 100% với file Template
 const khachHang = reactive({
   hoTen: '',
   sdt: '',
@@ -204,12 +207,13 @@ const khachHang = reactive({
   gioiTinh: '1',
   trangThai: 1,
   avatar: '',
-  diaChi: [
+  addresses: [
     {
+      id: Date.now(),
       tinhThanh: '',
       phuongXa: '',
-      diaChiChiTiet: '',
-      macDinh: true
+      chiTiet: '', // Đổi diaChiChiTiet thành chiTiet chuẩn dữ liệu
+      isDefault: true // Đổi macDinh thành isDefault
     }
   ]
 })
@@ -263,13 +267,13 @@ const onScanSuccess = (decodedText) => {
       }
       khachHang.gioiTinh = parts[4] === 'Nam' ? '1' : '0'
 
-      if (khachHang.diaChi.length > 0) {
-        khachHang.diaChi[0].diaChiChiTiet = parts[5]
+      if (khachHang.addresses.length > 0) {
+        khachHang.addresses[0].chiTiet = parts[5]
       }
     }
   } else {
-    if (khachHang.diaChi.length > 0) {
-      khachHang.diaChi[0].diaChiChiTiet = decodedText
+    if (khachHang.addresses.length > 0) {
+      khachHang.addresses[0].chiTiet = decodedText
     }
   }
 }
@@ -281,28 +285,47 @@ onBeforeUnmount(() => {
 })
 
 // --- LOGIC XỬ LÝ ĐỊA CHỈ & HÌNH ẢNH ---
+// 🌟 SỬA LỖI: Cập nhật hàm thêm địa chỉ theo mảng cấu trúc mới
 const addAddress = () => {
-  khachHang.diaChi.push({
+  khachHang.addresses.push({
+    id: Date.now() + Math.random(),
     tinhThanh: '',
     phuongXa: '',
-    diaChiChiTiet: '',
-    macDinh: false
+    chiTiet: '',
+    isDefault: false
   })
 }
 
+// 🌟 SỬA LỖI: Cập nhật hàm xóa địa chỉ, tự động đẩy địa chỉ đầu lên làm mặc định nếu xóa mất ô mặc định
+
 const removeAddress = (index) => {
-  khachHang.diaChi.splice(index, 1)
+  const wasDefault = khachHang.addresses[index].isDefault
+  khachHang.addresses.splice(index, 1)
+  
+  if (wasDefault && khachHang.addresses.length > 0) {
+    khachHang.addresses[0].isDefault = true
+  }
 }
 
+const setMainAddress = (selectedIndex) => {
+  khachHang.addresses.forEach((item, index) => {
+    item.isDefault = (index === selectedIndex)
+  })
+}
+
+// 🌟 BỔ SUNG: Hàm quản lý click chọn duy nhất một địa chỉ mặc định trong mảng
+const handleSetDefaultAddress = (index) => {
+  // Cập nhật mảng bằng cách tạo mới để trigger Vue reactivity
+  khachHang.addresses = khachHang.addresses.map((addr, idx) => ({
+    ...addr,
+    isDefault: idx === index // Cái được click là true, còn lại là false
+  }));
+};
+
+// 🌟 SỬA LỖI: Đổi từ tạo ObjectURL sang chuỗi Base64 hoàn chỉnh để lưu được xuống DB
 const handleImageUpload = (event) => {
   const file = event.target.files[0]
   if (!file) return
-
-  console.log('📸 File ảnh khách hàng được chọn:', {
-    name: file.name,
-    size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
-    type: file.type
-  })
 
   // Kiểm tra dung lượng
   if (file.size > 2 * 1024 * 1024) {
@@ -318,9 +341,12 @@ const handleImageUpload = (event) => {
     return
   }
 
-  // Sử dụng URL.createObjectURL (nhanh hơn cho preview)
-  khachHang.avatar = URL.createObjectURL(file)
-  console.log('✅ Preview avatar khách hàng thành công:', khachHang.avatar)
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    khachHang.avatar = e.target.result
+    console.log('✅ Chuyển đổi Base64 ảnh khách hàng thành công!')
+  }
+  reader.readAsDataURL(file)
 }
 
 // --- LOGIC HEADERS & CHECK TRÙNG LẶP ---
@@ -354,14 +380,12 @@ const validateSdt = async () => {
     errors.sdt = 'Số điện thoại không được để trống!'
     return
   }
-  // Regex check định dạng số điện thoại Việt Nam cơ bản
   const phoneRegex = /(0[3|5|7|8|9])+([0-9]{8})\b/
   if (!phoneRegex.test(khachHang.sdt.trim())) {
     errors.sdt = 'Số điện thoại không đúng định dạng!'
     return
   }
 
-  // Gọi API check trùng
   const res = await checkTrungLapKhachHang(khachHang.sdt, '')
   if (res.sdtTrung) {
     errors.sdt = 'Số điện thoại này đã tồn tại trong hệ thống!'
@@ -371,18 +395,16 @@ const validateSdt = async () => {
 }
 
 const validateEmail = async () => {
-  if (!khachHang.email.trim()) {
+  if (!khachHang.email || !khachHang.email.trim()) {
     errors.email = ''
     return
   }
-  // Regex check định dạng email
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(khachHang.email.trim())) {
     errors.email = 'Email không đúng định dạng!'
     return
   }
 
-  // Gọi API check trùng
   const res = await checkTrungLapKhachHang('', khachHang.email)
   if (res.emailTrung) {
     errors.email = 'Địa chỉ Email này đã tồn tại trong hệ thống!'
@@ -392,81 +414,58 @@ const validateEmail = async () => {
 }
 
 // --- CALL API LƯU THÔNG TIN KHÁCH HÀNG ---
+// --- CALL API LƯU THÔNG TIN KHÁCH HÀNG ---
 const saveKhachHang = async () => {
-  // 1. Kiểm tra nhanh các trường bắt buộc ở Client trước
+  // 1. Kiểm tra validate cơ bản
   if (!khachHang.hoTen.trim() || !khachHang.sdt.trim()) {
-    alert('Vui lòng nhập đầy đủ các trường bắt buộc (Họ tên, Số điện thoại)!')
-    return
+    alert('Vui lòng nhập đầy đủ các trường bắt buộc (Họ tên, Số điện thoại)!');
+    return;
   }
 
-  // 2. Chạy check trùng lặp qua API kiểm tra nhanh của bạn (nếu có)
-  const checkResult = await checkTrungLapKhachHang(khachHang.sdt, khachHang.email)
-  if (checkResult.sdtTrung) {
-    alert('Thêm thất bại: Số điện thoại khách hàng này đã tồn tại trong hệ thống (Check nhanh)!')
-    return
-  }
-  if (checkResult.emailTrung) {
-    alert('Thêm thất bại: Địa chỉ Email khách hàng này đã tồn tại trong hệ thống (Check nhanh)!')
-    return
+  if (errors.sdt || errors.email) {
+    alert('Vui lòng sửa các lỗi định dạng/trùng lặp trước khi lưu!');
+    return;
   }
 
-  // 3. Tiến hành gửi dữ liệu lên Backend và bẫy lỗi catch chuyên sâu
+  // 2. Xử lý mảng địa chỉ - BỔ SUNG CÁC TRƯỜNG BẮT BUỘC ĐỂ KHÔNG BỊ LỖI NULL
+  const now = new Date().toISOString();
+  const processedAddresses = khachHang.addresses.map(addr => ({
+    // Đảm bảo tên các key này khớp chính xác với Entity Address bên Java
+    diaChiChiTiet: addr.chiTiet || '',
+    phuongXa: addr.phuongXa || '',
+    tinhThanh: addr.tinhThanh || '',
+    nguoiNhan: khachHang.hoTen || 'Khách hàng', // Trường bị thiếu gây lỗi 400
+    sdt: khachHang.sdt || '',                  // Trường bị thiếu gây lỗi 400
+    macDinh: addr.isDefault ? 1 : 0,           // Chuyển boolean sang số (1/0)
+    ngayTao: now,
+    ngayCapNhat: now
+  }));
+
+  const dataPost = {
+    hoTen: khachHang.hoTen.trim(),
+    sdt: khachHang.sdt.trim(),
+    email: khachHang.email || null,
+    // ... các trường khác của khách hàng
+    addresses: processedAddresses // Mảng chứa các object đã đủ 9 trường
+  };
+
+  // 4. Gửi API
   try {
-    const firstAddr = khachHang.diaChi[0]
-    const addressParts = [firstAddr.diaChiChiTiet, firstAddr.phuongXa, firstAddr.tinhThanh]
-      .map(part => part ? part.trim() : '')
-      .filter(part => part !== '')
-
-    const fullAddress = addressParts.join(', ') || null
-    const tuSinhMa = 'KH' + Date.now()
-
-    const dataPost = {
-      maKhachHang: tuSinhMa,
-      hoTen: khachHang.hoTen.trim(),
-      sdt: khachHang.sdt.trim(),
-      email: khachHang.email ? khachHang.email.trim() : null,
-      ngaySinh: khachHang.ngaySinh || null,
-      gioiTinh: Number(khachHang.gioiTinh),
-      avatar: khachHang.avatar || null,
-      trangThai: Number(khachHang.trangThai),
-      diaChi: fullAddress,
-      stt: totalCustomers.value + 1
-    }
-
     const response = await axios.post('http://localhost:8080/public/khach-hang/add', dataPost, {
       headers: getAuthHeaders()
-    })
+    });
 
     if (response.status === 200 || response.status === 201) {
-      alert('Lưu dữ liệu khách hàng mới thành công!')
-      router.push('/khach-hang')
+      alert('Thêm khách hàng thành công!');
+      router.push('/khach-hang');
     }
   } catch (error) {
-    console.error('Lỗi API backend khách hàng:', error)
-
-    // ĐOẠN PHÂN TÍCH LOG LỖI 500 TỪ BACKEND ĐỂ HIỂN THỊ THÔNG BÁO
-    let errorMsg = 'Không thể kết nối đến máy chủ Backend.'
-
-    if (error.response && error.response.data) {
-      const serverError = error.response.data
-
-      // Trường hợp Backend trả về object, ta kiểm tra field "message" hoặc chuỗi "trace"
-      const traceString = serverError.trace || ''
-      const messageString = serverError.message || ''
-
-      if (traceString.includes('Số điện thoại đã tồn tại') || messageString.includes('Số điện thoại đã tồn tại')) {
-        errorMsg = 'Số điện thoại này đã tồn tại trên hệ thống! Vui lòng kiểm tra lại.'
-      } else if (traceString.includes('Email đã tồn tại') || messageString.includes('Email đã tồn tại')) {
-        errorMsg = 'Địa chỉ Email này đã tồn tại trên hệ thống! Vui lòng kiểm tra lại.'
-      } else {
-        // Nếu là một lỗi 500 khác không phải trùng dữ liệu
-        errorMsg = messageString || 'Lỗi hệ thống nội bộ (Internal Server Error).'
-      }
-    }
-
-    alert('Thêm khách hàng thất bại! \nChi tiết: ' + errorMsg)
+    console.error('Lỗi API:', error);
+    // Hiển thị chi tiết lỗi từ backend để dễ debug
+    const errorMsg = error.response?.data?.message || error.message || 'Thêm thất bại';
+    alert('Thêm khách hàng thất bại: ' + errorMsg);
   }
-}
+};
 </script>
 
 <style scoped>
@@ -493,7 +492,7 @@ textarea {
 }
 
 textarea {
-  height: auto;
+  height: 40px;
   min-height: 40px;
   padding-top: 10px;
 }
@@ -528,7 +527,7 @@ select.input-error:focus {
 
 /* 4. CAMERA & QUÉT MÃ */
 .btn-trigger-camera {
-  background: #e4925d;
+  background: #f79b66;
   color: white;
   border: none;
   padding: 0 16px;
@@ -544,7 +543,7 @@ select.input-error:focus {
 }
 
 .btn-trigger-camera:hover {
-  background: #d0814f;
+  background: #f79b66;
 }
 
 .btn-close-camera {
@@ -725,7 +724,7 @@ select.input-error:focus {
 .radio-label input[type="radio"] {
   width: 17px;
   height: 17px;
-  accent-color: #e6925e;
+  accent-color: #f79b66;
   cursor: pointer;
 }
 
@@ -752,7 +751,7 @@ select.input-error:focus {
 }
 
 .btn-add-address {
-  background: #e6925e;
+  background: #f79b66;
   color: white;
   border: none;
   padding: 0 15px;
@@ -796,7 +795,7 @@ select.input-error:focus {
 .checkbox-label input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  accent-color: #e6925e;
+  accent-color: #f79b66;
   cursor: pointer;
 }
 
@@ -826,7 +825,7 @@ select.input-error:focus {
 }
 
 .btn-save {
-  background: #e6925e;
+  background: #f79b66;
   color: white;
   border: none;
   padding: 0 24px;
