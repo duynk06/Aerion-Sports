@@ -31,7 +31,7 @@ public class NhanVienController {
         return ResponseEntity.ok(nhanVienService.findById(id));
     }
 
-    @PostMapping("/add")
+    @PostMapping("/create")
     public ResponseEntity<NhanVien> add(@RequestBody NhanVien nhanVien) {
         return ResponseEntity.ok(nhanVienService.create(nhanVien));
     }

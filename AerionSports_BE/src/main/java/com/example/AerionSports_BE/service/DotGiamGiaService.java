@@ -5,6 +5,7 @@ import com.example.AerionSports_BE.dto.DotGiamGiaDTO;
 import com.example.AerionSports_BE.entity.ChiTietDotGiamGia;
 import com.example.AerionSports_BE.entity.ChiTietSanPham;
 import com.example.AerionSports_BE.entity.DotGiamGia;
+import com.example.AerionSports_BE.entity.SanPham;
 import com.example.AerionSports_BE.repository.ChiTietDotGiamGiaRepository;
 import com.example.AerionSports_BE.repository.ChiTietSanPhamRepository;
 import com.example.AerionSports_BE.repository.DotGiamGiaRepository;
@@ -416,5 +417,34 @@ public class DotGiamGiaService {
         dto.setGiaTriGiamRieng(null);
         dto.setGhiChu(null);
         return dto;
+    }
+
+    @Transactional
+    public List<Map<String, Object>> getGroupedProductsForSelection(String keyword) {
+        // 1. Lấy danh sách các biến thể con đang hoạt động dựa trên từ khóa search
+        List<ChiTietSanPham> products = chiTietSanPhamRepository.searchActiveProducts(normalizeKeyword(keyword));
+
+        // 2. Group nhóm danh sách con này theo Thực thể Sản phẩm cha (SanPham)
+        Map<SanPham, List<ChiTietSanPham>> grouped = products.stream()
+                .filter(ctsp -> ctsp.getIdSanPham() != null)
+                .collect(Collectors.groupingBy(ChiTietSanPham::getIdSanPham, LinkedHashMap::new, Collectors.toList()));
+
+        // 3. Đóng gói cấu trúc cây lồng nhau trả về cho Front-end Vue dễ lặp dòng
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map.Entry<SanPham, List<ChiTietSanPham>> entry : grouped.entrySet()) {
+            SanPham spCha = entry.getKey();
+            List<ChiTietSanPham> listCon = entry.getValue();
+
+            Map<String, Object> spMap = new LinkedHashMap<>();
+            spMap.put("idSanPhamCha", spCha.getId());
+            spMap.put("maSanPham", spCha.getMaSanPham());
+            spMap.put("tenSanPham", spCha.getTenSanPham());
+
+            // Map mảng con sang DTO dạng phẳng để Front-end hiển thị thông số vợt
+            spMap.put("mangBienTheCon", listCon.stream().map(this::toChiTietDTO).collect(Collectors.toList()));
+
+            result.add(spMap);
+        }
+        return result;
     }
 }

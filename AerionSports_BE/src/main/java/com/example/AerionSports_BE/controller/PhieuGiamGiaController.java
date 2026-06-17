@@ -1,7 +1,7 @@
 package com.example.AerionSports_BE.controller;
 
+import com.example.AerionSports_BE.dto.VoucherRequestDTO;
 import com.example.AerionSports_BE.entity.PhieuGiamGia;
-
 import com.example.AerionSports_BE.service.PhieuGiamGiaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,8 +31,9 @@ public class PhieuGiamGiaController {
     }
 
     @PostMapping
-    public ResponseEntity<PhieuGiamGia> add(@RequestBody PhieuGiamGia pgg) {
-        return ResponseEntity.ok(service.add(pgg));
+    public ResponseEntity<PhieuGiamGia> add(@RequestBody VoucherRequestDTO dto) {
+        // Gọi thẳng Service nhận DTO để bóc tách mảng IDs và lưu 2 bảng kết hợp
+        return ResponseEntity.ok(service.add(dto));
     }
 
     @PutMapping("/{id}")

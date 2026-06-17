@@ -169,4 +169,9 @@ public class DotGiamGiaController {
         }
     }
 
+    @GetMapping("/grouped-products")
+    public ResponseEntity<?> getGroupedProducts(@RequestParam(value = "keyword", required = false) String keyword) {
+        return ResponseEntity.ok(dotGiamGiaService.getGroupedProductsForSelection(keyword));
+    }
+
 }

@@ -5,18 +5,21 @@ import com.example.AerionSports_BE.entity.VaiTro;
 import com.example.AerionSports_BE.repository.NhanVienRepository;
 import com.example.AerionSports_BE.repository.VaiTroRepository;
 import com.example.AerionSports_BE.service.NhanVienService;
+import com.example.AerionSports_BE.service.EmailService; // ⚡ THÊM IMPORT
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID; // ⚡ THÊM IMPORT ĐỂ SINH CHUỖI NGẪU NHIÊN
 
 @Service
 @RequiredArgsConstructor
 public class NhanVienServiceImpl implements NhanVienService {
     private final NhanVienRepository nhanVienRepository;
     private final VaiTroRepository vaiTroRepository;
+    private final EmailService emailService; // ⚡ TIÊM EMAIL SERVICE VÀO HỆ THỐNG
 
     @Override
     public List<NhanVien> findAll() {
@@ -35,17 +38,15 @@ public class NhanVienServiceImpl implements NhanVienService {
 
         // --- LOGIC TỰ TĂNG MÃ NHÂN VIÊN TUẦN TỰ ---
         if (nhanVien.getMaNv() == null || nhanVien.getMaNv().trim().isEmpty()) {
-            // Tìm nhân viên có ID lớn nhất vừa được thêm vào hệ thống
             Optional<NhanVien> maxIdEmployee = nhanVienRepository.findAll()
                     .stream()
                     .max((nv1, nv2) -> nv1.getId().compareTo(nv2.getId()));
 
-            int nextId = 1; // Nếu chưa có nhân viên nào, mặc định bắt đầu từ 1
+            int nextId = 1;
             if (maxIdEmployee.isPresent()) {
-                nextId = maxIdEmployee.get().getId() + 1; // Nếu có rồi thì lấy ID đó cộng thêm 1
+                nextId = maxIdEmployee.get().getId() + 1;
             }
 
-            // Định dạng chuỗi: NV + số thứ tự (ví dụ số 6 thành "NV006", số 12 thành "NV012")
             String maTuTang = String.format("NV%03d", nextId);
             nhanVien.setMaNv(maTuTang);
         }
@@ -72,7 +73,31 @@ public class NhanVienServiceImpl implements NhanVienService {
         nhanVien.setNgayTao(LocalDateTime.now());
         nhanVien.setNgaySua(LocalDateTime.now());
 
-        return nhanVienRepository.save(nhanVien);
+        // ==========================================================================
+        // ⚡ LOGIC TỰ CẤP TÀI KHOẢN & MẬT KHẨU GỬI MAIL
+        // ==========================================================================
+
+        // 1. Tự động sinh chuỗi mật khẩu tạm thời ngẫu nhiên gồm 8 ký tự viết thường/số
+        String matKhauTamThoi = UUID.randomUUID().toString().substring(0, 8);
+
+        // 2. Thiết lập mật khẩu cho nhân viên.
+        // Lưu ý: Nếu hệ thống của bạn đã có Spring Security, bạn nên bọc mã hóa: passwordEncoder.encode(matKhauTamThoi)
+        // Hiện tại mình đặt lưu text phẳng hoặc dùng cơ chế lưu mặc định của bạn
+        // nhanVien.setMatKhau(matKhauTamThoi);
+
+        // Thực hiện lưu thông tin nhân viên mới xuống Database SQL Server trước
+        NhanVien savedEmployee = nhanVienRepository.save(nhanVien);
+
+        // 3. Kích hoạt luồng gửi mail ngầm trả tài khoản về hòm thư Gmail của nhân viên
+        if (savedEmployee.getEmail() != null && !savedEmployee.getEmail().trim().isEmpty()) {
+            emailService.sendAccountCreationEmail(
+                    savedEmployee.getEmail(),
+                    savedEmployee.getTenNv(),
+                    matKhauTamThoi
+            );
+        }
+
+        return savedEmployee;
     }
 
     @Override
@@ -106,7 +131,6 @@ public class NhanVienServiceImpl implements NhanVienService {
 
         nv.setVaiTro(vaiTro);
 
-        // Không cho mất mã nhân viên khi cập nhật thông tin
         if (nhanVien.getMaNv() != null && !nhanVien.getMaNv().trim().isEmpty()) {
             nv.setMaNv(nhanVien.getMaNv());
         }
