@@ -1,5 +1,6 @@
 package com.example.AerionSports_BE.service;
 
+import com.example.AerionSports_BE.dto.response.KhachHangResponse;
 import com.example.AerionSports_BE.entity.KhachHang;
 
 import java.util.List;
@@ -14,4 +15,6 @@ public interface KhachHangService {
     KhachHang update(Integer id, KhachHang khachHang);
 
     void delete(Integer id);
+
+    List<KhachHangResponse> getAllSummary();
 }

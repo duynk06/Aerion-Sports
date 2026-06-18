@@ -1,5 +1,6 @@
 package com.example.AerionSports_BE.service.impl;
 
+import com.example.AerionSports_BE.dto.response.KhachHangResponse;
 import com.example.AerionSports_BE.entity.KhachHang;
 import com.example.AerionSports_BE.entity.DiaChiKhachHang;
 import com.example.AerionSports_BE.repository.KhachHangRepository;
@@ -8,7 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -137,22 +140,19 @@ public class KhachHangServiceImpl implements KhachHangService {
         }
 
         // --- ĐOẠN MỚI CẬP NHẬT: Đồng bộ mảng danh sách địa chỉ ---
-        // 1. Xóa các liên kết địa chỉ cũ trong phiên làm việc hiện tại
         oldKhachHang.getAddresses().clear();
 
-        // 2. Map lại toàn bộ danh sách địa chỉ mới gửi lên từ Front-end
         if (khachHang.getAddresses() != null) {
             for (DiaChiKhachHang addr : khachHang.getAddresses()) {
-                addr.setKhachHang(oldKhachHang); // Trỏ khóa ngoại về khách hàng hiện tại
+                addr.setKhachHang(oldKhachHang);
 
-                // Nếu là địa chỉ mới thêm từ giao diện (chưa có id dưới DB)
                 if (addr.getId() == null || String.valueOf(addr.getId()).startsWith("NEW_")) {
-                    addr.setId(null); // Reset lại null để SQL tự sinh IDENTITY tăng dần
+                    addr.setId(null);
                     addr.setNgayTao(LocalDateTime.now());
                 }
 
                 addr.setNgayCapNhat(LocalDateTime.now());
-                oldKhachHang.getAddresses().add(addr); // Nạp vào list quản lý của KhachHang
+                oldKhachHang.getAddresses().add(addr);
             }
         }
 
@@ -165,5 +165,37 @@ public class KhachHangServiceImpl implements KhachHangService {
     public void delete(Integer id) {
         KhachHang khachHang = getById(id);
         khachHangRepository.delete(khachHang);
+    }
+
+    // 🌟 ĐÃ THÊM MỚI: Hàm xử lý bóc tách mảng Object thô từ SQL đưa về cấu trúc DTO
+    @Override
+    public List<KhachHangResponse> getAllSummary() {
+        List<Object[]> rawData = khachHangRepository.findAllKhachHangWithOrderSummary();
+        List<KhachHangResponse> resultList = new ArrayList<>();
+
+        for (Object[] row : rawData) {
+            KhachHangResponse dto = new KhachHangResponse();
+            dto.setId((Integer) row[0]);
+            dto.setMaKhachHang((String) row[1]);
+            dto.setHoTen((String) row[2]);
+            dto.setEmail((String) row[3]);
+            dto.setSdt((String) row[4]);
+
+            // Ép kiểu Date an toàn tránh crash hệ thống
+            if (row[5] != null) {
+                dto.setNgaySinh(((java.sql.Date) row[5]).toLocalDate());
+            }
+
+            // Đếm tổng số đơn hàng
+            dto.setTongSoDonHang(row[6] != null ? ((Number) row[6]).longValue() : 0L);
+
+            // Tìm mốc thời gian đơn hàng mới nhất
+            if (row[7] != null) {
+                dto.setDonHangGanNhat(((Timestamp) row[7]).toLocalDateTime());
+            }
+
+            resultList.add(dto);
+        }
+        return resultList;
     }
 }

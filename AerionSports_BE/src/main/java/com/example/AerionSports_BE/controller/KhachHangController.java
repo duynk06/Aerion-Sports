@@ -1,5 +1,6 @@
 package com.example.AerionSports_BE.controller;
 
+import com.example.AerionSports_BE.dto.response.KhachHangResponse;
 import com.example.AerionSports_BE.entity.KhachHang;
 
 import com.example.AerionSports_BE.service.KhachHangService;
@@ -63,5 +64,11 @@ public class KhachHangController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @GetMapping("/summary-info")
+    public ResponseEntity<List<KhachHangResponse>> getKhachHangSummary() {
+        // Gọi sang hàm getAllSummary() bạn vừa khai báo ở Service để bốc dữ liệu
+        return ResponseEntity.ok(khachHangService.getAllSummary());
     }
 }
