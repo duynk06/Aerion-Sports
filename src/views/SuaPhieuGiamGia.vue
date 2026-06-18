@@ -5,12 +5,12 @@
       <div class="form-container left-panel">
         <div class="list-header">
           <div class="list-title">
-            <div class="title-icon" style="background: #f59e0b;">
-              <i class="fa-solid fa-pen"></i>
+            <div class="title-icon">
+              <i class="fa-solid fa-pen-to-square"></i>
             </div>
             <div>
-              <h3>Sửa phiếu giảm giá</h3>
-              <span>Cập nhật thông tin mã khuyến mãi</span>
+              <h3>Cập nhật phiếu giảm giá</h3>
+              <span>Chỉnh sửa thông tin chương trình khuyến mãi</span>
             </div>
           </div>
         </div>
@@ -19,8 +19,7 @@
           <div class="form-grid">
             <div class="form-group">
               <label>Mã phiếu giảm giá</label>
-              <input type="text" v-model="form.maPhieuGiamGia" required readonly
-                style="background: #f3f4f6; cursor: not-allowed;" title="Không thể sửa mã phiếu" />
+              <input type="text" v-model="form.maPhieuGiamGia" disabled class="disabled-input" />
             </div>
 
             <div class="form-group">
@@ -83,13 +82,12 @@
 
           <div class="button-group mt-auto">
             <button type="button" class="btn-cancel" @click="$router.back()">Hủy</button>
-            <button type="submit" class="btn-save" style="background: #f59e0b;">Cập nhật</button>
+            <button type="submit" class="btn-save">Cập nhật dữ liệu</button>
           </div>
         </form>
       </div>
 
       <div class="form-container right-panel">
-
         <div class="target-group">
           <label class="target-label">Đối tượng áp dụng</label>
           <div class="radio-group">
@@ -104,64 +102,62 @@
           </div>
         </div>
 
-        <div class="divider"></div>
+        <div v-if="form.doiTuongApDung === 'PERSONAL'" class="table-animated-wrapper">
+          <div class="divider"></div>
 
-        <div class="table-area">
-          <div :class="{ 'disabled-area': form.doiTuongApDung === 'ALL' }" class="table-content">
-            <div class="list-header" style="padding-bottom: 15px; margin-bottom: 15px;">
-              <div class="list-title">
-                <div class="title-icon" style="background: #3b82f6; width: 32px; height: 32px; font-size: 14px;">
-                  <i class="fa-solid fa-users"></i>
-                </div>
-                <div>
-                  <h3 style="font-size: 16px;">Chọn khách hàng áp dụng</h3>
-                  <span>Đã chọn: <strong style="color: #ea9154;">{{ form.khachHangIds.length }}</strong> khách
-                    hàng</span>
+          <div class="table-area">
+            <div class="table-content">
+              <div class="list-header" style="padding-bottom: 15px; margin-bottom: 15px;">
+                <div class="list-title">
+                  <div class="title-icon" style="background: #3b82f6; width: 32px; height: 32px; font-size: 14px;">
+                    <i class="fa-solid fa-users"></i>
+                  </div>
+                  <div>
+                    <h3 style="font-size: 16px;">Chọn khách hàng áp dụng</h3>
+                    <span>Đã chọn: <strong style="color: #f79b66;">{{ form.khachHangIds.length }}</strong> khách hàng</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="search-box mb-15">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" v-model="searchKhachHang" placeholder="Tìm tên, email, SĐT hoặc mã KH...">
-            </div>
+              <div class="search-box mb-15">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" v-model="searchKhachHang" placeholder="Tìm tên, email, SĐT hoặc mã KH...">
+              </div>
 
-            <div class="customer-table-container">
-              <table class="customer-table">
-                <thead>
-                  <tr>
-                    <th class="col-checkbox">
-                      <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" />
-                    </th>
-                    <th>Mã KH</th>
-                    <th>Tên KH</th>
-                    <th>Email</th>
-                    <th>SĐT</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-if="filteredKhachHang.length === 0">
-                    <td colspan="5" class="no-data">Không tìm thấy khách hàng nào</td>
-                  </tr>
-                  <tr v-for="kh in filteredKhachHang" :key="kh.id" @click="toggleSelectRow(kh.id)"
-                    :class="{ 'selected-row': form.khachHangIds.includes(kh.id) }">
-                    <td class="col-checkbox" @click.stop>
-                      <input type="checkbox" :value="kh.id" v-model="form.khachHangIds" />
-                    </td>
-                    <td>{{ kh.maKhachHang }}</td>
-                    <td class="font-medium">{{ kh.tenKhachHang }}</td>
-                    <td>{{ kh.email }}</td>
-                    <td>{{ kh.soDienThoai }}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div class="customer-table-container">
+                <table class="customer-table">
+                  <thead>
+                    <tr>
+                      <th class="col-checkbox">
+                        <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" />
+                      </th>
+                      <th>Mã KH</th>
+                      <th>Tên KH</th>
+                      <th>Email</th>
+                      <th>SĐT</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-if="filteredKhachHang.length === 0">
+                      <td colspan="5" class="no-data">Không tìm thấy khách hàng nào</td>
+                    </tr>
+                    <tr v-for="kh in filteredKhachHang" :key="kh.id" @click="toggleSelectRow(kh.id)"
+                      :class="{ 'selected-row': form.khachHangIds.includes(kh.id) }">
+                      <td class="col-checkbox" @click.stop>
+                        <input type="checkbox" :value="kh.id" v-model="form.khachHangIds" />
+                      </td>
+                      <td>{{ kh.maKhachHang }}</td>
+                      <td class="font-medium">{{ kh.hoTen }}</td>
+                      <td>{{ kh.email }}</td>
+                      <td>{{ kh.sdt }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-
-          <div class="overlay-msg" v-if="form.doiTuongApDung === 'ALL'">
-            Phiếu này áp dụng cho toàn bộ khách hàng. <br> Chọn "Khách hàng cụ thể" để mở khóa bảng.
           </div>
         </div>
+
       </div>
 
     </div>
@@ -173,8 +169,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import MainLayout from '../layouts/MainLayout.vue'
 import { updatePhieuGiamGia, fetchAllPhieuGiamGia } from '@/service/PhieuGiamGiaService'
 import { useRouter, useRoute } from 'vue-router'
-
-// import { fetchAllKhachHang } from '@/service/KhachHangService'
+import { fetchAllKhachHang } from '@/service/KhachHangService'
 
 const router = useRouter()
 const route = useRoute()
@@ -217,30 +212,27 @@ watch(() => form.value.loaiPhieuGiamGia, (newVal, oldVal) => {
 watch(() => form.value.doiTuongApDung, (newVal) => {
   if (newVal === 'ALL') {
     form.value.khachHangIds = []
+    searchKhachHang.value = ''
   }
 })
 
-// TẢI DỮ LIỆU KHÁCH HÀNG
 const loadKhachHang = async () => {
-  khachHangList.value = [
-    { id: 1, maKhachHang: 'KH001', tenKhachHang: 'Nguyễn Văn A', email: 'vana12@gmail.com', soDienThoai: '0901234567' },
-    { id: 2, maKhachHang: 'KH002', tenKhachHang: 'Trần Thị B', email: 'tranb@gmail.com', soDienThoai: '0987654321' },
-    { id: 3, maKhachHang: 'KH003', tenKhachHang: 'Lê Hoàng C', email: 'hoangc99@yahoo.com', soDienThoai: '0912223334' },
-    { id: 4, maKhachHang: 'KH004', tenKhachHang: 'Phạm D', email: 'phamd.work@gmail.com', soDienThoai: '0933445566' },
-    { id: 5, maKhachHang: 'KH005', tenKhachHang: 'Đặng E', email: 'dangee@gmail.com', soDienThoai: '0955667788' }
-  ]
+  try {
+    const data = await fetchAllKhachHang()
+    khachHangList.value = data || []
+  } catch (error) {
+    console.error('Lỗi tải danh sách khách hàng:', error)
+    khachHangList.value = []
+  }
 }
 
-// TẢI DỮ LIỆU PHIẾU GIẢM GIÁ ĐANG SỬA
 const loadPhieuGiamGia = async () => {
   try {
     const data = await fetchAllPhieuGiamGia()
     const phieu = data.find(x => x.id == route.params.id)
 
     if (phieu) {
-      // Xác định đối tượng áp dụng dựa trên mảng khách hàng trả về (nếu có)
       const isPersonal = phieu.khachHangIds && phieu.khachHangIds.length > 0;
-
       form.value = {
         ...phieu,
         ngayBatDau: phieu.ngayBatDau?.slice(0, 16),
@@ -259,10 +251,10 @@ const filteredKhachHang = computed(() => {
   if (!searchKhachHang.value) return khachHangList.value
   const keyword = searchKhachHang.value.toLowerCase()
   return khachHangList.value.filter(kh =>
-    kh.tenKhachHang.toLowerCase().includes(keyword) ||
-    kh.email.toLowerCase().includes(keyword) ||
-    kh.soDienThoai.includes(keyword) ||
-    kh.maKhachHang.toLowerCase().includes(keyword)
+    kh.hoTen?.toLowerCase().includes(keyword) ||
+    kh.email?.toLowerCase().includes(keyword) ||
+    kh.sdt?.includes(keyword) ||
+    kh.maKhachHang?.toLowerCase().includes(keyword)
   )
 })
 
@@ -336,6 +328,9 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* ==========================================================================
+   CSS TOÀN DIỆN BO GÓC 8-12px HỆ THỐNG TỐI GIẢN
+   ========================================================================== */
 .split-layout {
   display: flex;
   flex-direction: row;
@@ -362,7 +357,7 @@ onMounted(async () => {
   background: #ffffff;
   padding: 24px;
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #edf2f7;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
@@ -372,7 +367,7 @@ onMounted(async () => {
   align-items: center;
   margin-bottom: 25px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid #edf2f7;
 }
 
 .list-title {
@@ -398,11 +393,11 @@ onMounted(async () => {
   margin: 0;
   font-size: 18px;
   font-weight: 700;
-  color: #111827;
+  color: #1a202c;
 }
 
 .list-title span {
-  color: #6b7280;
+  color: #718096;
   font-size: 13px;
   margin-top: 2px;
   display: block;
@@ -429,23 +424,31 @@ onMounted(async () => {
   margin-bottom: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: #4a5568;
 }
 
-.form-group input[type="text"],
-.form-group input[type="number"],
-.form-group input[type="datetime-local"],
+.form-group input,
 .form-group select,
 .form-group textarea {
   width: 100%;
   box-sizing: border-box;
-  height: 42px;
+  height: 40px;
   padding: 0 14px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
   font-size: 14px;
-  color: #111827;
+  color: #2d3748;
+  outline: none;
+  background-color: #fff;
   transition: all 0.2s;
+}
+
+.disabled-input {
+  background-color: #f8fafc !important;
+  color: #718096 !important;
+  cursor: not-allowed;
+  border-color: #e2e8f0 !important;
+  font-weight: 500;
 }
 
 .form-group textarea {
@@ -457,9 +460,7 @@ onMounted(async () => {
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-  outline: none;
   border-color: #f79b66;
-  box-shadow: 0 0 0 3px rgba(247, 155, 102, 0.15);
 }
 
 .full-width {
@@ -477,13 +478,13 @@ onMounted(async () => {
 }
 
 .target-group {
-  margin-bottom: 20px;
+  margin-bottom: 5px;
 }
 
 .target-label {
   font-size: 15px;
   font-weight: 700;
-  color: #111827;
+  color: #1a202c;
   margin-bottom: 12px;
   display: block;
 }
@@ -500,7 +501,7 @@ onMounted(async () => {
   gap: 8px;
   font-size: 14px;
   cursor: pointer;
-  color: #111827;
+  color: #2d3748;
 }
 
 .radio-label input[type="radio"] {
@@ -511,8 +512,9 @@ onMounted(async () => {
 }
 
 .divider {
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid #edf2f7;
   margin-bottom: 20px;
+  margin-top: 20px;
 }
 
 .mt-auto {
@@ -524,7 +526,7 @@ onMounted(async () => {
   justify-content: flex-end;
   gap: 12px;
   padding-top: 20px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid #edf2f7;
 }
 
 .btn-cancel,
@@ -554,11 +556,16 @@ onMounted(async () => {
 }
 
 .btn-save:hover {
-  background: #ea9154;
+  background: #e08553;
+}
+
+.table-animated-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .table-area {
-  position: relative;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -568,27 +575,6 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   flex: 1;
-}
-
-.disabled-area {
-  opacity: 0.5;
-  pointer-events: none;
-  user-select: none;
-}
-
-.overlay-msg {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-size: 13px;
-  text-align: center;
-  line-height: 1.5;
-  z-index: 10;
 }
 
 .mb-15 {
@@ -602,16 +588,14 @@ onMounted(async () => {
 
 .search-box input {
   width: 100%;
-  height: 42px;
+  height: 40px;
   box-sizing: border-box;
   padding: 0 14px 0 36px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 13.5px;
   outline: none;
-  background-color: #fff !important;
-  cursor: text !important;
-  color: #111827;
+  color: #2d3748;
   transition: border-color 0.2s;
 }
 
@@ -629,7 +613,7 @@ onMounted(async () => {
 }
 
 .customer-table-container {
-  border: 1px solid #e5e7eb;
+  border: 1px solid #edf2f7;
   border-radius: 8px;
   overflow-y: auto;
   flex: 1;
@@ -645,7 +629,7 @@ onMounted(async () => {
 .customer-table thead {
   position: sticky;
   top: 0;
-  background: #f9fafb;
+  background: #f8fafc;
   z-index: 1;
 }
 
@@ -653,21 +637,21 @@ onMounted(async () => {
   padding: 12px;
   font-size: 13px;
   font-weight: 600;
-  color: #4b5563;
-  border-bottom: 1px solid #e5e7eb;
+  color: #4a5568;
+  border-bottom: 1px solid #edf2f7;
   white-space: nowrap;
 }
 
 .customer-table td {
   padding: 12px;
   font-size: 13px;
-  color: #374151;
-  border-bottom: 1px solid #f3f4f6;
+  color: #2d3748;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .font-medium {
   font-weight: 600;
-  color: #111827 !important;
+  color: #1a202c !important;
 }
 
 .customer-table tbody tr {
@@ -676,11 +660,11 @@ onMounted(async () => {
 }
 
 .customer-table tbody tr:hover {
-  background: #fff7f3;
+  background: #fff8f5;
 }
 
 .customer-table tbody tr.selected-row {
-  background: #fef1e8;
+  background: #fff1e7;
 }
 
 .col-checkbox {
@@ -697,8 +681,8 @@ onMounted(async () => {
 
 .no-data {
   text-align: center;
-  color: #9ca3af;
-  padding: 20px !important;
+  color: #a0aec0;
+  padding: 24px !important;
   font-style: italic;
 }
 

@@ -1,7 +1,7 @@
 <template>
   <div class="breadcrumb-container">
     <span class="breadcrumb-text">Quản lý sản phẩm / Thuộc tính / <strong style="color: #f97316;">{{ title }}</strong></span>
-    </div>
+  </div>
 
   <div class="filter-container">
     <div class="section-title">Bộ lọc tìm kiếm nhanh</div>
@@ -250,6 +250,7 @@ const moModalThemMoi = () => {
 };
 
 const moModalChinhSua = (item) => {
+  isEditMode.value = false; // Tạm thời hạ cờ sửa để tránh xung đột sự kiện Enter kích hoạt nhầm
   isEditMode.value = true;
   editingItemId.value = item.id;
   editingItemTrangThai.value = item.trangThai ?? 1;
@@ -260,7 +261,31 @@ const moModalChinhSua = (item) => {
   isModalOpen.value = true;
 };
 
+// 🌟 ĐÃ SỬA: Hàm validate Regex Unicode chuẩn, thắt chặt an ninh
+const checkValidThuocTinhText = (text) => {
+  const cleanText = text ? text.trim() : '';
+  if (!cleanText) {
+    alert(`Vui lòng điền tên ${props.title.toLowerCase()}!`);
+    return false;
+  }
+  
+  // Chỉ cho phép Chữ cái (\p{L}), Số (\p{N}) và Khoảng trắng (\s). Cờ "u" kích hoạt Unicode.
+  const regexChuanUnicode = /^[\p{L}\p{N}\s]+$/u;
+  
+  if (!regexChuanUnicode.test(cleanText)) {
+    alert(`Tên ${props.title.toLowerCase()} không được chứa các ký tự đặc biệt!`);
+    return false;
+  }
+  return true;
+};
+
+// 🌟 ĐÃ SỬA: Hàm điều hướng kiểm soát luồng, bẻ gãy hành động Axios nếu dính ký tự lạ
 const handleHanhDongLuu = () => {
+  // Thực hiện validate trước. Nếu sai, lập tức "return" dừng cuộc chơi ngay tại đây!
+  if (!checkValidThuocTinhText(formValue.value)) {
+    return;
+  }
+
   if (isEditMode.value) {
     submitCapNhatTen();
   } else {
@@ -269,7 +294,6 @@ const handleHanhDongLuu = () => {
 };
 
 const submitThemMoi = async () => {
-  if (!formValue.value.trim()) return alert(`Vui lòng điền tên ${props.title.toLowerCase()}!`);
   try {
     const payload = {};
     payload[props.propName] = formValue.value.trim();
@@ -294,8 +318,6 @@ const submitThemMoi = async () => {
 };
 
 const submitCapNhatTen = async () => {
-  if (!formValue.value.trim()) return alert(`Vui lòng nhập tên ${props.title.toLowerCase()} mới!`);
-  
   try {
     const payload = {
       id: editingItemId.value,
@@ -341,14 +363,14 @@ const toggleTrangThaiNhanh = async (item) => {
     }
   }
 };
-
 onMounted(loadData);
 </script>
 
+
 <style scoped>
+/* Giữ nguyên toàn bộ CSS giao diện màu cam thương hiệu của bạn */
 .breadcrumb-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .breadcrumb-text { font-size: 14px; color: #333; }
-
 .filter-container { background-color: #fff; border: 1px solid #fed7aa; border-radius: 6px; padding: 15px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
 .filter-grid { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px; align-items: flex-end; }
 .filter-item { display: flex; flex-direction: column; gap: 6px; text-align: left; flex: 1; min-width: 160px; }
@@ -357,18 +379,14 @@ onMounted(loadData);
 .filter-item input:focus, .filter-item select:focus { border-color: #f79b66; }
 .filter-actions { flex: 0 0 auto; min-width: auto; }
 .btn-filter-clear { background-color: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; padding: 8px 16px; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; }
-
 .data-table-container { background-color: #fff; border: 1px solid #fed7aa; border-radius: 4px; padding: 20px; text-align: left; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
 .table-header-row { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #f3f4f6; }
 .table-summary-title { font-size: 15px; font-weight: bold; color: #1e293b; margin: 0; }
 .header-actions { display: flex; align-items: center; gap: 10px; }
 .btn-action-excel { background: #79c38a; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
 .btn-action-excel:hover { background: #15803d; }
-
-/* ⚡ ĐÃ THÊM: CSS nút Thêm mới màu cam thương hiệu đặt sát cạnh nút Excel */
 .btn-add-new-orange { background-color: #f79b66; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
 .btn-add-new-orange:hover { background-color: #ea712b; }
-
 .custom-data-table { width: 100%; border-collapse: collapse; text-align: left; }
 .custom-data-table th { background-color: #f79b66; color: #fff; padding: 10px 12px; font-size: 13px; font-weight: 600; border: 1px solid #fed7aa; }
 .custom-data-table td { padding: 12px; border-bottom: 1px solid #fed7aa; font-size: 13px; color: #334155; vertical-align: middle; }
@@ -377,7 +395,6 @@ onMounted(loadData);
 .badge-status-text.status-active { background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
 .badge-status-text.status-stopped { background-color: #fef2f2; color: #f79b66; border: 1px solid #fecaca; }
 .empty-table-row { text-align: center; padding: 30px !important; color: #94a3b8; }
-
 .custom-pagination-container { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; padding-top: 15px; border-top: 1px solid #f1f5f9; }
 .pagination-left-summary { font-size: 13.5px; color: #475569; }
 .pagination-right-controls { display: flex; align-items: center; gap: 10px; }
@@ -385,7 +402,6 @@ onMounted(loadData);
 .page-arrow-btn:hover:not(:disabled) { background: #f3f4f6; border-color: #cbd5e1; }
 .page-arrow-btn:disabled { background: #f9fafb; color: #d1d5db; cursor: not-allowed; border-color: #f3f4f6; }
 .page-text-indicator { font-size: 13px; font-weight: 500; color: #374151; padding: 0 4px; }
-
 .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); display: flex; justify-content: center; align-items: center; z-index: 9999; }
 .custom-modal-box { background: white; border-radius: 6px; width: 420px; border-top: 5px solid #f79b66; display: flex; flex-direction: column; }
 .modal-box-header { padding: 15px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
@@ -402,12 +418,10 @@ onMounted(loadData);
 .btn-modal-submit { background: #f79b66; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; }
 .required-star { color: #f79b66; font-weight: bold; }
 .section-title { font-size: 13px; font-weight: bold; color: #f79b66; border-left: 3px solid #f79b66; padding-left: 8px; text-align: left; }
-
 .action-buttons-flex-group { display: flex; gap: 8px; justify-content: center; align-items: center; }
 .icon-btn-circle { width: 32px; height: 32px; border-radius: 50%; border: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; transition: all 0.2s ease-in-out; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 .icon-btn-circle.edit-pencil { background-color: #f9f5ff; color: #7c3aed; border: 1px solid #f3e8ff; }
 .icon-btn-circle.edit-pencil:hover { background-color: #7c3aed; color: #ffffff; border-color: #7c3aed; transform: scale(1.08); }
-
 .status-toggle-container { display: inline-flex; align-items: center; cursor: pointer; user-select: none; }
 .toggle-track { position: relative; display: inline-block; width: 36px; height: 18px; border-radius: 999px; transition: background-color 0.2s ease; }
 .track-active { background-color: #22c55e; }

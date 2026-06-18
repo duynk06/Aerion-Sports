@@ -8,6 +8,7 @@
 
     <div class="form-container-box">
       <div class="form-box-body">
+        
         <div class="section-title">1. Thông tin sản phẩm chung</div>
         <div class="form-grid-row">
           <div class="form-group-item flex-1">
@@ -56,11 +57,6 @@
             </div>
           </div>
         </div>
-        
-        <div class="form-group-item">
-          <label>Mô tả chi tiết</label>
-          <textarea v-model="productForm.moTa" rows="3" placeholder="Nhập đặc điểm nổi bật..."></textarea>
-        </div>
 
         <hr class="form-divider"/>
 
@@ -78,7 +74,7 @@
               />
               <ul class="combobox-dropdown" v-if="comboOpen.mauSac">
                 <li 
-                  v-for="item in filteredMauSac" 
+                  v-for="item in filteredMauSac.filter(m => m.trangThai === 1)" 
                   :key="item.id" 
                   :class="{ 'is-selected': isKiemTraDaChon('mauSac', item.id) }"
                   @mousedown.prevent="themThuocTinhDaChon(item, 'mauSac', item.tenMauSac ? 'tenMauSac' : 'ten')"
@@ -107,7 +103,7 @@
               />
               <ul class="combobox-dropdown" v-if="comboOpen.trongLuong">
                 <li 
-                  v-for="item in filteredTrongLuong" 
+                  v-for="item in filteredTrongLuong.filter(t => t.trangThai === 1)" 
                   :key="item.id" 
                   :class="{ 'is-selected': isKiemTraDaChon('trongLuong', item.id) }"
                   @mousedown.prevent="themThuocTinhDaChon(item, 'trongLuong', item.tenTrongLuong ? 'tenTrongLuong' : 'ten')"
@@ -205,13 +201,13 @@
         </div>
         
         <div style="text-align: right; margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px;">
-          <button v-if="isBienTheGenerated && productForm.bienThes.length > 0" class="btn-bulk-toggle" @click="isBulkPanelOpen = !isBulkPanelOpen">
+          <button v-if="isBienTheGenerated && hienThiBienTheThucTe.length > 0" class="btn-bulk-toggle" @click="isBulkPanelOpen = !isBulkPanelOpen">
             ⚡ {{ isBulkPanelOpen ? 'Đóng bảng điền nhanh' : 'Mở bảng điền nhanh' }}
           </button>
           <button class="btn-generate" @click="taoDanhSachBienTheDong">Tạo danh sách biến thể</button>
         </div>
 
-        <div v-if="isBienTheGenerated && productForm.bienThes.length > 0 && isBulkPanelOpen" class="bulk-fill-container">
+        <div v-if="isBienTheGenerated && hienThiBienTheThucTe.length > 0 && isBulkPanelOpen" class="bulk-fill-container">
           <div class="bulk-fill-title"> Áp dụng thông số chung </div>
           <div class="bulk-fill-grid">
             <div class="bulk-item">
@@ -230,8 +226,7 @@
           </div>
         </div>
 
-        <div v-if="isBienTheGenerated && productForm.bienThes.length > 0" style="margin-top: 20px;" class="tables-group-wrapper">
-          
+        <div v-if="isBienTheGenerated && danhSachBienTheTheoMau.length > 0" style="margin-top: 20px;" class="tables-group-wrapper">
           <div v-for="colorGroup in danhSachBienTheTheoMau" :key="colorGroup.idMauSac" class="color-table-section">
             <div class="color-table-header">
               <span class="badge-prop orange" style="font-size: 13.5px; padding: 6px 12px; font-weight: bold;">
@@ -273,7 +268,6 @@
               </tbody>
             </table>
           </div>
-
         </div>
 
         <div v-if="isBienTheGenerated && listMauSacDaChonQuetDuoc.length > 0" style="margin-top: 25px;">
@@ -290,7 +284,15 @@
           </div>
         </div>
 
+        <hr class="form-divider"/>
+        <div class="section-title">5. Thông tin bổ sung</div>
+        <div class="form-group-item">
+          <label>Mô tả chi tiết sản phẩm</label>
+          <textarea v-model="productForm.moTa" rows="4" placeholder="Nhập mô tả chi tiết, đặc điểm nổi bật hoặc thông tin quà tặng kèm theo khi mua sản phẩm..."></textarea>
+        </div>
+
       </div>
+      
       <div class="form-box-footer">
         <button class="btn-modal-cancel" @click="quayLaiDanhSach">Hủy bỏ</button>
         <button class="btn-modal-submit" @click="submitLuuToanBoSanPham"> Lưu toàn bộ hệ thống</button>
@@ -300,7 +302,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'; 
+import { ref, onMounted, computed, watch } from 'vue'; 
 import axios from 'axios';
 import { useRouter } from 'vue-router'; 
 import MainLayout from '@/layouts/MainLayout.vue';
@@ -329,15 +331,44 @@ const bulkInput = ref({ giaNhap: '', giaBan: '', soLuong: '' });
 const selectedRowIndexes = ref([]);
 const isBulkPanelOpen = ref(false);
 
-const listMauSacDaChonQuetDuoc = computed(() => selectedAttributes.value.mauSac);
 const isKiemTraDaChon = (key, id) => selectedAttributes.value[key].some(x => x.id === id);
 
-// ⚡ THUẬT TOÁN MỚI: Tự động gom mảng phẳng "productForm.bienThes" thành nhóm theo ID màu sắc
-const danhSachBienTheTheoMau = computed(() => {
+// Lọc danh sách màu sắc hiển thị ở phần ảnh dựa trên các tag thực sự ĐANG CHỌN và ĐANG HOẠT ĐỘNG
+const listMauSacDaChonQuetDuoc = computed(() => {
+  return selectedAttributes.value.mauSac.filter(ms => {
+    const rawColorObj = danhSachMauSacDB.value.find(c => c.id === ms.id);
+    return rawColorObj ? rawColorObj.trangThai === 1 : true;
+  });
+});
+
+// Lọc mảng phẳng thô sang danh sách hiển thị thực tế
+const hienThiBienTheThucTe = computed(() => {
   if (!productForm.value.bienThes || productForm.value.bienThes.length === 0) return [];
   
+  return productForm.value.bienThes.filter(item => {
+    // Check Màu sắc
+    const hasColorTag = selectedAttributes.value.mauSac.some(ms => ms.id === item.idMauSac);
+    const rawColorObj = danhSachMauSacDB.value.find(c => c.id === item.idMauSac);
+    const isColorActive = rawColorObj ? rawColorObj.trangThai === 1 : true;
+
+    // Check Trọng lượng
+    const hasWeightTag = selectedAttributes.value.trongLuong.some(tl => tl.id === item.idTrongLuong);
+    const rawWeightObj = danhSachTrongLuongDB.value.find(w => w.id === item.idTrongLuong);
+    const isWeightActive = rawWeightObj ? rawWeightObj.trangThai === 1 : true;
+
+    return hasColorTag && isColorActive && hasWeightTag && isWeightActive;
+  });
+});
+
+// Gom nhóm biến thể theo màu sắc từ danh sách thực tế đã lọc
+const danhSachBienTheTheoMau = computed(() => {
+  const filtered = hienThiBienTheThucTe.value;
+  if (filtered.length === 0) return [];
+  
   const groups = {};
-  productForm.value.bienThes.forEach((item, index) => {
+  filtered.forEach(item => {
+    const originalIndex = productForm.value.bienThes.findIndex(bt => bt.maCtsp === item.maCtsp);
+    
     if (!groups[item.idMauSac]) {
       groups[item.idMauSac] = {
         idMauSac: item.idMauSac,
@@ -345,23 +376,21 @@ const danhSachBienTheTheoMau = computed(() => {
         items: []
       };
     }
-    // Đính kèm globalIndex để phục vụ việc checkbox và sửa giá trị chuẩn xác của mảng gốc
     groups[item.idMauSac].items.push({
       ...item,
-      globalIndex: index
+      globalIndex: originalIndex
     });
   });
   return Object.values(groups);
 });
 
-// Tính toán Checkbox tổng của riêng từng bảng màu
+// Đồng bộ hóa Checkbox tổng của từng nhóm màu
 const isSelectAllByColor = (colorId) => {
   const group = danhSachBienTheTheoMau.value.find(g => g.idMauSac === colorId);
-  if (!group) return false;
+  if (!group || group.items.length === 0) return false;
   return group.items.every(item => selectedRowIndexes.value.includes(item.globalIndex));
 };
 
-// Bật/Tắt Checkbox theo nhóm màu
 const toggleSelectAllRowsByColor = (event, colorId) => {
   const group = danhSachBienTheTheoMau.value.find(g => g.idMauSac === colorId);
   if (!group) return;
@@ -376,35 +405,23 @@ const toggleSelectAllRowsByColor = (event, colorId) => {
   }
 };
 
-// Checkbox tổng của toàn bộ các bảng (giữ để không lỗi logic cũ)
-const isSelectAll = computed(() => {
-  return productForm.value.bienThes.length > 0 && selectedRowIndexes.value.length === productForm.value.bienThes.length;
-});
-
-const toggleSelectAllRows = (event) => {
-  if (event.target.checked) {
-    selectedRowIndexes.value = productForm.value.bienThes.map((_, index) => index);
-  } else {
-    selectedRowIndexes.value = [];
-  }
-};
-
 const dinhDangSoNgoaiUI = (val) => {
   if (val === null || val === undefined || val === '') return '';
   const clean = String(val).replace(/\D/g, '');
   return clean ? clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
 };
 
-// Hàm cập nhật số lượng/giá tiền dựa trên globalIndex của hàng
 const capNhatGiaTriSoTrucTiep = (event, globalIndex, truongDuLieu) => {
   const chuoiSoThuanTuy = event.target.value.replace(/\./g, '');
   const giaTriSo = chuoiSoThuanTuy ? parseInt(chuoiSoThuanTuy, 10) : 0;
-  productForm.value.bienThes[globalIndex][truongDuLieu] = isNaN(giaTriSo) ? 0 : giaTriSo;
-  event.target.value = dinhDangSoNgoaiUI(productForm.value.bienThes[globalIndex][truongDuLieu]);
+  if (productForm.value.bienThes[globalIndex]) {
+    productForm.value.bienThes[globalIndex][truongDuLieu] = isNaN(giaTriSo) ? 0 : giaTriSo;
+    event.target.value = dinhDangSoNgoaiUI(productForm.value.bienThes[globalIndex][truongDuLieu]);
+  }
 };
 
 const apDungChoBienTheDaChon = () => {
-  if (productForm.value.bienThes.length === 0) return;
+  if (hienThiBienTheThucTe.value.length === 0) return;
   if (selectedRowIndexes.value.length === 0) return alert("Vui lòng tích chọn ít nhất một dòng biến thể!");
 
   const gNhap = bulkInput.value.giaNhap ? parseInt(bulkInput.value.giaNhap, 10) : null;
@@ -416,12 +433,14 @@ const apDungChoBienTheDaChon = () => {
   }
 
   selectedRowIndexes.value.forEach(idx => {
-    if (gNhap !== null) productForm.value.bienThes[idx].giaNhap = gNhap;
-    if (gBan !== null) productForm.value.bienThes[idx].giaBan = gBan;
-    if (sLuong !== null) productForm.value.bienThes[idx].soLuong = sLuong;
+    if (productForm.value.bienThes[idx]) {
+      if (gNhap !== null) productForm.value.bienThes[idx].giaNhap = gNhap;
+      if (gBan !== null) productForm.value.bienThes[idx].giaBan = gBan;
+      if (sLuong !== null) productForm.value.bienThes[idx].soLuong = sLuong;
+    }
   });
 
-  alert(`Đã áp dụng thông số chung cho ${selectedRowIndexes.value.length} dòng biến thể! ⚡`);
+  alert(`Đã áp dụng thông số chung cho dòng biến thể được chọn! ⚡`);
 };
 
 const dongDropdownSauDelay = (field) => { setTimeout(() => { comboOpen.value[field] = false; }, 200); };
@@ -439,17 +458,14 @@ const themThuocTinhDaChon = (item, key, displayField) => {
   const index = selectedAttributes.value[key].findIndex(x => x.id === item.id);
   if (index > -1) {
     selectedAttributes.value[key].splice(index, 1);
-    isBienTheGenerated.value = false; 
   } else {
     selectedAttributes.value[key].push({ id: item.id, name: item[displayField] || item.ten });
-    isBienTheGenerated.value = false;
   }
   comboSearch.value[key] = ''; 
 };
 
 const xoaTagThuocTinh = (key, index) => {
   selectedAttributes.value[key].splice(index, 1);
-  isBienTheGenerated.value = false;
 };
 
 const loadToanBoDuLieuThuocTinh = async () => {
@@ -521,7 +537,11 @@ const taoDanhSachBienTheDong = () => {
         idChuViCanVot: cfg.idChuViCanVot, tenChuViCanVot: textChuVi,
         idDoCung: cfg.idDoCung, idDiemCanBang: cfg.idDiemCanBang, idDanhMuc: cfg.idDanhMuc,
         idChatLieuThanVot: cfg.idChatLieuThanVot, idChatLieuKhungVot: cfg.idChatLieuKhungVot,
-        maCtsp: codeAuto, giaNhap: 800000, giaBan: 1200000, soLuong: 20, trangThai: 1
+        maCtsp: codeAuto, 
+        giaNhap: 0, 
+        giaBan: 0,  
+        soLuong: 0, 
+        trangThai: 1
       });
     });
   });
@@ -540,21 +560,24 @@ const handleColorFileChange = (event, colorId) => {
 const submitLuuToanBoSanPham = async () => {
   if (!productForm.value.maSanPham?.trim() || !productForm.value.tenSanPham?.trim()) return alert("Vui lòng nhập Mã và Tên sản phẩm!");
   if (!productForm.value.idThuongHieu || !productForm.value.idXuatXu) return alert("Vui lòng nhập Thương hiệu và Xuất xứ!");
-  if (!isBienTheGenerated.value || productForm.value.bienThes.length === 0) return alert("Vui lòng ấn nút sinh chuỗi biến thể!");
+  if (!isBienTheGenerated.value || hienThiBienTheThucTe.value.length === 0) return alert("Vui lòng ấn nút sinh chuỗi biến thể!");
+
+  const variantsToSave = hienThiBienTheThucTe.value;
 
   let thieuAnh = false;
   listMauSacDaChonQuetDuoc.value.forEach(color => {
     if (!colorMapFiles.value[color.id]?.file) thieuAnh = true;
   });
-  if (thieuAnh) return alert("Vui lòng bổ sung đầy đủ hình ảnh đại diện cho tất cả các Màu Sắc ở dưới cùng!");
+  if (thieuAnh) return alert("Vui lòng bổ sung đầy đủ hình ảnh đại diện cho tất cả các Màu Sắc đang kích hoạt ở dưới cùng!");
 
-  if (!confirm(`Bạn có muốn thêm sản phẩm [ ${productForm.value.maSanPham} ] này không?`)) {
-    return;
-  }
+  let thieuThongTin = variantsToSave.some(v => v.giaNhap <= 0 || v.giaBan <= 0 || v.soLuong < 0);
+  if (thieuThongTin) return alert("Vui lòng nhập đầy đủ Giá nhập, Giá bán (> 0đ) cho các biến thể đang hiển thị!");
+
+  if (!confirm(`Bạn có muốn thêm sản phẩm [ ${productForm.value.maSanPham} ] này không?`)) return;
 
   const formData = new FormData();
   try {
-    const listChiTietSanPhamsPayload = productForm.value.bienThes.map(item => {
+    const listChiTietSanPhamsPayload = variantsToSave.map(item => {
       const fileConfigOfColor = colorMapFiles.value[item.idMauSac];
       return {
         idMauSac: item.idMauSac, idTrongLuong: item.idTrongLuong, idChuViCanVot: item.idChuViCanVot, 
@@ -599,8 +622,8 @@ const submitLuuToanBoSanPham = async () => {
 const quayLaiDanhSach = () => { router.push('/san-pham'); };
 
 onMounted(() => {
-  khoiTaoMaSanPhamTuDong();
   loadToanBoDuLieuThuocTinh();
+  khoiTaoMaSanPhamTuDong();
 });
 </script>
 
@@ -658,7 +681,6 @@ onMounted(() => {
 .btn-modal-cancel { background: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px; }
 .btn-modal-submit { background: #f79b66; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
 
-/* ⚡ CSS MỚI: Định dạng tiêu đề cho từng nhóm bảng màu */
 .tables-group-wrapper { display: flex; flex-direction: column; gap: 20px; text-align: left; }
 .color-table-section { background: #ffffff; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
 .color-table-header { margin-bottom: 12px; display: flex; align-items: center; }

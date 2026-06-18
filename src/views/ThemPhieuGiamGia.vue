@@ -18,20 +18,13 @@
         <form @submit.prevent="handleCreate" class="flex-form">
           <div class="form-grid">
             <div class="form-group">
-              <label>Mã phiếu giảm giá</label>
-              <div style="display: flex; gap: 8px;">
-                <input type="text" v-model="form.maPhieuGiamGia" required style="flex: 1;" />
-                <button type="button" @click="refreshVoucherCode" 
-                        style="background: #3b82f6; color: white; border: none; border-radius: 8px; padding: 0 12px; cursor: pointer;" 
-                        title="Đổi mã ngẫu nhiên khác">
-                  <i class="fa-solid fa-arrows-rotate"></i>
-                </button>
-              </div>
+              <label>Mã phiếu giảm giá (Hệ thống tự tăng)</label>
+              <input type="text" v-model="form.maPhieuGiamGia" disabled class="disabled-input" title="Mã phiếu tăng tự động" />
             </div>
 
             <div class="form-group">
-              <label>Tên phiếu giảm giá</label>
-              <input type="text" v-model="form.tenPhieuGiamGia" required />
+              <label>Tên phiếu giảm giá <span class="required-star">*</span></label>
+              <input type="text" v-model="form.tenPhieuGiamGia" placeholder="Nhập tên chương trình..." required />
             </div>
 
             <div class="form-group">
@@ -43,47 +36,41 @@
             </div>
 
             <div class="form-group">
-              <label>Giá trị giảm {{ form.loaiPhieuGiamGia === 'Sale %' ? '(%)' : '(đ)' }}</label>
-
-              <input v-if="form.loaiPhieuGiamGia === 'Sale %'" type="number" v-model.number="form.giaTriGiam" min="0"
-                max="100" placeholder="Nhập số từ 1 - 100" />
-
-              <input v-else type="text" :value="formatCurrency(form.giaTriGiam)"
-                @input="onInputCurrency('giaTriGiam', $event)" placeholder="Nhập số tiền giảm" />
+              <label>Giá trị giảm {{ form.loaiPhieuGiamGia === 'Sale %' ? '(%)' : '(đ)' }} <span class="required-star">*</span></label>
+              <input v-if="form.loaiPhieuGiamGia === 'Sale %'" type="number" v-model.number="form.giaTriGiam" min="1" max="100" placeholder="Nhập số từ 1 - 100" />
+              <input v-else type="text" :value="formatCurrency(form.giaTriGiam)" @input="onInputCurrency('giaTriGiam', $event)" placeholder="Nhập số tiền giảm" />
             </div>
 
             <div class="form-group">
-              <label>Đơn tối thiểu (đ)</label>
-              <input type="text" :value="formatCurrency(form.giaTriDonToiThieu)"
-                @input="onInputCurrency('giaTriDonToiThieu', $event)" />
+              <label>Đơn tối thiểu (đ) <span class="required-star">*</span></label>
+              <input type="text" :value="formatCurrency(form.giaTriDonToiThieu)" @input="onInputCurrency('giaTriDonToiThieu', $event)" placeholder="Ví dụ: 200.000" />
             </div>
 
             <div class="form-group">
-              <label>Giảm tối đa (đ)</label>
-              <input type="text" :value="formatCurrency(form.giaTriGiamToiDa)"
-                @input="onInputCurrency('giaTriGiamToiDa', $event)" />
+              <label>Giảm tối đa (đ) <span class="required-star">*</span></label>
+              <input type="text" :value="formatCurrency(form.giaTriGiamToiDa)" @input="onInputCurrency('giaTriGiamToiDa', $event)" placeholder="Ví dụ: 50.000" />
             </div>
 
             <div class="form-group">
-              <label>Số lượng</label>
-              <input type="number" v-model="form.soLuong" min="0" />
+              <label>Số lượng phát hành <span class="required-star">*</span></label>
+              <input type="number" v-model.number="form.soLuong" min="1" placeholder="Nhập số lượng..." />
             </div>
 
             <div class="form-group">
-              <label>Ngày bắt đầu</label>
+              <label>Ngày bắt đầu <span class="required-star">*</span></label>
               <input type="datetime-local" v-model="form.ngayBatDau" required />
             </div>
 
             <div class="form-group">
-              <label>Ngày kết thúc</label>
+              <label>Ngày kết thúc <span class="required-star">*</span></label>
               <input type="datetime-local" v-model="form.ngayKetThuc" required />
             </div>
 
             <div class="form-group hidden-placeholder"></div>
 
             <div class="form-group full-width">
-              <label>Mô tả</label>
-              <textarea rows="4" v-model="form.moTa"></textarea>
+              <label>Mô tả chiến dịch</label>
+              <textarea rows="4" v-model="form.moTa" placeholder="Nhập ghi chú chi tiết..."></textarea>
             </div>
           </div>
 
@@ -109,63 +96,70 @@
           </div>
         </div>
 
-        <div class="divider"></div>
+        <div v-if="form.doiTuongApDung === 'PERSONAL'" class="table-animated-wrapper">
+          <div class="divider"></div>
 
-        <div class="table-area">
-          <div :class="{ 'disabled-area': form.doiTuongApDung === 'ALL' }" class="table-content">
-            <div class="list-header" style="padding-bottom: 15px; margin-bottom: 15px;">
-              <div class="list-title">
-                <div class="title-icon" style="background: #3b82f6; width: 32px; height: 32px; font-size: 14px;">
-                  <i class="fa-solid fa-users"></i>
-                </div>
-                <div>
-                  <h3>Chọn khách hàng áp dụng</h3>
-                  <span>Đã chọn: <strong style="color: #ea9154;">{{ form.khachHangIds.length }}</strong> khách hàng</span>
+          <div class="table-area">
+            <div class="table-content">
+              <div class="list-header" style="padding-bottom: 15px; margin-bottom: 15px;">
+                <div class="list-title">
+                  <div class="title-icon" style="background: #3b82f6; width: 32px; height: 32px; font-size: 14px;">
+                    <i class="fa-solid fa-users"></i>
+                  </div>
+                  <div>
+                    <h3 style="font-size: 16px;">Chọn khách hàng áp dụng</h3>
+                    <span>Đã chọn: <strong style="color: #f79b66;">{{ form.khachHangIds.length }}</strong> khách hàng</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="search-box mb-15">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" v-model="searchKhachHang" placeholder="Tìm tên, email, SĐT hoặc mã KH...">
-            </div>
+              <div class="search-box mb-15">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" v-model="searchKhachHang" placeholder="Tìm tên, email, SĐT hoặc mã KH...">
+              </div>
 
-            <div class="customer-table-container">
-              <table class="customer-table">
-                <thead>
-                  <tr>
-                    <th class="col-checkbox">
-                      <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" />
-                    </th>
-                    <th>Mã KH</th>
-                    <th>Tên KH</th>
-                    <th>Email</th>
-                    <th>SĐT</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-if="filteredKhachHang.length === 0">
-                    <td colspan="5" class="no-data">Không tìm thấy khách hàng nào</td>
-                  </tr>
-                  <tr v-for="kh in filteredKhachHang" :key="kh.id" @click="toggleSelectRow(kh.id)"
-                    :class="{ 'selected-row': form.khachHangIds.includes(kh.id) }">
-                    <td class="col-checkbox" @click.stop>
-                      <input type="checkbox" :value="kh.id" v-model="form.khachHangIds" />
-                    </td>
-                    <td>{{ kh.maKhachHang }}</td>
-                    <td class="font-medium">{{ kh.hoTen }}</td>
-                    <td>{{ kh.email }}</td>
-                    <td>{{ kh.sdt }}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div class="customer-table-container">
+                <table class="customer-table">
+                  <thead>
+                    <tr>
+                      <th class="col-checkbox">
+                        <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" />
+                      </th>
+                      <th>Mã KH</th>
+                      <th>Tên KH</th>
+                      <th>Email</th>
+                      <th>SĐT</th>
+                      <th>Ngày sinh</th>
+                      <th style="text-align: center;">Tổng đơn</th>
+                      <th>Đơn gần nhất</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-if="filteredKhachHang.length === 0">
+                      <td colspan="8" class="no-data">Không tìm thấy khách hàng nào hợp lệ</td>
+                    </tr>
+                    <tr v-for="kh in filteredKhachHang" :key="kh.id" @click="toggleSelectRow(kh.id)"
+                      :class="{ 'selected-row': form.khachHangIds.includes(kh.id) }">
+                      <td class="col-checkbox" @click.stop>
+                        <input type="checkbox" :value="kh.id" v-model="form.khachHangIds" />
+                      </td>
+                      <td>{{ kh.maKhachHang }}</td>
+                      <td class="font-medium">{{ kh.hoTen }}</td>
+                      <td>{{ kh.email }}</td>
+                      <td>{{ kh.sdt }}</td>
+                      <td>{{ dinhDangNgaySinhUI(kh.ngaySinh) }}</td>
+                      <td style="text-align: center;">
+                        <span class="badge-count">{{ kh.tongSoDonHang || 0 }} đơn</span>
+                      </td>
+                      <td class="date-time-text">{{ dinhDangNgayGioUI(kh.donHangGanNhat) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-
-          <div class="overlay-msg" v-if="form.doiTuongApDung === 'ALL'">
-            Phiếu này áp dụng cho toàn bộ khách hàng. <br> Chọn "Khách hàng cụ thể" để mở khóa bảng.
           </div>
         </div>
+
       </div>
 
     </div>
@@ -175,7 +169,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import MainLayout from '../layouts/MainLayout.vue'
-import { createPhieuGiamGia } from '@/service/PhieuGiamGiaService'
+import { createPhieuGiamGia, fetchAllPhieuGiamGia } from '@/service/PhieuGiamGiaService'
 import { useRouter } from 'vue-router'
 import { fetchAllKhachHang } from '@/service/KhachHangService'
 
@@ -200,22 +194,56 @@ const form = ref({
 const khachHangList = ref([])
 const searchKhachHang = ref('')
 
-// Hàm tự động tạo mã phiếu giảm giá không trùng lặp
-const generateVoucherCode = () => {
-  const prefix = "VCO" 
-  const now = new Date()
-  const year = now.getFullYear().toString().slice(-2) // Lấy 2 số cuối năm (Ví dụ: 26)
-  const month = String(now.getMonth() + 1).padStart(2, '0') // Tháng (Ví dụ: 06)
-  const day = String(now.getDate()).padStart(2, '0') // Ngày (Ví dụ: 15)
-  const dateStr = `${year}${month}${day}`
-  const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase() // Sinh 4 ký tự ngẫu nhiên
-  
-  return `${prefix}_${dateStr}_${randomStr}` // Kết quả mẫu: VCO_260615_E87B
+const sinhMaPhieuTuDongTang = async () => {
+  try {
+    const data = await fetchAllPhieuGiamGia()
+    let maxNumber = 0
+
+    if (data && data.length > 0) {
+      data.forEach(phieu => {
+        if (phieu.maPhieuGiamGia && phieu.maPhieuGiamGia.startsWith('PGG')) {
+          const laySo = phieu.maPhieuGiamGia.replace('PGG', '')
+          const num = parseInt(laySo, 10)
+          if (!isNaN(num) && num > maxNumber) {
+            maxNumber = num
+          }
+        }
+      })
+    }
+    
+    const nextNumber = maxNumber + 1
+    const formatSo = nextNumber < 10 ? '0' + nextNumber : nextNumber
+    form.value.maPhieuGiamGia = 'PGG' + formatSo
+  } catch (error) {
+    console.error('Lỗi tính toán sinh mã tự tăng:', error)
+    form.value.maPhieuGiamGia = 'PGG01'
+  }
 }
 
-// Hàm đổi sang mã ngẫu nhiên mới
-const refreshVoucherCode = () => {
-  form.value.maPhieuGiamGia = generateVoucherCode()
+// 🌟 ĐÃ THÊM: Định dạng Ngày/Tháng/Năm hiển thị lên bảng
+const dinhDangNgaySinhUI = (dateStr) => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  const d = String(date.getDate()).padStart(2, '0');
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
+// 🌟 ĐÃ THÊM: Định dạng Ngày Giờ mua đơn gần nhất trực quan
+const dinhDangNgayGioUI = (dateTimeStr) => {
+  if (!dateTimeStr) return 'Chưa mua hàng 🛒';
+  const date = new Date(dateTimeStr);
+  if (isNaN(date.getTime())) return dateTimeStr;
+  
+  const h = String(date.getHours()).padStart(2, '0');
+  const m = String(date.getMinutes()).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  const mo = String(date.getMonth() + 1).padStart(2, '0');
+  const y = date.getFullYear();
+  
+  return `${h}:${m} - ${d}/${mo}/${y}`;
 }
 
 const formatCurrency = (value) => {
@@ -237,6 +265,7 @@ watch(() => form.value.loaiPhieuGiamGia, () => {
 watch(() => form.value.doiTuongApDung, (newVal) => {
   if (newVal === 'ALL') {
     form.value.khachHangIds = []
+    searchKhachHang.value = ''
   }
 })
 
@@ -287,26 +316,36 @@ const toggleSelectRow = (id) => {
   }
 }
 
+// 🌟 HÀM VALIDATE CHUYÊN SÂU CHẶN ĐỨNG MỌI NGOẠI LỆ NGHIỆP VỤ
 const handleCreate = async () => {
-  if (!form.value.maPhieuGiamGia.trim() || !form.value.tenPhieuGiamGia.trim()) {
-    return alert('Vui lòng nhập đủ Mã và Tên phiếu giảm giá!')
+  if (!form.value.tenPhieuGiamGia.trim()) {
+    return alert('Vui lòng nhập Tên phiếu giảm giá!')
+  }
+  if (form.value.tenPhieuGiamGia.trim().length < 4) {
+    return alert('Tên phiếu giảm giá quá ngắn! Phải chứa từ 4 ký tự trở lên.')
   }
   if (form.value.soLuong <= 0) {
-    return alert('Số lượng phiếu phải lớn hơn 0!')
+    return alert('Số lượng phiếu phát hành bắt buộc phải lớn hơn 0!')
   }
 
+  // Khối validate giá trị dựa theo phân loại coupon
   if (form.value.loaiPhieuGiamGia === 'Sale %') {
     if (form.value.giaTriGiam <= 0 || form.value.giaTriGiam > 100) {
-      return alert('Phần trăm giảm phải nằm trong khoảng từ 1 đến 100%!')
+      return alert('Tỷ lệ phần trăm giảm giá phải nằm trong khoảng từ 1% đến 100%!')
     }
   } else {
     if (form.value.giaTriGiam <= 0) {
-      return alert('Giá trị giảm giá tiền mặt phải lớn hơn 0đ!')
+      return alert('Số tiền giảm của Free Ship phải lớn hơn 0đ!')
     }
   }
 
+  if (form.value.giaTriDonToiThieu < 0 || form.value.giaTriGiamToiDa < 0) {
+    return alert('Cấu hình mệnh giá tiền mặt không được đặt số âm!')
+  }
+
+  // Kiểm tra tính logic thời gian thực
   if (!form.value.ngayBatDau || !form.value.ngayKetThuc) {
-    return alert('Vui lòng chọn đầy đủ thời gian áp dụng!')
+    return alert('Vui lòng chọn thời gian hiệu lực cho chiến dịch khuyến mãi!')
   }
 
   const now = new Date()
@@ -315,14 +354,15 @@ const handleCreate = async () => {
   now.setSeconds(0, 0)
 
   if (start < now) {
-    return alert('Ngày bắt đầu không được chọn trong quá khứ!')
+    return alert('Hệ thống từ chối! Ngày bắt đầu không được đặt mốc thời gian trong quá khứ.')
   }
   if (end <= start) {
-    return alert('Ngày kết thúc phải diễn ra sau ngày bắt đầu!')
+    return alert('Hệ thống từ chối! Ngày kết thúc phải diễn ra sau ngày bắt đầu chương trình.')
   }
 
+  // Khóa validate đối tượng khách hàng mục tiêu cụ thể
   if (form.value.doiTuongApDung === 'PERSONAL' && form.value.khachHangIds.length === 0) {
-    return alert('Vui lòng chọn ít nhất 1 khách hàng từ danh sách bên phải!')
+    return alert('Yêu cầu chọn cấu hình! Vui lòng tích chọn tối thiểu 1 khách hàng từ danh sách bên phải.')
   }
 
   const payload = {
@@ -332,28 +372,29 @@ const handleCreate = async () => {
 
   try {
     await createPhieuGiamGia(payload)
-    alert('Thêm phiếu giảm giá thành công!');
+    alert('Thêm phiếu giảm giá thành công! Mã ưu đãi đang được tự động bắn hàng loạt về Mail của khách hàng. 🎉')
     router.push('/phieu-giam-gia')
-
   } catch (error) {
     const errorMsg = error.response?.data?.message?.toLowerCase() || ''
     if (errorMsg.includes('trùng') || errorMsg.includes('tồn tại') || errorMsg.includes('duplicate') || error.response?.status === 409) {
-      alert('Mã phiếu giảm giá này đã tồn tại! Vui lòng nhập mã khác hoặc bấm nút làm mới.');
+      alert('Mã phiếu giảm giá bị trùng lặp ngầm! Hệ thống đang tự cập nhật mã kế tiếp, vui lòng ấn Lưu lại.');
+      await sinhMaPhieuTuDongTang();
     } else {
-      alert(error.response?.data?.message || 'Có lỗi xảy ra khi thêm phiếu!');
+      alert(error.response?.data?.message || 'Có lỗi xảy ra khi xử lý dữ liệu phiếu!')
     }
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadKhachHang()
-  // 🌟 TỰ ĐỘNG ĐIỀN MÃ KHI VỪA MỞ TRANG
-  form.value.maPhieuGiamGia = generateVoucherCode()
+  await sinhMaPhieuTuDongTang()
 })
 </script>
 
 <style scoped>
-/* Toàn bộ CSS gốc của bạn giữ nguyên vẹn 100% không bị lệch giao diện */
+/* ==========================================================================
+   CSS ĐỊNH DẠNG TỶ LỆ KHUNG GIAO DIỆN BẢNG RỘNG
+   ========================================================================== */
 .split-layout {
   display: flex;
   flex-direction: row;
@@ -363,14 +404,14 @@ onMounted(() => {
 }
 
 .left-panel {
-  width: 55%;
+  width: 42%; /* Co nhỏ form nhập để nhường không gian bề ngang cho bảng dữ liệu */
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
 }
 
 .right-panel {
-  width: calc(45% - 20px);
+  width: calc(58% - 20px); /* Nâng diện tích bảng rộng 58% giúp hiển thị 8 cột nằm ngang */
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -380,7 +421,7 @@ onMounted(() => {
   background: #ffffff;
   padding: 24px;
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #edf2f7;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
@@ -390,7 +431,7 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 25px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid #edf2f7;
 }
 
 .list-title {
@@ -416,11 +457,11 @@ onMounted(() => {
   margin: 0;
   font-size: 18px;
   font-weight: 700;
-  color: #111827;
+  color: #1a202c;
 }
 
 .list-title span {
-  color: #6b7280;
+  color: #718096;
   font-size: 13px;
   margin-top: 2px;
   display: block;
@@ -447,7 +488,7 @@ onMounted(() => {
   margin-bottom: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: #4a5568;
 }
 
 .form-group input,
@@ -455,13 +496,24 @@ onMounted(() => {
 .form-group textarea {
   width: 100%;
   box-sizing: border-box;
-  height: 42px;
+  height: 40px;
   padding: 0 14px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
   font-size: 14px;
-  color: #111827;
+  color: #2d3748;
+  outline: none;
+  background-color: #fff;
   transition: all 0.2s;
+}
+
+.disabled-input {
+  background-color: #f8fafc !important;
+  color: #4a5568 !important;
+  cursor: not-allowed;
+  border-color: #e2e8f0 !important;
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .form-group textarea {
@@ -473,9 +525,7 @@ onMounted(() => {
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-  outline: none;
   border-color: #f79b66;
-  box-shadow: 0 0 0 3px rgba(247, 155, 102, 0.15);
 }
 
 .full-width {
@@ -493,13 +543,13 @@ onMounted(() => {
 }
 
 .target-group {
-  margin-bottom: 20px;
+  margin-bottom: 5px;
 }
 
 .target-label {
   font-size: 15px;
   font-weight: 700;
-  color: #111827;
+  color: #1a202c;
   margin-bottom: 12px;
   display: block;
 }
@@ -516,7 +566,7 @@ onMounted(() => {
   gap: 8px;
   font-size: 14px;
   cursor: pointer;
-  color: #111827;
+  color: #2d3748;
 }
 
 .radio-label input[type="radio"] {
@@ -527,8 +577,9 @@ onMounted(() => {
 }
 
 .divider {
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid #edf2f7;
   margin-bottom: 20px;
+  margin-top: 20px;
 }
 
 .mt-auto {
@@ -540,7 +591,7 @@ onMounted(() => {
   justify-content: flex-end;
   gap: 12px;
   padding-top: 20px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid #edf2f7;
 }
 
 .btn-cancel,
@@ -570,11 +621,16 @@ onMounted(() => {
 }
 
 .btn-save:hover {
-  background: #ea9154;
+  background: #e08553;
+}
+
+.table-animated-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .table-area {
-  position: relative;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -584,27 +640,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   flex: 1;
-}
-
-.disabled-area {
-  opacity: 0.5;
-  pointer-events: none;
-  user-select: none;
-}
-
-.overlay-msg {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-size: 13px;
-  text-align: center;
-  line-height: 1.5;
-  z-index: 10;
 }
 
 .mb-15 {
@@ -618,16 +653,14 @@ onMounted(() => {
 
 .search-box input {
   width: 100%;
-  height: 42px;
+  height: 40px;
   box-sizing: border-box;
   padding: 0 14px 0 36px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 13.5px;
   outline: none;
-  background-color: #fff !important;
-  cursor: text !important;
-  color: #111827;
+  color: #2d3748;
   transition: border-color 0.2s;
 }
 
@@ -645,8 +678,9 @@ onMounted(() => {
 }
 
 .customer-table-container {
-  border: 1px solid #e5e7eb;
+  border: 1px solid #edf2f7;
   border-radius: 8px;
+  overflow-x: auto; /* Tự kích hoạt thanh thanh cuộn ngang nếu hiển thị trên màn hình nhỏ */
   overflow-y: auto;
   flex: 1;
   min-height: 250px;
@@ -661,29 +695,45 @@ onMounted(() => {
 .customer-table thead {
   position: sticky;
   top: 0;
-  background: #f9fafb;
+  background: #f8fafc;
   z-index: 1;
 }
 
 .customer-table th {
   padding: 12px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
-  color: #4b5563;
-  border-bottom: 1px solid #e5e7eb;
+  color: #4a5568;
+  border-bottom: 1px solid #edf2f7;
   white-space: nowrap;
 }
 
 .customer-table td {
   padding: 12px;
-  font-size: 13px;
-  color: #374151;
-  border-bottom: 1px solid #f3f4f6;
+  font-size: 12.5px;
+  color: #2d3748;
+  border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap; /* Khóa không cho dữ liệu ngày giờ và email bị bẻ gãy dòng */
 }
 
 .font-medium {
   font-weight: 600;
-  color: #111827 !important;
+  color: #1a202c !important;
+}
+
+.badge-count {
+  background-color: #e6fffa;
+  color: #319795;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 12px;
+  border: 1px solid #b2f5ea;
+}
+
+.date-time-text {
+  color: #718096;
+  font-size: 12px;
 }
 
 .customer-table tbody tr {
@@ -692,11 +742,11 @@ onMounted(() => {
 }
 
 .customer-table tbody tr:hover {
-  background: #fff7f3;
+  background: #fff8f5;
 }
 
 .customer-table tbody tr.selected-row {
-  background: #fef1e8;
+  background: #fff1e7;
 }
 
 .col-checkbox {
@@ -713,9 +763,14 @@ onMounted(() => {
 
 .no-data {
   text-align: center;
-  color: #9ca3af;
-  padding: 20px !important;
+  color: #a0aec0;
+  padding: 24px !important;
   font-style: italic;
+}
+
+.required-star {
+  color: #e53e3e;
+  font-weight: bold;
 }
 
 @media (max-width: 1024px) {

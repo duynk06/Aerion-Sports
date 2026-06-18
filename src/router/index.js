@@ -26,6 +26,8 @@ import ChuViCanView from '../views/thuoc-tinh/ChuViCanView.vue'
 import ChatLieuThanView from '../views/thuoc-tinh/ChatLieuThanView.vue'
 import ChatLieuKhungView from '../views/thuoc-tinh/ChatLieuKhungView.vue'
 import DanhSachBienTheView from '../views/bienthe/DanhSachBienTheView.vue'
+import SuaKhachHangView from '../views/SuaKhachHangView.vue'
+import SuaNhanVienView from '../views/SuaNhanVienView.vue'
 const routes = [
   { path: '/', redirect: '/trang-chu' },
 
@@ -89,8 +91,20 @@ const routes = [
   { path: '/dot-giam-gia', component: DotGiamGia },
   { path: '/nhan-vien', name: 'nhan-vien', component: NhanVienView },
   { path: '/nhan-vien/them', name: 'them-nhan-vien', component: ThemNhanVienView }, 
+  {
+  path: '/nhan-vien/sua/:id',
+  name: 'sua-nhan-vien',
+  component: SuaNhanVienView,
+  meta: { title: 'Sửa thông tin nhân viên' }
+},
   { path: '/khach-hang', name: 'khach-hang-list', component: KhachHangView },
-  { path: '/khach-hang/them', name: 'them-khach-hang', component: ThemKhachHangView }
+  { path: '/khach-hang/them', name: 'them-khach-hang', component: ThemKhachHangView },
+  {
+  path: '/khach-hang/sua/:id',
+  name: 'sua-khach-hang',
+  component: SuaKhachHangView,
+  meta: { title: 'Sửa thông tin khách hàng' } // Nếu dự án của bạn có dùng meta title
+}
 ]
 
 export default createRouter({

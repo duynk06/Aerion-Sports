@@ -1,5 +1,5 @@
 <template>
-  <MainLayout>
+  <MainLayout title="Cập Nhật Biến Thể">
     <div class="breadcrumb-container">
       <span class="breadcrumb-text">Quản lý sản phẩm / Quản lý biến thể / <strong style="color: #f97316;">Cập nhật chi tiết biến thể</strong></span>
     </div>
@@ -202,7 +202,7 @@ const loadChiTietBienTheHienTai = async () => {
         giaBan: data.giaBan,
         giaNhap: data.giaNhap,
         trangThai: data.trangThai,
-        hinhAnh: data.duongDanAnh || data.hinhAnh || '', // Đồng bộ lấy trường duongDanAnh có UUID mới
+        hinhAnh: data.duongDanAnh || data.hinhAnh || '',
         idSanPham: data.idSanPham || data.id_san_pham || parseInt(productInfo.value.id, 10),
         
         idMauSac: timIdTheoTen(masterData.value.mauSac, 'tenMauSac', data.tenMauSac),
@@ -218,7 +218,6 @@ const loadChiTietBienTheHienTai = async () => {
 
       const pathAnh = data.duongDanAnh || data.hinhAnh;
       if (pathAnh) {
-        // ⚡ ĐÃ SỬA: Phá hủy cache trình duyệt lúc load trang để ảnh đại diện đổi ngay lập tức
         previewImageSrc.value = pathAnh.startsWith('http') ? pathAnh : `http://localhost:8080${pathAnh}?t=${new Date().getTime()}`;
       }
     }
@@ -264,27 +263,46 @@ const onFileChange = (event) => {
   }
 };
 
-// ⚡ ĐÃ SỬA HOÀN TOÀN: Đóng gói dữ liệu qua FormData để đẩy ảnh vật lý lên Backend tự động lưu
+// 🌟 ĐÃ TÍCH HỢP: Bộ lọc chặn đứng và Validate dữ liệu toàn diện
 const submitCapNhat = async () => {
-  if (!editingForm.value.idMauSac) return alert("Vui lòng chọn Màu sắc!");
-  if (!editingForm.value.idTrongLuong) return alert("Vui lòng chọn Trọng lượng!");
+  // 1. Kiểm tra thuộc tính cơ bản bắt buộc chọn
+  if (!editingForm.value.idMauSac) return alert("Vui lòng chọn Màu sắc sản phẩm!");
+  if (!editingForm.value.idTrongLuong) return alert("Vui lòng chọn Trọng lượng vợt!");
   
+  // 2. Kiểm tra Giá tiền rỗng hoặc âm
+  if (editingForm.value.giaNhap === null || editingForm.value.giaNhap === undefined || editingForm.value.giaNhap <= 0) {
+    return alert("Giá nhập kho phải lớn hơn 0 VNĐ!");
+  }
+  if (editingForm.value.giaBan === null || editingForm.value.giaBan === undefined || editingForm.value.giaBan <= 0) {
+    return alert("Giá bán lẻ phải lớn hơn 0 VNĐ!");
+  }
+
+  // 3. Kiểm tra logic kinh doanh (Giá bán lẻ không được thấp hơn giá nhập gốc)
+  if (parseInt(editingForm.value.giaBan, 10) < parseInt(editingForm.value.giaNhap, 10)) {
+    return alert("Cảnh báo lỗi: Giá bán lẻ không được nhỏ hơn Giá nhập kho!");
+  }
+
+  // 4. Kiểm tra Số lượng kho
+  if (editingForm.value.soLuong === null || editingForm.value.soLuong === undefined || editingForm.value.soLuong < 0) {
+    return alert("Số lượng tồn kho không được để trống hoặc là số âm!");
+  }
+  if (!Number.isInteger(editingForm.value.soLuong)) {
+    return alert("Số lượng tồn kho phải là một số nguyên dương chỉnh chu!");
+  }
+
   try {
     let formData = new FormData();
     
-    // 🛠️ GIẢI PHÁP SỬA LỖI 400: Tạo một bản sao dữ liệu sạch và xóa thuộc tính id
+    // Tạo một bản sao dữ liệu sạch và xóa thuộc tính id phục vụ cho cấu trúc Jackson Mapping
     const cleanPayload = { ...editingForm.value };
-    delete cleanPayload.id; // Xóa bỏ trường id ra để Jackson không bắt lỗi Unrecognized field
+    delete cleanPayload.id;
 
-    // Đóng gói bản sao sạch vào trường "data"
     formData.append("data", JSON.stringify(cleanPayload));
     
-    // Đóng gói tệp tin hình ảnh mới nếu có chọn
     if (fileUploadData.value) {
       formData.append("file", fileUploadData.value);
     }
 
-    // Gửi lên API cập nhật sửa lẻ
     await axios.put(`http://localhost:8080/api/san-pham/bien-the/update/${editingForm.value.id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" }
     });
@@ -293,7 +311,7 @@ const submitCapNhat = async () => {
     quayLaiDanhSach();
   } catch (error) {
     console.error(error);
-    alert("Cập nhật thất bại, vui lòng kiểm tra lại dữ liệu!");
+    alert("Cập nhật thất bại, vui lòng kiểm tra lại kết nối mạng hoặc dữ liệu!");
   }
 };
 
@@ -319,10 +337,10 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* Giữ nguyên toàn bộ CSS của bạn không đổi */
+/* Giữ nguyên vẹn 100% CSS nguyên bản của bạn */
 .breadcrumb-container { display: flex; align-items: center; margin-bottom: 15px; }
 .breadcrumb-text { font-size: 14px; color: #333; }
-.box-alert-info { background-color: #fff7ed; border-left: 4px solid #f97316; padding: 12px 15px; font-size: 14px; margin-bottom: 20px; color: #7c2d12; border-radius: 0 4px 4px 0; text-align: left; }
+.box-alert-info { background-color: #fff7ed; border-left: 4px solid #f79b66; padding: 12px 15px; font-size: 14px; margin-bottom: 20px; color: #7c2d12; border-radius: 0 4px 4px 0; text-align: left; }
 .form-container-box { background: white; border: 1px solid #fed7aa; border-radius: 6px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
 .form-box-body { display: flex; flex-direction: column; gap: 15px; }
 .form-group-item { display: flex; flex-direction: column; gap: 6px; text-align: left; }
@@ -331,7 +349,7 @@ onMounted(async () => {
 .disabled-input { background: #f1f5f9 !important; cursor: not-allowed; color: #64748b; font-weight: 500; border-color: #e2e8f0 !important; }
 .form-row-flex { display: flex; gap: 15px; }
 .form-row-flex .form-group-item { flex: 1; }
-.image-upload-section { display: flex; gap: 15px; align-items: center; background-color: #fff7ed; padding: 12px; border-radius: 6px; border: 1px dashed #f97316; }
+.image-upload-section { display: flex; gap: 15px; align-items: center; background-color: #fff7ed; padding: 12px; border-radius: 6px; border: 1px dashed #f79b66; }
 .image-preview-box { width: 90px; height: 90px; border-radius: 4px; background-color: #fff; border: 1px solid #cbd5e1; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .image-preview-box img { width: 100%; height: 100%; object-fit: cover; }
 .status-toggle-container { display: inline-flex; align-items: center; cursor: pointer; user-select: none; gap: 8px; }
@@ -343,6 +361,6 @@ onMounted(async () => {
 .toggle-text { font-size: 13px; font-weight: 600; }
 .form-box-footer { padding: 15px 0 0 0; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; }
 .btn-modal-cancel { background: #f3f4f6; border: 1px solid #d1d5db; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px; color: #4b5563; }
-.btn-modal-submit { background: #f97316; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; }
-.required-star { color: #f97316; font-weight: bold; }
+.btn-modal-submit { background: #f79b66; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; }
+.required-star { color: #f79b66; font-weight: bold; }
 </style>
