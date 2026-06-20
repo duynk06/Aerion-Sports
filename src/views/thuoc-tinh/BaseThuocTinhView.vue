@@ -152,10 +152,13 @@ const statusFilter = ref('');
 const currentPage = ref(0);
 const pageSize = ref(5);
 
+// 🌟 ĐÃ SỬA: Chuyển đổi gọi sang API /search kèm size lớn bốc data phẳng từ .content về an toàn
 const loadData = async () => {
   try {
-    const res = await axios.get(`http://localhost:8080/api/${props.apiPath}/all`);
-    dataList.value = res.data.content || res.data || [];
+    const res = await axios.get(`http://localhost:8080/api/${props.apiPath}/search`, {
+      params: { page: 0, size: 9999 }
+    });
+    dataList.value = res.data?.content || res.data || [];
   } catch (e) {
     console.error(`Lỗi nạp dữ liệu thuộc tính ${props.title}:`, e);
   }
@@ -250,7 +253,7 @@ const moModalThemMoi = () => {
 };
 
 const moModalChinhSua = (item) => {
-  isEditMode.value = false; // Tạm thời hạ cờ sửa để tránh xung đột sự kiện Enter kích hoạt nhầm
+  isEditMode.value = false; 
   isEditMode.value = true;
   editingItemId.value = item.id;
   editingItemTrangThai.value = item.trangThai ?? 1;
@@ -261,7 +264,6 @@ const moModalChinhSua = (item) => {
   isModalOpen.value = true;
 };
 
-// 🌟 ĐÃ SỬA: Hàm validate Regex Unicode chuẩn, thắt chặt an ninh
 const checkValidThuocTinhText = (text) => {
   const cleanText = text ? text.trim() : '';
   if (!cleanText) {
@@ -269,19 +271,63 @@ const checkValidThuocTinhText = (text) => {
     return false;
   }
   
-  // Chỉ cho phép Chữ cái (\p{L}), Số (\p{N}) và Khoảng trắng (\s). Cờ "u" kích hoạt Unicode.
-  const regexChuanUnicode = /^[\p{L}\p{N}\s]+$/u;
-  
-  if (!regexChuanUnicode.test(cleanText)) {
-    alert(`Tên ${props.title.toLowerCase()} không được chứa các ký tự đặc biệt!`);
+  const path = props.apiPath.toLowerCase();
+
+  if (path === 'mau-sac') {
+    const regexMauSac = /^[\p{L}\s]+$/u;
+    if (!regexMauSac.test(cleanText)) {
+      alert("Lỗi định dạng: Tên màu sắc phải là chữ thuần tiếng Việt (Ví dụ: Đỏ, Xanh neon, Đen nhám). Không chứa số hay ký tự lạ!");
+      return false;
+    }
+  } 
+  else if (path === 'trong-luong') {
+    const regexTrongLuong = /^([1-6]U|\d+g|\d+-\d+g)$/i; 
+    if (!regexTrongLuong.test(cleanText)) {
+      alert("Lỗi định dạng: Trọng lượng vợt phải đúng tiêu chuẩn cầu lông (Ví dụ: 3U, 4U, 5U) hoặc số kèm chữ g (Ví dụ: 85g)!");
+      return false;
+    }
+  } 
+  else if (path === 'do-cung') {
+    const regexDoCung = /^[\p{L}\s]+$/u;
+    if (!regexDoCung.test(cleanText) || cleanText.match(/\d/)) {
+      alert("Lỗi định dạng: Độ cứng thân vợt phải là từ mô tả (Ví dụ: Cứng, Dẻo, Trung bình, Rất cứng)!");
+      return false;
+    }
+  } 
+  else if (path === 'diem-can-bang') {
+    const regexDiemCanBang = /^([\p{L}\s]+|\d+mm)$/u;
+    if (!regexDiemCanBang.test(cleanText)) {
+      alert("Lỗi định dạng: Điểm cân bằng phải là từ mô tả (Ví dụ: Nặng đầu, Cân bằng, Nhẹ đầu) hoặc số đo mm (Ví dụ: 295mm, 300mm)!");
+      return false;
+    }
+  }
+  else if (path === 'chu-vi-can' || path === 'chu-vi-can-vot') {
+    const regexChuViCan = /^G[4-9]$/i;
+    if (!regexChuViCan.test(cleanText)) {
+      alert("Lỗi định dạng: Chu vi cán vợt phải đúng tiêu chuẩn kỹ thuật (Bắt đầu bằng chữ G:)!");
+      return false;
+    }
+  }
+
+  const lowerInput = cleanText.toLowerCase();
+  const isDuplicate = dataList.value.some(item => {
+    const currentName = String(item[props.propName] || '').trim().toLowerCase();
+    if (isEditMode.value) {
+      return currentName === lowerInput && item.id !== editingItemId.value;
+    } else {
+      return currentName === lowerInput;
+    }
+  });
+
+  if (isDuplicate) {
+    alert(`Tên ${props.title.toLowerCase()} này đã tồn tại trên hệ thống! Vui lòng nhập tên khác.`);
     return false;
   }
+
   return true;
 };
 
-// 🌟 ĐÃ SỬA: Hàm điều hướng kiểm soát luồng, bẻ gãy hành động Axios nếu dính ký tự lạ
 const handleHanhDongLuu = () => {
-  // Thực hiện validate trước. Nếu sai, lập tức "return" dừng cuộc chơi ngay tại đây!
   if (!checkValidThuocTinhText(formValue.value)) {
     return;
   }
@@ -293,6 +339,7 @@ const handleHanhDongLuu = () => {
   }
 };
 
+// 🌟 ĐÃ SỬA: Thêm đuôi `/add` khớp 100% endpoint `@PostMapping("/add")` của Backend
 const submitThemMoi = async () => {
   try {
     const payload = {};
@@ -308,15 +355,16 @@ const submitThemMoi = async () => {
     payload.maChatLieuThanVot = generatedCode.value;
     payload.maChatLieuKhungVot = generatedCode.value;
 
-    await axios.post(`http://localhost:8080/api/${props.apiPath}`, payload);
+    await axios.post(`http://localhost:8080/api/${props.apiPath}/add`, payload);
     alert(`Thêm mới ${props.title.toLowerCase()} thành công! 🎉`);
     isModalOpen.value = false;
     loadData();
   } catch (e) {
-    alert("Thao tác thất bại! Tên thuộc tính có thể đã tồn tại.");
+    alert("Thao tác thêm mới thất bại! Tên thuộc tính có thể đã tồn tại.");
   }
 };
 
+// 🌟 ĐÃ SỬA: Thêm đuôi `/update/{id}` khớp 100% endpoint `@PutMapping("/update/{id}")` của Backend
 const submitCapNhatTen = async () => {
   try {
     const payload = {
@@ -334,7 +382,7 @@ const submitCapNhatTen = async () => {
     payload.maChatLieuThanVot = generatedCode.value;
     payload.maChatLieuKhungVot = generatedCode.value;
 
-    await axios.put(`http://localhost:8080/api/${props.apiPath}/${editingItemId.value}`, payload);
+    await axios.put(`http://localhost:8080/api/${props.apiPath}/update/${editingItemId.value}`, payload);
     
     alert(`Cập nhật tên ${props.title.toLowerCase()} thành công! 🚀`);
     isModalOpen.value = false;
@@ -366,9 +414,8 @@ const toggleTrangThaiNhanh = async (item) => {
 onMounted(loadData);
 </script>
 
-
 <style scoped>
-/* Giữ nguyên toàn bộ CSS giao diện màu cam thương hiệu của bạn */
+/* Giữ nguyên 100% CSS màu cam thương hiệu của bạn */
 .breadcrumb-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .breadcrumb-text { font-size: 14px; color: #333; }
 .filter-container { background-color: #fff; border: 1px solid #fed7aa; border-radius: 6px; padding: 15px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }

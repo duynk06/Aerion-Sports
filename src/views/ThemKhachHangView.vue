@@ -8,6 +8,14 @@
         <p>Nhập thông tin khách hàng mới</p>
       </div>
 
+      <div class="qr-scan-section mb-4" style="border-bottom: 1px solid #eee; padding-bottom: 20px;">
+        <button type="button" @click="startScan" class="btn-scan-qr">
+          <i class="fas fa-qrcode"></i> Quét QR lấy thông tin nhanh
+        </button>
+        <div v-if="isScanning" id="qr-reader-them-kh" style="max-width: 330px; margin: 15px 0 10px 0; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;"></div>
+        <button v-if="isScanning" type="button" class="btn-cancel" @click="stopScan" style="margin-top: 5px; height: 34px; padding: 0 15px;">Tắt Camera</button>
+      </div>
+
       <form @submit.prevent="saveKhachHang">
         <div class="info-section">
           <div class="form-content">
@@ -15,7 +23,7 @@
             <div class="form-grid">
               <div class="form-group" :class="{ 'has-error': errors.tenKh }">
                 <label>Họ và tên khách hàng <span>*</span></label>
-                <input type="text" v-model="khachHang.tenKh" placeholder="Nhập tên khách hàng" @input="errors.tenKh = ''"/>
+                <input type="text" v-model="khachHang.tenKh" placeholder="Nhập tên khách hàng" @input="errors.tenKh = ''" @blur="validateHoTenChuDong"/>
                 <span v-if="errors.tenKh" class="error-text">{{ errors.tenKh }}</span>
               </div>
 
@@ -31,9 +39,10 @@
                 <span v-if="errors.email" class="error-text">{{ errors.email }}</span>
               </div>
 
-              <div class="form-group">
-                <label>Ngày sinh</label>
-                <input type="date" v-model="khachHang.ngaySinh"/>
+              <div class="form-group" :class="{ 'has-error': errors.ngaySinh }">
+                <label>Ngày sinh <span>*</span></label>
+                <input type="date" v-model="khachHang.ngaySinh" :max="ngayMaxChoPhep" @change="validateNgaySinhChuDong"/>
+                <span v-if="errors.ngaySinh" class="error-text">{{ errors.ngaySinh }}</span>
               </div>
 
               <div class="form-group">
@@ -42,14 +51,6 @@
                   <label class="radio-label"><input type="radio" :value="1" v-model="khachHang.gioiTinh" style="accent-color: #f79b66;"/> Nam</label>
                   <label class="radio-label"><input type="radio" :value="0" v-model="khachHang.gioiTinh" style="accent-color: #f79b66;"/> Nữ</label>
                 </div>
-              </div>
-
-              <div class="form-group">
-                <label>Trạng thái tài khoản</label>
-                <select v-model="khachHang.trangThai">
-                  <option :value="1">Đang hoạt động</option>
-                  <option :value="0">Ngừng hoạt động</option>
-                </select>
               </div>
             </div>
           </div>
@@ -129,22 +130,70 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import MainLayout from '../layouts/MainLayout.vue'
+import { Html5QrcodeScanner } from 'html5-qrcode'
 
 const router = useRouter()
 const listTinhThanh = ref([])
 
+const isScanning = ref(false)
+let qrScanner = null
+
 const khachHang = reactive({
-  tenKh: '', sdt: '', email: '', ngaySinh: '', gioiTinh: 1, trangThai: 1,
+  tenKh: '', sdt: '', email: '', ngaySinh: '', gioiTinh: 1,
   listDiaChi: [{ tenNguoiNhan: '', sdtNguoiNhan: '', tinhThanh: '', quanHuyen: '', phuongXa: '', chiTietCuThe: '', isDefault: true, listQuanHuyenTmp: [], listPhuongXaTmp: [] }]
 })
 
-const errors = reactive({ tenKh: '', sdt: '', email: '' })
+const errors = reactive({ tenKh: '', sdt: '', email: '', ngaySinh: '' })
 
-// 1. Tải danh sách 63 tỉnh thành gốc khi vừa vào trang
+const ngayMaxChoPhep = computed(() => {
+  const today = new Date()
+  const yearLimit = today.getFullYear() - 15
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const date = String(today.getDate()).padStart(2, '0')
+  return `${yearLimit}-${month}-${date}`
+})
+
+const startScan = () => {
+  isScanning.value = true
+  setTimeout(() => {
+    qrScanner = new Html5QrcodeScanner("qr-reader-them-kh", { fps: 10, qrbox: { width: 250, height: 250 } }, false)
+    qrScanner.render(onScanSuccess, () => {})
+  }, 300)
+}
+
+const stopScan = () => {
+  if (qrScanner) {
+    qrScanner.clear().then(() => { isScanning.value = false }).catch(err => console.error(err))
+  }
+}
+
+const onScanSuccess = (decodedText) => {
+  alert('Quét thông tin căn cước công dân thành công! 🎉')
+  stopScan()
+  
+  if (decodedText.includes('|')) {
+    const parts = decodedText.split('|')
+    if (parts.length >= 6) {
+      khachHang.tenKh = parts[2]
+      
+      if (parts[3]?.length === 8) {
+        khachHang.ngaySinh = `${parts[3].substring(4, 8)}-${parts[3].substring(2, 4)}-${parts[3].substring(0, 2)}`
+      }
+      
+      khachHang.gioiTinh = parts[4] === 'Nam' ? 1 : 0
+      
+      if (khachHang.listDiaChi.length > 0) {
+        khachHang.listDiaChi[0].tenNguoiNhan = parts[2]
+        khachHang.listDiaChi[0].chiTietCuThe = parts[5]
+      }
+    }
+  }
+}
+
 const load63TinhThanhTuAPI = async () => {
   try {
     const res = await axios.get('https://provinces.open-api.vn/api/p/')
@@ -152,7 +201,6 @@ const load63TinhThanhTuAPI = async () => {
   } catch (e) { console.error(e) }
 }
 
-// 2. Khi đổi Tỉnh thành -> Gọi lấy danh sách Quận/Huyện trực thuộc
 const handleThayDoiTinhThanh = async (item) => {
   item.quanHuyen = ''; item.phuongXa = ''; item.listQuanHuyenTmp = []; item.listPhuongXaTmp = [];
   if (!item.tinhThanh) return
@@ -163,7 +211,6 @@ const handleThayDoiTinhThanh = async (item) => {
   }
 }
 
-// 3. Khi đổi Quận/Huyện -> Gọi lấy danh sách Phường/Xã/Thị trấn trực thuộc
 const handleThayDoiQuanHuyen = async (item) => {
   item.phuongXa = ''; item.listPhuongXaTmp = [];
   if (!item.quanHuyen) return
@@ -176,7 +223,6 @@ const handleThayDoiQuanHuyen = async (item) => {
 
 onMounted(async () => { await load63TinhThanhTuAPI() })
 
-// --- QUẢN LÝ SỔ ĐỊA CHỈ HÀNG LOẠT ---
 const themKhoiDiaChiMoi = () => {
   khachHang.listDiaChi.push({
     tenNguoiNhan: khachHang.tenKh || '', sdtNguoiNhan: khachHang.sdt || '', tinhThanh: '', quanHuyen: '', phuongXa: '', chiTietCuThe: '', isDefault: khachHang.listDiaChi.length === 0, listQuanHuyenTmp: [], listPhuongXaTmp: []
@@ -185,47 +231,103 @@ const themKhoiDiaChiMoi = () => {
 const xoaKhoiDiaChi = (index) => { const wasDef = khachHang.listDiaChi[index].isDefault; khachHang.listDiaChi.splice(index, 1); if (wasDef && khachHang.listDiaChi.length > 0) khachHang.listDiaChi[0].isDefault = true }
 const datDiaChiMacDinh = (index) => { khachHang.listDiaChi.forEach((addr, idx) => addr.isDefault = idx === index) }
 
-const validateSdtChuDong = () => { if (!/^(0[3|5|7|8|9])([0-9]{8})$/.test(khachHang.sdt.trim())) { errors.sdt = 'SĐT không hợp lệ!'; return false } errors.sdt = ''; return true }
+const validateSdtChuDong = () => { if (!/^(0[3|5|7|8|9])([0-9]{8})$/.test(khachHang.sdt.trim())) { errors.sdt = 'SĐT không đúng định dạng nhà mạng VN!'; return false } errors.sdt = ''; return true }
 const validateEmailChuDong = () => { if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(khachHang.email.trim())) { errors.email = 'Email sai định dạng!'; return false } errors.email = ''; return true }
 
+const validateNgaySinhChuDong = () => {
+  if (!khachHang.ngaySinh) { errors.ngaySinh = 'Vui lòng chọn ngày sinh!'; return false }
+  const birthDate = new Date(khachHang.ngaySinh); const today = new Date()
+  let age = today.getFullYear() - birthDate.getFullYear(); const m = today.getMonth() - birthDate.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--
+  if (age < 15) { errors.ngaySinh = `Khách hàng chưa đủ điều kiện (Yêu cầu phải từ 15 tuổi trở lên, hiện tại: ${age} tuổi)!`; return false }
+  errors.ngaySinh = ''; return true
+}
+
+const validateHoTenChuDong = () => {
+  let name = khachHang.tenKh.trim()
+  if (!name) { errors.tenKh = 'Họ tên khách hàng không được để trống!'; return false }
+  
+  name = name.replace(/\s+/g, ' ')
+  khachHang.tenKh = name 
+
+  if (name.length < 3 || name.length > 100) { errors.tenKh = `Độ dài họ tên phải nằm trong khoảng từ 3 đến 100 ký tự (Hiện tại: ${name.length} ký tự)!`; return false }
+  if (!/^[\p{L}\s]+$/u.test(name)) { errors.tenKh = 'Họ tên không được chứa số hoặc ký tự đặc biệt!'; return false }
+  
+  errors.tenKh = ''; 
+  return true;
+}
+
 const saveKhachHang = async () => {
-  const name = khachHang.tenKh.trim()
-  if (!name || !/^[\p{L}\s]+$/u.test(name)) return alert('Họ tên sai ký tự hoặc rỗng!')
-  if (!validateSdtChuDong() || !validateEmailChuDong()) return alert('Vui lòng sửa các trường lỗi đỏ!')
+  const hoTenHopLe = validateHoTenChuDong()
+  const sdtHopLe = validateSdtChuDong()
+  const emailHopLe = validateEmailChuDong()
+  const tuoiHopLe = validateNgaySinhChuDong()
+  
+  if (!hoTenHopLe || !sdtHopLe || !emailHopLe || !tuoiHopLe) {
+    return alert('Vui lòng hoàn thiện đúng các trường hiển thị lỗi đỏ!')
+  }
 
   let trong = khachHang.listDiaChi.some(a => !a.tenNguoiNhan.trim() || !a.sdtNguoiNhan.trim() || !a.tinhThanh || !a.quanHuyen || !a.phuongXa || !a.chiTietCuThe.trim())
-  if (trong) return alert('Vui lòng điền đầy đủ mọi ô trống trong khối địa chỉ!')
+  if (trong) return alert('Vui lòng không để trống bất kì thông tin nào trong khối sổ địa chỉ!')
 
   try {
+    const checkTrungRes = await axios.get('http://localhost:8080/public/khach-hang/check-trung', {
+      params: { 
+        sdt: khachHang.sdt.trim(), 
+        email: khachHang.email.trim() 
+      }
+    })
+    
+    const { trungSdt, trungEmail } = checkTrungRes.data
+
+    if (trungSdt) {
+      errors.sdt = 'Số điện thoại này đã tồn tại trên hệ thống!'
+      return alert('Thất bại: Số điện thoại này đã được đăng ký bởi khách hàng khác!')
+    }
+
+    if (trungEmail) {
+      errors.email = 'Địa chỉ Email này đã tồn tại trên hệ thống!'
+      return alert('Thất bại: Địa chỉ email này đã được sử dụng bởi khách hàng khác!')
+    }
+
+    // 🌟 ĐÃ SỬA LỖI: Đồng bộ chính xác thuộc tính `addr.tenNguoiNhan` và `addr.sdtNguoiNhan` để tránh lỗi trim() của undefined
     const addressesPayload = khachHang.listDiaChi.map(addr => ({
-      tenNguoiNhan: addr.tenNguoiNhan.trim(),
-      sdtNguoiNhan: addr.sdtNguoiNhan.trim(),
+      nguoiNhan: addr.tenNguoiNhan ? addr.tenNguoiNhan.trim() : '',
+      sdt: addr.sdtNguoiNhan ? addr.sdtNguoiNhan.trim() : '',
       tinhThanh: addr.tinhThanh,
-      // Ghép nối chuỗi: "Phường/Xã, Quận/Huyện" để tương thích với trường phuongXa duy nhất ở Backend DTO của bạn
       phuongXa: `${addr.phuongXa}, ${addr.quanHuyen}`, 
-      diaChiChiTiet: addr.chiTietCuThe.trim(),
+      diaChiChiTiet: addr.chiTietCuThe ? addr.chiTietCuThe.trim() : '',
       macDinh: addr.isDefault ? 1 : 0
     }))
 
     const payload = {
-      hoTen: name, 
+      hoTen: khachHang.tenKh.trim(), 
       sdt: khachHang.sdt.trim(), 
       email: khachHang.email.trim(), 
       gioiTinh: parseInt(khachHang.gioiTinh, 10), 
-      ngaySinh: khachHang.ngaySinh || null, 
-      trangThai: khachHang.trangThai, 
+      ngaySinh: khachHang.ngaySinh, 
+      trangThai: 1, 
       addresses: addressesPayload
     }
 
     const response = await axios.post('http://localhost:8080/public/khach-hang/add', payload)
-    if (response.status === 200 || response.status === 201) { alert('🎉 Thêm khách hàng và sổ địa chỉ 3 cấp thành công!'); router.push('/khach-hang') }
-  } catch (error) { alert('Thất bại: ' + (error.response?.data?.message || error.message)) }
+    if (response.status === 200 || response.status === 201) { 
+      alert('🎉 Thêm khách hàng và sổ địa chỉ thành công!')
+      router.push('/khach-hang') 
+    }
+  } catch (error) { 
+    alert('Thất bại: ' + (error.response?.data?.message || error.message)) 
+  }
 }
 </script>
 
 <style scoped>
+.btn-scan-qr { background-color: #1890ff; color: white; border: none; padding: 0 16px; height: 38px; border-radius: 4px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+.btn-scan-qr:hover { background-color: #40a9ff; }
+.mb-4 { margin-bottom: 1.5rem; }
+
 .form-group.has-error input { border-color: #ef4444 !important; background-color: #fef2f2; }
-.form-select-control { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 4px; height: 38px; background-color: #fff; font-size: 14px; color: #334155; outline: none; box-sizing: border-box; }
+.form-select-control { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 4px; height: 38px; background-color: #fff; font-size: 14px; color: #334155; outline: none; box-sizing: border-box; width: 100%; }
 .form-select-control:focus { border-color: #f79b66; }
 .error-text { color: #ef4444; font-size: 13px; margin-top: 5px; display: block; text-align: left;}
 .customer-card { background: #ffffff; padding: 24px; border-radius: 8px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: left; }

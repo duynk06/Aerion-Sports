@@ -24,13 +24,30 @@ export const fetchAllNhanVien = async () => {
     throw error;
   }
 };
-
+// Thêm đoạn này vào file NhanVienService.js
+export const checkDuplicate = async (sdt, email) => {
+  try {
+    // Đảm bảo baseUrl đã được định nghĩa ở trên trong file này
+    const response = await fetch(`${baseUrl}/nhan-vien/check-duplicate?sdt=${sdt}&email=${email}`);
+    if (!response.ok) throw new Error("Lỗi kết nối");
+    return await response.json(); 
+  } catch (error) {
+    console.error("Lỗi kiểm tra trùng:", error);
+    return false;
+  }
+};
+export const checkDuplicateUpdate = async (sdt, email, id) => {
+  try {
+    const res = await fetch(`${baseUrl}/nhan-vien/check-duplicate-update?sdt=${sdt}&email=${email}&id=${id}`);
+    return await res.json();
+  } catch (e) { return false; }
+};
 /**
  * 2. ⚡ THÊM MỚI: Gọi API thêm nhân viên để kích hoạt luồng tự cấp mật khẩu và gửi Email ngầm
  */
-export const createNhanVien = async (nhanVienData) => {
+export const addNhanVien = async (nhanVienData) => {
   try {
-    const response = await fetch(`${baseUrl}/nhan-vien/create`, {
+    const response = await fetch(`${baseUrl}/nhan-vien/add`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -45,7 +62,7 @@ export const createNhanVien = async (nhanVienData) => {
 
     return await response.json();
   } catch (error) {
-    console.error("Lỗi khi gọi API createNhanVien:", error);
+    console.error("Lỗi khi gọi API addNhanVien:", error);
     throw error;
   }
 };
@@ -77,8 +94,7 @@ export const updateNhanVien = async (id, nhanVienData) => {
 
 /**
  * 4. Thay đổi trạng thái hoạt động nhanh của nhân viên
- */
-export const changeStatusNhanVien = async (id, trangThai) => {
+ */export const changeStatusNhanVien = async (id, trangThai) => {
   try {
     const response = await fetch(`${baseUrl}/nhan-vien/doi-trang-thai/${id}?trangThai=${trangThai}`, {
       method: 'PUT',
@@ -183,8 +199,7 @@ export const updateAddress = async (addressId, addressPayload) => {
     }
 
     const updatedPayload = {
-      ...targetNv,
-      vaiTro: { id: Number(roleId) }
+      ...targetNv,vaiTro: { id: Number(roleId) }
     };
 
     return await updateNhanVien(targetNv.id || targetNv.idNhanVien, updatedPayload);

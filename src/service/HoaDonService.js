@@ -20,7 +20,7 @@ export const searchHoaDon = async (keyword) => {
   
     return await response.json()
   }
-export const filterHoaDon = async (
+  export const filterHoaDon = async (
     keyword,
     loaiHoaDon,
     trangThai,
@@ -35,8 +35,15 @@ export const filterHoaDon = async (
     if (keyword)
       params.append("keyword", keyword)
   
-    if (loaiHoaDon)
-      params.append("loaiHoaDon", loaiHoaDon)
+    if (
+      loaiHoaDon !== null &&
+      loaiHoaDon !== undefined
+    ) {
+      params.append(
+        "loaiHoaDon",
+        loaiHoaDon
+      )
+    }
   
     if (
       trangThai !== '' &&
@@ -63,14 +70,12 @@ export const filterHoaDon = async (
     )
   
     if (!response.ok) {
-      throw new Error(
-        await response.text()
-      )
+      throw new Error(await response.text())
     }
   
     return await response.json()
   }
-  export const getHoaDonById = async (id) => {
+    export const getHoaDonById = async (id) => {
     const response = await fetch(
       `${baseUrl}/${id}`
     )

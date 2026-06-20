@@ -202,8 +202,9 @@ const formatTienTe = (value) => {
 
 const safeExtractArray = (res) => { return res && res.data ? (Array.isArray(res.data) ? res.data : (res.data.content || [])) : []; };
 
+// 🌟 ĐÃ SỬA: Chuyển toàn bộ check mảng từ `chiTietSanPhams` sang `bienThes` cho khớp cấu trúc JSON mới của Backend
 const layKhoangGiaCuaSanPham = (sp) => {
-  const variants = sp.chiTietSanPhams || [];
+  const variants = sp.bienThes || sp.chiTietSanPhams || [];
   if (variants.length === 0) return { min: 0, max: 0, text: 'Chưa có giá' };
   const giaBans = variants.map(v => v.giaBan || 0);
   const minGia = Math.min(...giaBans);
@@ -213,9 +214,10 @@ const layKhoangGiaCuaSanPham = (sp) => {
 
 const hienThiKhoangGia = (sp) => layKhoangGiaCuaSanPham(sp).text;
 
+// 🌟 ĐÃ SỬA: Đồng bộ bóc tách đếm tổng lượng tồn kho qua mảng `sp.bienThes` sạch sẽ
 const filteredDanhSachSanPham = computed(() => {
   return danhSachSanPham.value.map(sp => {
-    const tongTonKhoCon = (sp.chiTietSanPhams || []).reduce((sum, item) => sum + (item.soLuong || 0), 0);
+    const tongTonKhoCon = (sp.bienThes || sp.chiTietSanPhams || []).reduce((sum, item) => sum + (item.soLuong || 0), 0);
     return {
       ...sp,
       computedThuongHieuId: sp.idThuongHieu,
@@ -241,6 +243,7 @@ const filteredDanhSachSanPham = computed(() => {
   });
 });
 
+// 🌟 ĐÃ SỬA: Cấu trúc lại bộ lọc gửi lên params khớp với SanPhamFilter.java mới ở BE
 const loadToanBoDuLieu = async () => {
   try {
     const [sp, th, xx] = await Promise.all([
@@ -248,8 +251,8 @@ const loadToanBoDuLieu = async () => {
         params: {
           page: currentPage.value,
           size: pageSize.value,
-          keyword: filterForm.value.keyword || null,
-          thuongHieuId: filterForm.value.idThuongHieu || null, 
+          keyword: filterForm.value.keyword?.trim() || null,
+          idThuongHieu: filterForm.value.idThuongHieu || null, 
           idXuatXu: filterForm.value.idXuatXu || null,
           trangThai: filterForm.value.trangThai !== '' ? filterForm.value.trangThai : null
         }
@@ -288,7 +291,7 @@ const toggleXoaMemSanPham = async (sp) => {
   const trangThaiCu = danhSachSanPham.value[indexGoc].trangThai;
   const trangThaiMoi = trangThaiCu === 1 ? 0 : 1; 
 
-  if (!confirm(trangThaiMoi === 1 ? "Bạn muốn khôi phục kinh doanh sản phẩm này?" : "Bạn muốn tạm ngừng kinh doanh sản phẩm này?")) {
+  if (!confirm(trangThaiMoi === 1 ? "Bạn muốn khôi phục kinh doanh sản phẩm này ?" : "Bạn muốn tạm ngừng kinh doanh sản phẩm này ?")) {
     return;
   }
 
@@ -298,6 +301,19 @@ const toggleXoaMemSanPham = async (sp) => {
     await axios.put(`http://localhost:8080/api/san-pham/${productId}/trang-thai`, null, {
       params: { trangThai: trangThaiMoi }
     });
+
+    // 🌟 ĐÃ SỬA: Đồng bộ cập nhật trạng thái các biến thể quét theo mảng `sp.bienThes`
+    const danhSachCon = sp.bienThes || sp.chiTietSanPhams || [];
+    if (danhSachCon.length > 0) {
+      await Promise.all(danhSachCon.map(variant => 
+        axios.put(`http://localhost:8080/api/chi-tiet-san-pham/${variant.id}/trang-thai`, null, {
+          params: { trangThai: trangThaiMoi }
+        })
+      ));
+    }
+
+    alert("Thay đổi trạng thái sản phẩm thành công!");
+    await loadToanBoDuLieu(); 
   } catch (e) {
     danhSachSanPham.value[indexGoc].trangThai = trangThaiCu;
     alert("Hệ thống mất kết nối, không thể thay đổi trạng thái kinh doanh!");
@@ -306,10 +322,6 @@ const toggleXoaMemSanPham = async (sp) => {
 
 const xemChiTietBienThe = (sp) => { 
   router.push({ path: '/san-pham/bien-the', query: { idSP: sp.id, maSP: sp.maSanPham, tenSP: sp.tenSanPham } }); 
-};
-
-const chuyenTrangSuaSanPhamCha = (sp) => {
-  router.push({ path: '/san-pham/sua', query: { id: sp.id } });
 };
 
 const chuyenSangTrangThemMoi = () => {
@@ -337,438 +349,59 @@ onMounted(() => loadToanBoDuLieu());
 </script>
 
 <style scoped>
-/* ==========================================================================
-   1. BREADCRUMB & KHUNG CHUNG
-   ========================================================================== */
-.breadcrumb-container { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  margin-bottom: 15px; 
-}
-
-.breadcrumb-text { 
-  font-size: 14px; 
-  color: #4a5568; 
-}
-
-.btn-toggle-filter { 
-  background-color: #f8fafc; 
-  border: 1px solid #cbd5e1; 
-  color: #475569; 
-  padding: 6px 14px; 
-  border-radius: 8px; /* Bo góc đồng bộ */
-  cursor: pointer; 
-  font-size: 13px; 
-  font-weight: 500; 
-  transition: all 0.2s;
-}
-
-.btn-toggle-filter:hover { 
-  background-color: #e2e8f0; 
-}
-
-/* ==========================================================================
-   2. BỘ LỌC TÌM KIẾM CHUẨN BO GÓC (FILTER ZONE)
-   ========================================================================== */
-.filter-container-orange { 
-  background-color: #fff; 
-  border: 1px solid #f79b66; 
-  border-radius: 12px; /* Tăng bo góc mềm mại */
-  margin-bottom: 20px; 
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05); 
-  overflow: hidden; 
-}
-
-.filter-header-title { 
-  background-color: #f79b66; 
-  color: white; 
-  padding: 12px 18px; 
-  font-size: 14px; 
-  font-weight: bold; 
-  text-align: left; 
-}
-
-.filter-body-content { 
-  padding: 20px; 
-  background-color: #fff; 
-}
-
-.filter-grid { 
-  display: flex; 
-  flex-wrap: wrap; 
-  gap: 15px; 
-  align-items: flex-end; 
-}
-
-.filter-item { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 8px; 
-  text-align: left; 
-  flex: 1; 
-  min-width: 160px; 
-}
-
-.filter-item label { 
-  font-size: 13px; 
-  font-weight: 600; 
-  color: #4a5568; 
-}
-
-/* Ô nhập liệu và select bo góc tròn trịa */
-.filter-item input, 
-.filter-item select { 
-  padding: 8px 12px; 
-  border: 1px solid #cbd5e1; 
-  border-radius: 8px; /* Bo góc 8px hiện đại */
-  font-size: 13px; 
-  outline: none; 
-  box-sizing: border-box; 
-  width: 100%; 
-  height: 38px;
-  background-color: #fff; 
-  transition: border-color 0.2s;
-}
-
-.filter-item input:focus, 
-.filter-item select:focus { 
-  border-color: #f79b66; 
-}
-
-/* Thanh trượt khoảng giá */
-.slider-item { 
-  min-width: 230px; 
-  color:#22c55e;
-}
-
-.price-slider-wrapper { 
-  display: flex; 
-  align-items: center; 
-  width: 100%; 
-  height: 38px; 
-}
-
-.custom-slider { 
-  -webkit-appearance: none; 
-  width: 100%; 
-  height: 6px; 
-  background: #e2e8f0; 
-  border-radius: 5px; 
-  outline: none; 
-  padding: 0 !important; 
-  border: none !important; 
-}
-
-.custom-slider::-webkit-slider-thumb { 
-  -webkit-appearance: none; 
-  appearance: none; 
-  width: 18px; 
-  height: 18px; 
-  border-radius: 50%; 
-  background: #f79b66; 
-  cursor: pointer; 
-}
-
-.filter-actions { 
-  flex: 0 0 auto; 
-  min-width: auto; 
-}
-
-/* Nút đặt lại bo tròn */
-.btn-filter-clear { 
-  background-color: #f3f4f6; 
-  color: #4b5563; 
-  border: none; 
-  padding: 10px 20px; 
-  border-radius: 8px; 
-  font-size: 13px; 
-  font-weight: 600; 
-  cursor: pointer; 
-  height: 38px;
-  transition: background-color 0.2s; 
-}
-
-.btn-filter-clear:hover { 
-  background-color: #e5e7eb; 
-}
-
-/* ==========================================================================
-   3. KHUNG BẢNG DỮ LIỆU
-   ========================================================================== */
-.data-table-container { 
-  background-color: #fff; 
-  border: 1px solid #edf2f7; 
-  border-radius: 12px; 
-  padding: 20px; 
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
-}
-
-.table-header-row { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  margin-bottom: 20px; 
-  padding-bottom: 12px; 
-  border-bottom: 1px solid #edf2f7; 
-}
-
-.table-summary-title { 
-  font-size: 16px; 
-  font-weight: 600; 
-  color: #1a202c; 
-  margin: 0; 
-}
-
-.header-actions { 
-  display: flex; 
-  align-items: center; 
-  gap: 10px; 
-}
-
-/* Nút thêm sản phẩm mới */
-.btn-action-solid { 
-  background-color: #f79b66; 
-  border: none; 
-  color: #fff; 
-  padding: 9px 18px; 
-  border-radius: 8px; 
-  font-weight: 600; 
-  cursor: pointer; 
-  font-size: 13px; 
-  transition: all 0.2s;
-}
-
-.btn-action-solid:hover { 
-  background-color: #e08553; 
-  transform: translateY(-1px);
-}
-
-/* Nút xuất Excel màu xanh Mint dịu mắt */
-.btn-action-excel { 
-  background: #e6f7f0; 
-  color: #0aa06e; 
-  border: none; 
-  padding: 9px 18px; 
-  border-radius: 8px; 
-  cursor: pointer; 
-  font-size: 13px; 
-  font-weight: 600; 
-  transition: all 0.2s;
-}
-
-.btn-action-excel:hover { 
-  background: #ccefe3; 
-  transform: translateY(-1px);
-}
-
-/* ==========================================================================
-   4. CẤU TRÚC BẢNG (TABLE)
-   ========================================================================== */
-.custom-data-table { 
-  width: 100%; 
-  border-collapse: collapse; 
-  text-align: left; 
-}
-
-.custom-data-table th { 
-  background-color: #f79b66; 
-  color: white; 
-  padding: 14px 10px; 
-  font-size: 14px; 
-  font-weight: 600;
-  text-align: center;
-}
-
-.custom-data-table td { 
-  padding: 14px 10px; 
-  border-bottom: 1px solid #edf2f7; 
-  font-size: 14px; 
-  vertical-align: middle; 
-}
-
-.custom-data-table tbody tr:hover {
-  background-color: #f8fafc;
-}
-
-.product-code-text { 
-  font-weight: bold; 
-  color: #f79b66; 
-}
-
-.empty-table-row { 
-  text-align: center; 
-  color: #94a3b8; 
-  padding: 40px; 
-  font-style: italic;
-}
-
-/* ==========================================================================
-   5. NHÃN TRẠNG THÁI PASTEL (BADGE STATUS)
-   ========================================================================== */
-.badge-status-text { 
-  padding: 5px 14px; 
-  border-radius: 30px; /* Định dạng viên thuốc mềm mại */
-  font-size: 13px; 
-  font-weight: 500; 
-  display: inline-block; 
-  min-width: 130px;
-  text-align: center;
-}
-
-/* Đang kinh doanh (Xanh lá pastel nhạt) */
-.badge-status-text.status-active { 
-  background-color: #e6f4ea; 
-  color: #137333; 
-}
-
-/* Ngừng kinh doanh (Xanh dương pastel nhạt đồng bộ) */
-.badge-status-text.status-stopped { 
-  background-color: #e8f0fe; 
-  color: #1a73e8; 
-}
-
-/* ==========================================================================
-   6. NÚT THAO TÁC MINIMALIST BLACK (HÀNH ĐỘNG TỐI GIẢN)
-   ========================================================================== */
-.action-buttons-flex-group { 
-  display: flex; 
-  gap: 6px; 
-  justify-content: center; 
-  align-items: center; 
-}
-
-/* Đồng bộ nút tròn tối giản, màu đen xám thanh lịch */
-.icon-btn-circle { 
-  width: 32px; 
-  height: 32px; 
-  border-radius: 50%; 
-  border: none; 
-  display: inline-flex; 
-  align-items: center; 
-  justify-content: center; 
-  cursor: pointer; 
-  font-size: 15px; 
-  background-color: transparent;
-  color: #4a5568; /* Icon màu tối giản */
-  transition: all 0.2s ease; 
-}
-
-.icon-btn-circle:hover { 
-  background-color: #f1f5f9;
-  color: #000000;
-}
-
-/* Loại bỏ class màu cũ */
-.icon-btn-circle.view-eye,
-.icon-btn-circle.edit-pencil-black {
-  background-color: transparent !important;
-  border: none !important;
-  color: #4a5568 !important;
-}
-
-.icon-btn-circle.view-eye:hover,
-.icon-btn-circle.edit-pencil-black:hover {
-  background-color: #f1f5f9 !important;
-  color: #000000 !important;
-}
-
-/* Công tắc gạt Toggle Switch mượt mà */
-.status-toggle-container { 
-  display: inline-flex; 
-  align-items: center; 
-  cursor: pointer; 
-  user-select: none; 
-  padding: 0 4px;
-}
-
-.toggle-track { 
-  position: relative; 
-  display: inline-block; 
-  width: 34px; 
-  height: 18px; 
-  border-radius: 999px; 
-  transition: background-color 0.2s ease; 
-}
-
-.track-active { 
-  background-color: #22c55e; /* Màu xanh gạt khi active */
-}
-
-.track-inactive { 
-  background-color: #cbd5e1; 
-}
-
-.toggle-handle { 
-  position: absolute; 
-  top: 3px; 
-  left: 3px; 
-  width: 12px; 
-  height: 12px; 
-  background-color: #fff; 
-  border-radius: 50%; 
-  transition: transform 0.2s ease; 
-}
-
-.track-active .toggle-handle { 
-  transform: translateX(16px); 
-}
-
-/* ==========================================================================
-   7. THANH PHÂN TRANG (PAGINATION)
-   ========================================================================== */
-.custom-pagination-container { 
-  display: flex; 
-  align-items: center; 
-  justify-content: space-between; 
-  margin-top: 25px; 
-  padding-top: 15px; 
-  border-top: 1px solid #edf2f7; 
-}
-
-.pagination-left-summary { 
-  font-size: 13.5px; 
-  color: #4a5568; 
-}
-
-.pagination-right-controls { 
-  display: flex; 
-  align-items: center; 
-  gap: 10px; 
-}
-
-.page-arrow-btn { 
-  width: 32px; 
-  height: 32px; 
-  background: #fff; 
-  border: 1px solid #e2e8f0; 
-  border-radius: 6px; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  font-size: 14px; 
-  color: #4a5568; 
-  cursor: pointer; 
-  transition: 0.2s; 
-}
-
-.page-arrow-btn:hover:not(:disabled) { 
-  background: #f8fafc; 
-  border-color: #cbd5e1; 
-}
-
-.page-arrow-btn:disabled { 
-  background: white; 
-  color: #cbd5e1; 
-  cursor: not-allowed; 
-  border-color: #f1f5f9; 
-  opacity: 0.5;
-}
-
-.page-text-indicator { 
-  font-size: 13.5px; 
-  font-weight: 500; 
-  color: #4a5568; 
-  padding: 0 4px; 
-}
+/* Giữ nguyên 100% CSS Scoped thương hiệu màu cam Aerion-Sports của bạn */
+.breadcrumb-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.breadcrumb-text { font-size: 14px; color: #4a5568; }
+.btn-toggle-filter { background-color: #f8fafc; border: 1px solid #cbd5e1; color: #475569; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
+.btn-toggle-filter:hover { background-color: #e2e8f0; }
+.filter-container-orange { background-color: #fff; border: 1px solid #f79b66; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); overflow: hidden; }
+.filter-header-title { background-color: #f79b66; color: white; padding: 12px 18px; font-size: 14px; font-weight: bold; text-align: left; }
+.filter-body-content { padding: 20px; background-color: #fff; }
+.filter-grid { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
+.filter-item { display: flex; flex-direction: column; gap: 8px; text-align: left; flex: 1; min-width: 160px; }
+.filter-item label { font-size: 13px; font-weight: 600; color: #4a5568; }
+.filter-item input, .filter-item select { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; box-sizing: border-box; width: 100%; height: 38px; background-color: #fff; transition: border-color 0.2s; }
+.filter-item input:focus, .filter-item select:focus { border-color: #f79b66; }
+.slider-item { min-width: 230px; color:#22c55e; }
+.price-slider-wrapper { display: flex; align-items: center; width: 100%; height: 38px; }
+.custom-slider { -webkit-appearance: none; width: 100%; height: 6px; background: #e2e8f0; border-radius: 5px; outline: none; padding: 0 !important; border: none !important; }
+.custom-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #f79b66; cursor: pointer; }
+.filter-actions { flex: 0 0 auto; min-width: auto; }
+.btn-filter-clear { background-color: #f3f4f6; color: #4b5563; border: none; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; height: 38px; transition: background-color 0.2s; }
+.btn-filter-clear:hover { background-color: #e5e7eb; }
+.data-table-container { background-color: #fff; border: 1px solid #edf2f7; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.table-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #edf2f7; }
+.table-summary-title { font-size: 16px; font-weight: 600; color: #1a202c; margin: 0; }
+.header-actions { display: flex; align-items: center; gap: 10px; }
+.btn-action-solid { background-color: #f79b66; border: none; color: #fff; padding: 9px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.btn-action-solid:hover { background-color: #e08553; transform: translateY(-1px); }
+.btn-action-excel { background: #e6f7f0; color: #0aa06e; border: none; padding: 9px 18px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+.btn-action-excel:hover { background: #ccefe3; transform: translateY(-1px); }
+.custom-data-table { width: 100%; border-collapse: collapse; text-align: left; }
+.custom-data-table th { background-color: #f79b66; color: white; padding: 14px 10px; font-size: 14px; font-weight: 600; text-align: center; }
+.custom-data-table td { padding: 14px 10px; border-bottom: 1px solid #edf2f7; font-size: 14px; vertical-align: middle; }
+.custom-data-table tbody tr:hover { background-color: #f8fafc; }
+.product-code-text { font-weight: bold; color: #f79b66; }
+.empty-table-row { text-align: center; color: #94a3b8; padding: 40px; font-style: italic; }
+.badge-status-text { padding: 5px 14px; border-radius: 30px; font-size: 13px; font-weight: 500; display: inline-block; min-width: 130px; text-align: center; }
+.badge-status-text.status-active { background-color: #e6f4ea; color: #137333; }
+.badge-status-text.status-stopped { background-color: #e8f0fe; color: #1a73e8; }
+.action-buttons-flex-group { display: flex; gap: 6px; justify-content: center; align-items: center; }
+.icon-btn-circle { width: 32px; height: 32px; border-radius: 50%; border: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; background-color: transparent; color: #4a5568; transition: all 0.2s ease; }
+.icon-btn-circle:hover { background-color: #f1f5f9; color: #000000; }
+.icon-btn-circle.view-eye, .icon-btn-circle.edit-pencil-black { background-color: transparent !important; border: none !important; color: #4a5568 !important; }
+.icon-btn-circle.view-eye:hover, .icon-btn-circle.edit-pencil-black:hover { background-color: #f1f5f9 !important; color: #000000 !important; }
+.status-toggle-container { display: inline-flex; align-items: center; cursor: pointer; user-select: none; padding: 0 4px; }
+.toggle-track { position: relative; display: inline-block; width: 34px; height: 18px; border-radius: 999px; transition: background-color 0.2s ease; }
+.track-active { background-color: #22c55e; }
+.track-inactive { background-color: #cbd5e1; }
+.toggle-handle { position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; background-color: #fff; border-radius: 50%; transition: transform 0.2s ease; }
+.track-active .toggle-handle { transform: translateX(16px); }
+.custom-pagination-container { display: flex; align-items: center; justify-content: space-between; margin-top: 25px; padding-top: 15px; border-top: 1px solid #edf2f7; }
+.pagination-left-summary { font-size: 13.5px; color: #4a5568; }
+.pagination-right-controls { display: flex; align-items: center; gap: 10px; }
+.page-arrow-btn { width: 32px; height: 32px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #4a5568; cursor: pointer; transition: 0.2s; }
+.page-arrow-btn:hover:not(:disabled) { background: #f8fafc; border-color: #cbd5e1; }
+.page-arrow-btn:disabled { background: white; color: #cbd5e1; cursor: not-allowed; border-color: #f1f5f9; opacity: 0.5; }
+.page-text-indicator { font-size: 13.5px; font-weight: 500; color: #4a5568; padding: 0 4px; }
 </style>

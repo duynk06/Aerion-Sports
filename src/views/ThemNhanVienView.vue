@@ -10,7 +10,7 @@
 
       <div class="qr-scan-section" style="margin-bottom: 25px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 20px;">
         <button type="button" @click="startScan" class="btn-save" style="background-color: #1890ff; display: inline-flex; align-items: center; gap: 8px;">
-          📷 Quét QR CCCD lấy thông tin nhanh
+        Quét QR CCCD lấy thông tin nhanh
         </button>
         <div v-if="isScanning" id="qr-reader-nv" style="max-width: 350px; margin-top: 15px; border: 1px solid #ddd; border-radius: 6px;"></div>
         <button v-if="isScanning" type="button" @click="stopScan" class="btn-cancel" style="margin-top: 10px; padding: 6px 16px;">Tắt Camera</button>
@@ -60,21 +60,13 @@
                   <option :value="3">Nhân viên</option>
                 </select>
               </div>
-
-              <div class="form-group">
-                <label>Trạng thái tài khoản</label>
-                <select v-model="nhanVienForm.trangThai">
-                  <option :value="1">Đang làm việc</option>
-                  <option :value="0">Ngừng làm việc</option>
-                </select>
-              </div>
             </div>
           </div>
         </div>
 
         <div class="address-card">
           <div v-for="(item, index) in nhanVienForm.listDiaChi" :key="index" class="address-item">
-            <div class="address-title" style="font-weight: bold; color: #f79b66; margin-bottom: 15px;">📍 Địa chỉ nhân viên liên hệ</div>
+            <div class="address-title" style="font-weight: bold; color: #f79b66; margin-bottom: 15px;">Địa chỉ nhân viên liên hệ</div>
 
             <div class="form-grid" style="margin-bottom: 15px;">
               <div class="form-group">
@@ -126,13 +118,33 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import MainLayout from '../layouts/MainLayout.vue'
 import { Html5QrcodeScanner } from 'html5-qrcode'
-import { addNhanVien } from '@/service/NhanVienService'
+import { addNhanVien, checkDuplicate} from '@/service/NhanVienService'
 
 const router = useRouter()
 const listTinhThanh = ref([])
 const isScanning = ref(false)
 let qrScanner = null
 
+// Kiểm tra tên: trên 3 ký tự, dưới 100 ký tự, không chứa ký tự đặc biệt
+const validateTenNv = (name) => {
+  const nameRegex = /^[\p{L}\s]+$/u; // Chỉ cho phép chữ cái và khoảng trắng
+  if (name.length < 3 || name.length > 100) return 'Tên phải từ 3 đến 100 ký tự!';
+  if (!nameRegex.test(name)) return 'Tên không được chứa ký tự đặc biệt hoặc số!';
+  return '';
+};
+
+// Kiểm tra đủ 18 tuổi
+const validateTuoi = (ngaySinh) => {
+  if (!ngaySinh) return 'Vui lòng chọn ngày sinh!';
+  const birthDate = new Date(ngaySinh);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age >= 18 ? '' : 'Nhân viên phải đủ 18 tuổi!';
+};
 // Đã quy hoạch lại tên biến chuẩn dữ liệu Nhân viên (tenNv, sdt, vaiTro, trangThai)
 const nhanVienForm = ref({
   tenNv: '', sdt: '', email: '', ngaySinh: '', gioiTinh: 1, vaiTro: 3, trangThai: 1, avatar: null,
@@ -219,40 +231,68 @@ const validateEmailChuDong = () => {
 
 // --- SUBMIT LƯU DỮ LIỆU NHÂN VIÊN ---
 const saveNhanVien = async () => {
-  const name = nhanVienForm.value.tenNv.trim()
-  if (!name || !/^[\p{L}\s]+$/u.test(name)) return alert('Họ tên sai ký tự hoặc rỗng!')
-  if (!validateSdtChuDong() || !validateEmailChuDong()) return alert('Vui lòng sửa các trường lỗi đỏ!')
+  const name = nhanVienForm.value.tenNv.trim();
+  const sdt = nhanVienForm.value.sdt.trim();
+  const email = nhanVienForm.value.email.trim();
 
-  let trong = nhanVienForm.value.listDiaChi.some(a => !a.tinhThanh || !a.quanHuyen || !a.phuongXa || !a.chiTietCuThe.trim())
-  if (trong) return alert('Vui lòng điền đầy đủ mọi ô trống trong khối địa chỉ!')
+  // 1. Validate Tên
+  const errorName = validateTenNv(name);
+  if (errorName) {
+    errors.tenNv = errorName;
+    return alert(errorName);
+  }
 
+  // 2. Validate Tuổi
+  const errorAge = validateTuoi(nhanVienForm.value.ngaySinh);
+  if (errorAge) return alert(errorAge);
+
+  // 3. Validate Định dạng SĐT & Email
+  if (!validateSdtChuDong() || !validateEmailChuDong()) {
+    return alert('SĐT hoặc Email sai định dạng!');
+  }
+
+  // 4. Validate Địa chỉ
+  const trong = nhanVienForm.value.listDiaChi.some(a => 
+    !a.tinhThanh || !a.quanHuyen || !a.phuongXa || !a.chiTietCuThe.trim()
+  );
+  if (trong) return alert('Vui lòng điền đầy đủ thông tin địa chỉ!');
+
+  // 5. Kiểm tra trùng lặp (Server Side)
   try {
-    const active = nhanVienForm.value.listDiaChi[0]
-    const stringDiaChiPhuongXa = `${active.phuongXa}, ${active.quanHuyen}`
-    const diaChiGhop = `${active.chiTietCuThe.trim()}, ${active.phuongXa}, ${active.tinhThanh}`
+    const isDuplicate = await checkDuplicate(sdt, email);
+    if (isDuplicate) {
+      return alert('⚠️ Cảnh báo: Số điện thoại hoặc Email đã tồn tại trong hệ thống!');
+    }
+  } catch (err) {
+    console.error("Lỗi kiểm tra trùng:", err);
+    return alert('Không thể kiểm tra dữ liệu, vui lòng thử lại sau.');
+  }
 
+  // 6. Gửi Payload
+  try {
+    const active = nhanVienForm.value.listDiaChi[0];
     const payload = {
       tenNv: name,
-      sdt: nhanVienForm.value.sdt.trim(),
-      email: nhanVienForm.value.email.trim(),
+      sdt: sdt,
+      email: email,
       gioiTinh: Number(nhanVienForm.value.gioiTinh),
       ngaySinh: nhanVienForm.value.ngaySinh || null,
       trangThai: Number(nhanVienForm.value.trangThai),
-      diaChi: diaChiGhop,
+      diaChi: `${active.chiTietCuThe.trim()}, ${active.phuongXa}, ${active.tinhThanh}`,
       tinhThanh: active.tinhThanh,
-      phuongXa: stringDiaChiPhuongXa,
+      phuongXa: `${active.phuongXa}, ${active.quanHuyen}`,
       diaChiChiTiet: active.chiTietCuThe.trim(),
       avatar: nhanVienForm.value.avatar,
-      vaiTro: { id: Number(nhanVienForm.value.vaiTro) } // Định dạng mapping JPA Object Role
-    }
+      vaiTro: { id: Number(nhanVienForm.value.vaiTro) }
+    };
 
-    await addNhanVien(payload)
-    alert('🎉 Thêm mới nhân viên và khởi tạo địa chỉ 3 cấp thành công!')
-    router.push('/nhan-vien') // Đẩy chuẩn xác về trang danh sách nhân viên
-  } catch (error) { 
-    alert('Thất bại: Có thể do trùng Email hoặc Số điện thoại!') 
+    await addNhanVien(payload);
+    alert('🎉 Thêm mới nhân viên thành công!');
+    router.push('/nhan-vien');
+  } catch (error) {
+    alert('Thất bại: Có lỗi xảy ra trong quá trình lưu dữ liệu!');
   }
-}
+};
 </script>
 
 <style scoped>

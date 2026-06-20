@@ -45,7 +45,7 @@
             <select v-model="filterForm.idMauSac" @change="phatSinhTimKiem">
               <option value="">-- Tất cả --</option>
               <option v-for="ms in masterData.mauSec" :key="ms.id" :value="ms.id">
-                {{ ms.tenMauSac || ms.ten }}
+                {{ ms.tenMauSac || ms.tenMauSec || ms.ten }}
               </option>
             </select>
           </div>
@@ -128,7 +128,7 @@
 
             <td style="font-weight: bold; color: #475569;">{{ item.maSanPham || '---' }}</td>
             <td class="product-code-text">{{ item.maCtsp }}</td>
-            <td><span class="badge-prop orange">{{ item.tenMauSec || item.tenMauSac || 'Mặc định' }}</span></td>
+            <td><span class="badge-prop orange">{{ item.tenMauSac || 'Mặc định' }}</span></td>
             <td><span class="badge-prop cyan">{{ item.tenTrongLuong || 'Mặc định' }}</span></td>
             
             <td style="text-align: center;">
@@ -195,7 +195,7 @@
           <div class="info-specs-column">
             <div class="spec-row-item"><span>Mã sản phẩm cha:</span> <strong>{{ selectedVariant.maSanPham || '---' }}</strong></div>
             <div class="spec-row-item"><span>Mã SKU biến thể:</span> <strong>{{ selectedVariant.maCtsp }}</strong></div>
-            <div class="spec-row-item"><span>Màu sắc:</span> <strong>{{ selectedVariant.tenMauSec || selectedVariant.tenMauSac || 'Mặc định' }}</strong></div>
+            <div class="spec-row-item"><span>Màu sắc:</span> <strong>{{ selectedVariant.tenMauSac || 'Mặc định' }}</strong></div>
             <div class="spec-row-item"><span>Trọng lượng:</span> <strong>{{ selectedVariant.tenTrongLuong || 'Mặc định' }}</strong></div>
             <div class="spec-row-item"><span>Độ cứng thân vợt:</span> <strong>{{ selectedVariant.tenDoCung || 'Mặc định' }}</strong></div>
             <div class="spec-row-item"><span>Điểm cân bằng:</span> <strong>{{ selectedVariant.tenDiemCanBang || 'Mặc định' }}</strong></div>
@@ -221,7 +221,6 @@
         </div>
       </div>
     </div>
-
   </MainLayout>
 </template>
 
@@ -231,7 +230,7 @@ import axios from 'axios';
 import { useRouter } from 'vue-router';
 import MainLayout from '@/layouts/MainLayout.vue';
 import * as XLSX from 'xlsx';
-import QRCode from 'qrcode'; // ⚡ Đóng gói nạp thư viện tạo QR Code tự động
+import QRCode from 'qrcode';
 
 const router = useRouter();
 const isFilterVisible = ref(true);
@@ -242,7 +241,6 @@ const totalPages = ref(1);
 const listBienTheRaw = ref([]);
 const masterData = ref({ mauSec: [], trongLuong: [] });
 
-// Biến kiểm soát trạng thái Modal QR Code
 const isQrModalOpen = ref(false);
 const selectedVariant = ref({});
 const qrCanvasRef = ref(null);
@@ -258,7 +256,6 @@ const formatTienTe = (value) => {
 
 const safeExtractArray = (res) => { return res && res.data ? (Array.isArray(res.data) ? res.data : (res.data.content || [])) : []; };
 
-// Hàm kích hoạt mở Modal hiển thị QR Code dựa vào biến thể dòng
 const moModalXemQr = async (item) => {
   selectedVariant.value = item;
   isQrModalOpen.value = true;
@@ -269,17 +266,13 @@ const moModalXemQr = async (item) => {
     QRCode.toCanvas(qrCanvasRef.value, duLieuMaHoa, {
       width: 165,
       margin: 1,
-      color: {
-        dark: '#1e293b',
-        white: '#ffffff'
-      }
+      color: { dark: '#1e293b', white: '#ffffff' }
     }, (error) => {
       if (error) console.error("Lỗi vẽ QR Code canvas:", error);
     });
   }
 };
 
-// Hàm kích hoạt lệnh in nhãn dán sản phẩm chứa QR
 const inMaQRCode = () => {
   const canvas = qrCanvasRef.value;
   if (!canvas) return;
@@ -298,59 +291,67 @@ const inMaQRCode = () => {
       <body onload="window.print(); window.close();">
         <img src="${urlAnhQr}" width="140" height="140"/>
         <div class="sku-title">${selectedVariant.value.maCtsp}</div>
-        <div style="font-size: 11px; color: #475569;">Màu: ${selectedVariant.value.tenMauSec || selectedVariant.value.tenMauSac || 'Mặc định'} - Trọng lượng: ${selectedVariant.value.tenTrongLuong || 'Mặc định'}</div>
+        <div style="font-size: 11px; color: #475569;">Màu: ${selectedVariant.value.tenMauSac || 'Mặc định'} - Trọng lượng: ${selectedVariant.value.tenTrongLuong || 'Mặc định'}</div>
       </body>
     </html>
   `);
   cuaSoIn.document.close();
 };
 
+// 🌟 ĐÃ SỬA: Đọc phẳng mảng dữ liệu đã phân trang Server-side được trả về từ DB sạch sẽ
 const filteredDanhSachBienTe = computed(() => {
-  return listBienTheRaw.value.filter(item => {
-    const giaThucTeValue = (item.phanTramGiam && item.phanTramGiam > 0) ? (item.giaDaGiam || item.giaBan) : item.giaBan;
-    const matchKeyword = !filterForm.value.keyword.trim() || 
-      (item.maCtsp || '').toLowerCase().includes(filterForm.value.keyword.trim().toLowerCase()) ||
-      (item.tenSanPham || '').toLowerCase().includes(filterForm.value.keyword.trim().toLowerCase());
-    
-    const currentMsId = item.idMauSac || item.idMauSec;
-    const currentTlId = item.idTrongLuong;
-    
-    const matchMauSac = !filterForm.value.idMauSac || String(currentMsId) === String(filterForm.value.idMauSac) || String(item.tenMauSec).toLowerCase().includes(String(filterForm.value.idMauSac).toLowerCase()) || String(item.tenMauSac).toLowerCase().includes(String(filterForm.value.idMauSac).toLowerCase());
-    const matchTrongLuong = !filterForm.value.idTrongLuong || String(currentTlId) === String(filterForm.value.idTrongLuong) || String(item.tenTrongLuong).toLowerCase().includes(String(filterForm.value.idTrongLuong).toLowerCase());
-    
-    const matchTrangThai = filterForm.value.trangThai === '' || String(item.trangThai) === String(filterForm.value.trangThai);
-    const matchPrice = giaThucTeValue <= filterForm.value.giaMax;
-
-    return matchKeyword && matchMauSac && matchTrongLuong && matchTrangThai && matchPrice;
-  });
+  return listBienTheRaw.value;
 });
 
+// 🌟 ĐÃ SỬA: Đính kèm mảng ID gửi trực tiếp lên SQL Server để thực thi tìm kiếm nâng cao ở Database
 const loadToanBoDuLieu = async () => {
   try {
+    const paramsPayload = {
+      page: currentPage.value,
+      size: pageSize.value
+    };
+
+    if (filterForm.value.keyword?.trim()) paramsPayload.keyword = filterForm.value.keyword.trim();
+    if (filterForm.value.trangThai !== '') paramsPayload.trangThai = parseInt(filterForm.value.trangThai, 10);
+    
+    // Đẩy trực tiếp ID lên Server-side Pagination
+    if (filterForm.value.idMauSac !== '') paramsPayload.idMauSac = parseInt(filterForm.value.idMauSac, 10);
+    if (filterForm.value.idTrongLuong !== '') paramsPayload.idTrongLuong = parseInt(filterForm.value.idTrongLuong, 10);
+
     const [ctsp, ms, tl] = await Promise.all([
       axios.get('http://localhost:8080/api/chi-tiet-san-pham/search', {
-        params: { 
-          page: currentPage.value, 
-          size: pageSize.value, 
-          keyword: filterForm.value.keyword || null, 
-          trangThai: filterForm.value.trangThai !== '' ? filterForm.value.trangThai : null 
-        }
+        params: paramsPayload
       }),
       axios.get('http://localhost:8080/api/mau-sac/all'),   
       axios.get('http://localhost:8080/api/trong-luong/all')
     ]);
 
+    let rawData = [];
     if (ctsp.data && ctsp.data.content !== undefined) {
-      listBienTheRaw.value = ctsp.data.content;
+      rawData = ctsp.data.content;
       totalPages.value = ctsp.data.totalPages || 1;
     } else {
-      listBienTheRaw.value = safeExtractArray(ctsp);
+      rawData = safeExtractArray(ctsp);
       totalPages.value = 1;
     }
+
+    // Cơ chế phòng vệ tự động gán trạng thái con ăn theo cha khi sản phẩm cha ngừng bán
+    listBienTheRaw.value = rawData.map(item => {
+      let finalStatus = item.trangThai;
+      if (item.sanPham && (item.sanPham.trangThai === 0 || item.sanPham.trangThai === false)) {
+        finalStatus = 0;
+      } else if (item.trangThaiSanPham === 0 || item.trangThaiSanPham === false) {
+        finalStatus = 0;
+      }
+      return {
+        ...item,
+        trangThai: finalStatus
+      };
+    });
     
     masterData.value.mauSec = safeExtractArray(ms);
     masterData.value.trongLuong = safeExtractArray(tl);
-  } catch (error) { console.error("Lỗi:", error); }
+  } catch (error) { console.error("Lỗi nạp dữ liệu tổng kho:", error); }
 };
 
 const chuyenTrang = (page) => { currentPage.value = page; loadToanBoDuLieu(); };
@@ -384,7 +385,7 @@ const editItem = (item) => {
 };
 
 const exportToExcel = () => {
-  const mapped = filteredDanhSachBienTe.value.map((item, i) => ({ "STT": i + 1, "SKU": item.maCtsp, "Giá thực": item.giaDaGiam || item.giaBan, "Tồn": item.soLuong }));
+  const mapped = filteredDanhSachBienTe.value.map((item, i) => ({ "STT": i + 1, "SKU": item.maCtsp, "Giá thực": item.giaDaGiam || item.giaBan, "Tồn": item.soLuong, "Trạng thái": item.trangThai === 1 ? "Đang hoạt động" : "Ngừng hoạt động" }));
   const ws = XLSX.utils.json_to_sheet(mapped);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Variants");
@@ -395,498 +396,76 @@ onMounted(loadToanBoDuLieu);
 </script>
 
 <style scoped>
-/* ==========================================================================
-   1. BREADCRUMB & KHUNG CHUNG
-   ========================================================================== */
-.breadcrumb-container { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  margin-bottom: 15px; 
-}
-
-.breadcrumb-text { 
-  font-size: 14px; 
-  color: #4a5568; 
-}
-
-.btn-toggle-filter { 
-  background-color: #f8fafc; 
-  border: 1px solid #cbd5e1; 
-  color: #475569; 
-  padding: 6px 14px; 
-  border-radius: 8px; 
-  cursor: pointer; 
-  font-size: 13px; 
-  font-weight: 500; 
-  transition: all 0.2s;
-}
-
-.btn-toggle-filter:hover { 
-  background-color: #e2e8f0; 
-}
-
-/* ==========================================================================
-   2. BỘ LỌC NỀN CAM ĐỒNG BỘ MỀM MẠI (FILTER ZONE)
-   ========================================================================== */
-.filter-container-orange { 
-  background-color: #fff; 
-  border: 1px solid #f79b66; 
-  border-radius: 12px; 
-  margin-bottom: 20px; 
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05); 
-  overflow: hidden; 
-}
-
-.filter-header-title { 
-  background-color: #f79b66; 
-  color: white; 
-  padding: 12px 18px; 
-  font-size: 14px; 
-  font-weight: bold; 
-  text-align: left; 
-}
-
-.filter-body-content { 
-  padding: 20px; 
-  background-color: #fff; 
-}
-
-.filter-grid { 
-  display: flex; 
-  flex-wrap: wrap; 
-  gap: 15px; 
-  align-items: flex-end; 
-}
-
-.filter-item { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 8px; 
-  text-align: left; 
-  flex: 1; 
-  min-width: 160px; 
-}
-
-.filter-item label { 
-  font-size: 13px; 
-  font-weight: 600; 
-  color: #4a5568; 
-}
-
-.filter-item input, 
-.filter-item select { 
-  padding: 8px 12px; 
-  border: 1px solid #cbd5e1; 
-  border-radius: 8px; 
-  font-size: 13px; 
-  outline: none; 
-  box-sizing: border-box; 
-  width: 100%; 
-  height: 38px;
-  background-color: #fff; 
-  transition: border-color 0.2s;
-}
-
-.filter-item input:focus, 
-.filter-item select:focus { 
-  border-color: #f79b66; 
-}
-
-.slider-item { 
-  min-width: 230px; 
-}
-
-.price-slider-wrapper {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 38px;
-}
-
-.custom-slider { 
-  -webkit-appearance: none; 
-  width: 100%; 
-  height: 6px; 
-  background: #e2e8f0; 
-  border-radius: 5px; 
-  outline: none; 
-}
-
-.custom-slider::-webkit-slider-thumb { 
-  -webkit-appearance: none; 
-  width: 18px; 
-  height: 18px; 
-  border-radius: 50%; 
-  background: #f79b66; 
-  cursor: pointer; 
-}
-
-.btn-filter-clear { 
-  background-color: #f3f4f6; 
-  color: #4b5563; 
-  border: none; 
-  padding: 10px 20px; 
-  border-radius: 8px; 
-  font-size: 13px; 
-  font-weight: 600; 
-  cursor: pointer; 
-  height: 38px;
-  transition: background-color 0.2s;
-}
-
-.btn-filter-clear:hover { 
-  background-color: #e5e7eb; 
-}
-
-/* ==========================================================================
-   3. KHUNG BẢNG DỮ LIỆU
-   ========================================================================== */
-.data-table-container { 
-  background-color: #fff; 
-  border: 1px solid #edf2f7; 
-  border-radius: 12px; 
-  padding: 20px; 
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-.table-header-row { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  margin-bottom: 20px; 
-  padding-bottom: 12px; 
-  border-bottom: 1px solid #edf2f7; 
-}
-
-.table-summary-title { 
-  font-size: 16px; 
-  font-weight: 600; 
-  color: #1a202c; 
-}
-
-.btn-action-excel { 
-  background: #e6f7f0; 
-  color: #0aa06e; 
-  border: none; 
-  padding: 9px 18px; 
-  border-radius: 8px; 
-  font-weight: 600; 
-  cursor: pointer; 
-  font-size: 13px;
-  transition: all 0.2s;
-}
-
-.btn-action-excel:hover {
-  background: #ccefe3;
-  transform: translateY(-1px);
-}
-
-/* ==========================================================================
-   4. CẤU TRÚC BẢNG (TABLE)
-   ========================================================================== */
-.custom-data-table { 
-  width: 100%; 
-  border-collapse: collapse; 
-}
-
-.custom-data-table th { 
-  background-color: #f79b66; 
-  color: white; 
-  padding: 14px 10px; 
-  font-size: 14px; 
-  font-weight: 600;
-  text-align: center; 
-}
-
-.custom-data-table td { 
-  padding: 14px 10px; 
-  border-bottom: 1px solid #edf2f7; 
-  font-size: 14px; 
-  color: #2d3748;
-  vertical-align: middle; 
-}
-
-.custom-data-table tbody tr:hover {
-  background-color: #f8fafc;
-}
-
-.product-code-text { 
-  font-weight: bold; 
-  color: #f79b66; 
-}
-
-/* ⚡ ĐÃ CẬP NHẬT: Khung ảnh relative dán cứng Badge % giảm giá góc trái */
-.variant-image-wrapper {
-  position: relative;
-  width: 50px;
-  height: 50px;
-  margin: 0 auto;
-}
-
-.variant-img-thumb-table {
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-}
-
-.badge-corner-discount {
-  position: absolute;
-  top: -4px;
-  left: -4px;
-  background-color: #ef4444; 
-  color: white;
-  font-size: 10px;
-  font-weight: 800;
-  padding: 1px 4px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.35);
-  z-index: 2;
-}
-
-.badge-prop { 
-  padding: 3px 8px; 
-  border-radius: 4px; 
-  font-weight: 500; 
-  font-size: 12px; 
-}
-
-.badge-prop.cyan { 
-  background: #e6f7ff; 
-  color: #096dd9; 
-  border: 1px solid #bae7ff; 
-}
-
-.badge-prop.orange { 
-  background: #fff7ed; 
-  color: #f79b66; 
-  border: 1px solid #ffedd5; 
-}
-
-.badge-discount-percent { 
-  background-color: #fee2e2; 
-  color: #ef4444; 
-  padding: 3px 8px; 
-  border-radius: 4px; 
-  font-weight: 700; 
-  font-size: 12px;
-}
-
-.text-muted-dash {
-  color: #a0aec0;
-}
-
-.discounted-price-text { 
-  color: #ef4444; 
-  font-weight: 700; 
-}
-
-.original-price-strike { 
-  color: #a0aec0; 
-  text-decoration: line-through; 
-  font-size: 12px; 
-}
-
-.normal-price-text {
-  color: #2563eb;
-  font-weight: 600;
-}
-
-.empty-table-row {
-  text-align: center;
-  color: #a0aec0;
-  padding: 40px !important;
-  font-style: italic;
-}
-
-/* ==========================================================================
-   5. NHÃN TRẠNG THÁI PASTEL (BADGE STATUS)
-   ========================================================================== */
-.badge-status-text { 
-  padding: 5px 14px; 
-  border-radius: 30px; 
-  font-size: 13px; 
-  font-weight: 500; 
-  display: inline-block;
-  min-width: 130px;
-  text-align: center;
-}
-
-.badge-status-text.status-active { 
-  background-color: #e6f4ea; 
-  color: #137333; 
-}
-
-.badge-status-text.status-stopped { 
-  background-color: #e8f0fe; 
-  color: #1a73e8; 
-}
-
-/* ==========================================================================
-   6. NÚT THAO TÁC MINIMALIST BLACK & TOGGLE
-   ========================================================================== */
-.action-buttons-flex-group { 
-  display: flex; 
-  gap: 6px; 
-  justify-content: center; 
-  align-items: center; 
-}
-
-.icon-btn-circle { 
-  width: 32px; 
-  height: 32px; 
-  border-radius: 50%; 
-  border: none; 
-  display: inline-flex; 
-  align-items: center; 
-  justify-content: center; 
-  cursor: pointer; 
-  font-size: 15px; 
-  background-color: transparent;
-  color: #4a5568; 
-  transition: all 0.2s ease; 
-}
-
-.icon-btn-circle.view-eye {
-  color: #3b82f6;
-}
-.icon-btn-circle.view-eye:hover {
-  background-color: #eff6ff;
-  color: #2563eb;
-}
-
-.icon-btn-circle.edit-pencil-black:hover {
-  background-color: #f1f5f9;
-  color: #000000;
-}
-
-.status-toggle-container { 
-  display: inline-flex; 
-  align-items: center; 
-  cursor: pointer; 
-  user-select: none;
-  padding: 0 4px;
-}
-
-.toggle-track { 
-  width: 34px; 
-  height: 18px; 
-  border-radius: 999px; 
-  position: relative; 
-  background-color: #cbd5e1; 
-  transition: background-color 0.2s ease; 
-}
-
-.track-active { 
-  background-color: #22c55e; 
-}
-
-.toggle-handle { 
-  width: 12px; 
-  height: 12px; 
-  background-color: white; 
-  border-radius: 50%; 
-  position: absolute; 
-  top: 3px; 
-  left: 3px; 
-  transition: transform 0.2s ease; 
-}
-
-.track-active .toggle-handle { 
-  transform: translateX(16px); 
-}
-
-/* ==========================================================================
-   7. THANH PHÂN TRANG & HIỆU ỨNG CHUẨN MODAL QR CODE MỚI
-   ========================================================================== */
-.custom-pagination-wrapper { 
-  display: flex; 
-  align-items: center; 
-  gap: 10px; 
-  margin-top: 25px; 
-  justify-content: flex-start;
-}
-
-.page-arrow-btn { 
-  width: 32px; 
-  height: 32px; 
-  background: #fff;
-  border: 1px solid #e2e8f0; 
-  border-radius: 6px; 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #4a5568;
-  cursor: pointer; 
-  transition: 0.2s;
-}
-
-.page-arrow-btn:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
-
-.page-arrow-btn:disabled {
-  background: white;
-  color: #cbd5e1;
-  cursor: not-allowed;
-  border-color: #f1f5f9;
-  opacity: 0.5;
-}
-
-.page-text-indicator {
-  font-size: 13.5px;
-  font-weight: 500;
-  color: #4a5568;
-  padding: 0 4px;
-}
-
-/* ⚡ KIỂU DÁNG HIỆN ĐẠI CHO KHỐI MODAL QR CODE TỔNG KHO CHUẨN */
-.qr-modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(15, 23, 42, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-.qr-modal-content {
-  background-color: #ffffff;
-  width: 580px;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-  animation: popUpModal 0.2s ease-out;
-}
-.modal-header-orange {
-  background-color: #f79b66;
-  color: white;
-  padding: 12px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+.breadcrumb-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.breadcrumb-text { font-size: 14px; color: #4a5568; }
+.btn-toggle-filter { background-color: #f8fafc; border: 1px solid #cbd5e1; color: #475569; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
+.btn-toggle-filter:hover { background-color: #e2e8f0; }
+.filter-container-orange { background-color: #fff; border: 1px solid #f79b66; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); overflow: hidden; }
+.filter-header-title { background-color: #f79b66; color: white; padding: 12px 18px; font-size: 14px; font-weight: bold; text-align: left; }
+.filter-body-content { padding: 20px; background-color: #fff; }
+.filter-grid { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
+.filter-item { display: flex; flex-direction: column; gap: 8px; text-align: left; flex: 1; min-width: 160px; }
+.filter-item label { font-size: 13px; font-weight: 600; color: #4a5568; }
+.filter-item input, .filter-item select { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; box-sizing: border-box; width: 100%; height: 38px; background-color: #fff; transition: border-color 0.2s; }
+.filter-item input:focus, .filter-item select:focus { border-color: #f79b66; }
+.slider-item { min-width: 230px; }
+.price-slider-wrapper { display: flex; align-items: center; width: 100%; height: 38px; }
+.custom-slider { -webkit-appearance: none; width: 100%; height: 6px; background: #e2e8f0; border-radius: 5px; outline: none; }
+.custom-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #f79b66; cursor: pointer; }
+.btn-filter-clear { background-color: #f3f4f6; color: #4b5563; border: none; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; height: 38px; transition: background-color 0.2s; }
+.btn-filter-clear:hover { background-color: #e5e7eb; }
+.data-table-container { background-color: #fff; border: 1px solid #edf2f7; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.table-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #edf2f7; }
+.table-summary-title { font-size: 16px; font-weight: 600; color: #1a202c; }
+.btn-action-excel { background: #e6f7f0; color: #0aa06e; border: none; padding: 9px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.btn-action-excel:hover { background: #ccefe3; transform: translateY(-1px); }
+.custom-data-table { width: 100%; border-collapse: collapse; }
+.custom-data-table th { background-color: #f79b66; color: white; padding: 14px 10px; font-size: 14px; font-weight: 600; text-align: center; }
+.custom-data-table td { padding: 14px 10px; border-bottom: 1px solid #edf2f7; font-size: 14px; color: #2d3748; vertical-align: middle; }
+.custom-data-table tbody tr:hover { background-color: #f8fafc; }
+.product-code-text { font-weight: bold; color: #f79b66; }
+.variant-image-wrapper { position: relative; width: 50px; height: 50px; margin: 0 auto; }
+.variant-img-thumb-table { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0; }
+.badge-corner-discount { position: absolute; top: -4px; left: -4px; background-color: #ef4444; color: white; font-size: 10px; font-weight: 800; padding: 1px 4px; border-radius: 4px; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.35); z-index: 2; }
+.badge-prop { padding: 3px 8px; border-radius: 4px; font-weight: 500; font-size: 12px; }
+.badge-prop.cyan { background: #e6f7ff; color: #096dd9; border: 1px solid #bae7ff; }
+.badge-prop.orange { background: #fff7ed; color: #f79b66; border: 1px solid #ffedd5; }
+.badge-discount-percent { background-color: #fee2e2; color: #ef4444; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 12px; }
+.text-muted-dash { color: #a0aec0; }
+.discounted-price-text { color: #ef4444; font-weight: 700; }
+.original-price-strike { color: #a0aec0; text-decoration: line-through; font-size: 12px; }
+.normal-price-text { color: #2563eb; font-weight: 600; }
+.empty-table-row { text-align: center; color: #a0aec0; padding: 40px !important; font-style: italic; }
+.badge-status-text { padding: 5px 14px; border-radius: 30px; font-size: 13px; font-weight: 500; display: inline-block; min-width: 130px; text-align: center; }
+.badge-status-text.status-active { background-color: #e6f4ea; color: #137333; }
+.badge-status-text.status-stopped { background-color: #e8f0fe; color: #1a73e8; }
+.action-buttons-flex-group { display: flex; gap: 6px; justify-content: center; align-items: center; }
+.icon-btn-circle { width: 32px; height: 32px; border-radius: 50%; border: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; background-color: transparent; color: #4a5568; transition: all 0.2s ease; }
+.icon-btn-circle.view-eye { color: #3b82f6; }
+.icon-btn-circle.view-eye:hover { background-color: #eff6ff; color: #2563eb; }
+.icon-btn-circle.edit-pencil-black:hover { background-color: #f1f5f9; color: #000000; }
+.status-toggle-container { display: inline-flex; align-items: center; cursor: pointer; user-select: none; padding: 0 4px; }
+.toggle-track { width: 34px; height: 18px; border-radius: 999px; position: relative; background-color: #cbd5e1; transition: background-color 0.2s ease; }
+.track-active { background-color: #22c55e; }
+.toggle-handle { width: 12px; height: 12px; background-color: white; border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: transform 0.2s ease; }
+.track-active .toggle-handle { transform: translateX(16px); }
+.custom-pagination-wrapper { display: flex; align-items: center; gap: 10px; margin-top: 25px; justify-content: flex-start; }
+.page-arrow-btn { width: 32px; height: 32px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #4a5568; cursor: pointer; transition: 0.2s; }
+.page-arrow-btn:hover:not(:disabled) { background: #f8fafc; border-color: #cbd5e1; }
+.page-arrow-btn:disabled { background: white; color: #cbd5e1; cursor: not-allowed; border-color: #f1f5f9; opacity: 0.5; }
+.page-text-indicator { font-size: 13.5px; font-weight: 500; color: #4a5568; padding: 0 4px; }
+.qr-modal-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.qr-modal-content { background-color: #ffffff; width: 580px; border-radius: 8px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.15); animation: popUpModal 0.2s ease-out; }
+.modal-header-orange { background-color: #f79b66; color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
 .modal-header-orange h4 { margin: 0; font-size: 14px; font-weight: bold; }
 .btn-close-modal { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
-
 .modal-body-layout { padding: 20px; display: flex; gap: 20px; }
 .info-specs-column { flex: 1; display: flex; flex-direction: column; gap: 10px; }
 .spec-row-item { display: flex; justify-content: space-between; font-size: 13px; border-bottom: 1px dashed #f1f5f9; padding-bottom: 6px; text-align: left; }
 .spec-row-item span { color: #64748b; }
-
 .qr-code-column { width: 190px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-left: 1px solid #f1f5f9; padding-left: 20px; }
 .qr-canvas-holder { border: 1px solid #cbd5e1; padding: 4px; border-radius: 6px; background: #fff; }
 .btn-print-qr-code { background-color: #1e293b; color: white; border: none; padding: 9px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; margin-top: 15px; cursor: pointer; width: 100%; }
 .btn-print-qr-code:hover { background-color: #0f172a; }
-
-@keyframes popUpModal {
-  from { transform: scale(0.96); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
+@keyframes popUpModal { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 </style>

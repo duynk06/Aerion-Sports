@@ -22,23 +22,27 @@
           <div class="info-fields-block">
             <div class="section-sub-title fw-bold mb-3">Thông tin khách hàng</div>
             <div class="form-row">
-              <div class="form-cell">
+              <div class="form-cell" :class="{ 'has-error': errors.hoTen }">
                 <label>Họ và tên <span class="required">*</span></label>
-                <input type="text" v-model="customerForm.hoTen" placeholder="Nhập họ và tên" required />
+                <input type="text" v-model="customerForm.hoTen" placeholder="Nhập họ và tên" @input="errors.hoTen = ''" @blur="validateHoTenChuDong" required />
+                <span v-if="errors.hoTen" class="error-text">{{ errors.hoTen }}</span>
               </div>
-              <div class="form-cell">
+              <div class="form-cell" :class="{ 'has-error': errors.sdt }">
                 <label>Số điện thoại <span class="required">*</span></label>
-                <input type="text" v-model="customerForm.sdt" placeholder="Nhập số điện thoại" required />
+                <input type="text" v-model="customerForm.sdt" placeholder="Nhập số điện thoại" @input="errors.sdt = ''" @blur="validateSdtChuDong" required />
+                <span v-if="errors.sdt" class="error-text">{{ errors.sdt }}</span>
               </div>
             </div>
             <div class="form-row">
-              <div class="form-cell">
-                <label>Email</label>
-                <input type="email" v-model="customerForm.email" placeholder="Nhập email" />
+              <div class="form-cell" :class="{ 'has-error': errors.email }">
+                <label>Email <span class="required">*</span></label>
+                <input type="email" v-model="customerForm.email" placeholder="Nhập email" @input="errors.email = ''" @blur="validateEmailChuDong" required />
+                <span v-if="errors.email" class="error-text">{{ errors.email }}</span>
               </div>
-              <div class="form-cell">
-                <label>Ngày sinh</label>
-                <input type="date" v-model="customerForm.ngaySinh" />
+              <div class="form-cell" :class="{ 'has-error': errors.ngaySinh }">
+                <label>Ngày sinh <span class="required">*</span></label>
+                <input type="date" v-model="customerForm.ngaySinh" :max="ngayMaxChoPhep" @change="validateNgaySinhChuDong" required />
+                <span v-if="errors.ngaySinh" class="error-text">{{ errors.ngaySinh }}</span>
               </div>
             </div>
             <div class="form-row">
@@ -133,7 +137,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import MainLayout from '../layouts/MainLayout.vue'
@@ -148,6 +152,18 @@ const formFileInputRef = ref(null)
 
 const customerForm = ref({
   id: null, hoTen: '', sdt: '', email: '', ngaySinh: '', gioiTinh: '1', trangThai: 1, avatar: '', addresses: []
+})
+
+// Bảng chứa thông tin lỗi hiển thị thời gian thực lên giao diện
+const errors = reactive({ hoTen: '', sdt: '', email: '', ngaySinh: '' })
+
+// 🌟 ĐÃ ĐỒNG BỘ: Ràng buộc ô chọn lịch lùi về tròn 15 năm trước (Yêu cầu tuổi từ 15 trở lên)
+const ngayMaxChoPhep = computed(() => {
+  const today = new Date()
+  const yearLimit = today.getFullYear() - 15
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const date = String(today.getDate()).padStart(2, '0')
+  return `${yearLimit}-${month}-${date}`
 })
 
 const load63TinhThanh = async () => {
@@ -178,7 +194,6 @@ const loadDuLieuKhachHangCu = async () => {
           let huyenList = []
           let xaList = []
 
-          // Kiểm tra nghiêm ngặt mảng tỉnh thành gốc phải có dữ liệu mới bóc tách
           if (addr.tinhThanh && listTinhThanhAPI.value.length > 0) {
             const tinhChuan = addr.tinhThanh.trim()
             const tinh = listTinhThanhAPI.value.find(t => t.name.trim() === tinhChuan)
@@ -199,7 +214,6 @@ const loadDuLieuKhachHangCu = async () => {
           }
 
           return {
-            // Ép sinh id động kèm theo Date.now() để bắt buộc tầng DOM của Vue phải re-render fill chữ lên select
             id: addr.id ? `${addr.id}_${Date.now()}` : 'ADDR_' + Date.now() + Math.random(),
             tinhThanh: addr.tinhThanh || '',
             quanHuyen: qHuyen,
@@ -271,31 +285,113 @@ const handleFormAvatarChange = (e) => {
 }
 const quayLaiDanhSach = () => router.push('/khach-hang')
 
-const handleSubmitForm = async () => {
-  const processed = customerForm.value.addresses.map(addr => {
-    // Tách bỏ phần timestamp để lấy lại ID nguyên bản gửi về DB sạch sẽ
-    let cleanId = addr.id;
-    if (typeof cleanId === 'string' && cleanId.includes('_')) {
-      cleanId = cleanId.split('_')[0];
-    }
-    return {
-      id: cleanId,
-      nguoiNhan: addr.nguoiNhan.trim(),
-      sdt: addr.sdt.trim(),
-      tinhThanh: addr.tinhThanh,
-      phuongXa: `${addr.phuongXa}, ${addr.quanHuyen}`,
-      diaChiChiTiet: addr.diaChiChiTiet.trim(),
-      macDinh: addr.macDinh ? 1 : 0
-    }
-  })
+// 🌟 ĐÒNG BỘ VALIDATE: SĐT nhà mạng Việt Nam
+const validateSdtChuDong = () => { 
+  if (!/^(0[3|5|7|8|9])([0-9]{8})$/.test(customerForm.value.sdt.trim())) { 
+    errors.sdt = 'SĐT không đúng định dạng nhà mạng VN!'; 
+    return false 
+  } 
+  errors.sdt = ''; 
+  return true 
+}
 
-  const payload = {
-    hoTen: customerForm.value.hoTen.trim(), sdt: customerForm.value.sdt.trim(), email: customerForm.value.email || null, ngaySinh: customerForm.value.ngaySinh || null,
-    gioiTinh: Number(customerForm.value.gioiTinh), trangThai: Number(customerForm.value.trangThai), avatar: customerForm.value.avatar || null,
-    addresses: processed
+// 🌟 ĐÒNG BỘ VALIDATE: Kiểm tra Email định dạng chuẩn
+const validateEmailChuDong = () => { 
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerForm.value.email.trim())) { 
+    errors.email = 'Email sai định dạng!'; 
+    return false 
+  } 
+  errors.email = ''; 
+  return true 
+}
+
+// 🌟 ĐÒNG BỘ VALIDATE: Logic tính tuổi chuẩn xác (Từ 15 tuổi trở lên)
+const validateNgaySinhChuDong = () => {
+  if (!customerForm.value.ngaySinh) { errors.ngaySinh = 'Vui lòng chọn ngày sinh!'; return false }
+  const birthDate = new Date(customerForm.value.ngaySinh); const today = new Date()
+  let age = today.getFullYear() - birthDate.getFullYear(); const m = today.getMonth() - birthDate.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--
+  if (age < 15) { errors.ngaySinh = `Khách hàng chưa đủ điều kiện (Yêu cầu phải từ 15 tuổi trở lên, hiện tại: ${age} tuổi)!`; return false }
+  errors.ngaySinh = ''; return true
+}
+
+// 🌟 ĐÒNG BỘ VALIDATE: Thu gọn khoảng trắng lớn, chặn kí tự đặc biệt và số (3-100 kí tự)
+const validateHoTenChuDong = () => {
+  let name = customerForm.value.hoTen.trim()
+  if (!name) { errors.hoTen = 'Họ tên khách hàng không được để trống!'; return false }
+  
+  name = name.replace(/\s+/g, ' ')
+  customerForm.value.hoTen = name 
+
+  if (name.length < 3 || name.length > 100) { errors.hoTen = `Độ dài họ tên phải từ 3 đến 100 ký tự (Hiện tại: ${name.length} ký tự)!`; return false }
+  if (!/^[\p{L}\s]+$/u.test(name)) { errors.hoTen = 'Họ tên không được chứa số hoặc ký tự đặc biệt!'; return false }
+  
+  errors.hoTen = ''; 
+  return true;
+}
+
+const handleSubmitForm = async () => {
+  const hoTenHopLe = validateHoTenChuDong()
+  const sdtHopLe = validateSdtChuDong()
+  const emailHopLe = validateEmailChuDong()
+  const tuoiHopLe = validateNgaySinhChuDong()
+  
+  if (!hoTenHopLe || !sdtHopLe || !emailHopLe || !tuoiHopLe) {
+    return alert('Vui lòng hoàn thiện đúng các trường hiển thị lỗi đỏ!')
   }
 
+  let trong = customerForm.value.addresses.some(a => !a.nguoiNhan.trim() || !a.sdt.trim() || !a.tinhThanh || !a.quanHuyen || !a.phuongXa || !a.diaChiChiTiet.trim())
+  if (trong) return alert('Vui lòng không để trống bất kì thông tin nào trong khối sổ địa chỉ!')
+
   try {
+    // 🌟 ĐÒNG BỘ CHECK TRÙNG QUA API PHẲNG: Loại trừ bản ghi hiện tại khi đối chiếu
+    const checkTrungRes = await axios.get('http://localhost:8080/public/khach-hang/check-trung', {
+      params: { 
+        sdt: customerForm.value.sdt.trim(), 
+        email: customerForm.value.email.trim() 
+      }
+    })
+    
+    // Nếu Backend kiểm tra thấy có trùng nhưng ID lại khác ID đang sửa thì mới báo trùng chặn lại
+    const { trungSdt, trungEmail } = checkTrungRes.data
+
+    // Kiểm tra xem dữ liệu trùng lặp có phải của khách hàng khác không
+    const allData = await fetchAllKhachHang()
+    const trungSdtThucTe = allData.some(kh => kh.sdt === customerForm.value.sdt.trim() && String(kh.id) !== String(customerForm.value.id))
+    const trungEmailThucTe = allData.some(kh => kh.email?.toLowerCase() === customerForm.value.email.trim().toLowerCase() && String(kh.id) !== String(customerForm.value.id))
+
+    if (trungSdtThucTe) {
+      errors.sdt = 'Số điện thoại này đã tồn tại trên hệ thống!'
+      return alert('Thất bại: Số điện thoại này đã được đăng ký bởi khách hàng khác!')
+    }
+
+    if (trungEmailThucTe) {
+      errors.email = 'Địa chỉ Email này đã tồn tại trên hệ thống!'
+      return alert('Thất bại: Địa chỉ email này đã được sử dụng bởi khách hàng khác!')
+    }
+
+    const processed = customerForm.value.addresses.map(addr => {
+      let cleanId = addr.id;
+      if (typeof cleanId === 'string' && cleanId.includes('_')) {
+        cleanId = cleanId.split('_')[0];
+      }
+      return {
+        id: cleanId.startsWith('ADDR') ? null : cleanId, // Nếu là dòng thêm mới ở trang edit thì gửi null sang để BE insert
+        nguoiNhan: addr.nguoiNhan.trim(),
+        sdt: addr.sdt.trim(),
+        tinhThanh: addr.tinhThanh,
+        phuongXa: `${addr.phuongXa}, ${addr.quanHuyen}`,
+        diaChiChiTiet: addr.diaChiChiTiet.trim(),
+        macDinh: addr.macDinh ? 1 : 0
+      }
+    })
+
+    const payload = {
+      hoTen: customerForm.value.hoTen.trim(), sdt: customerForm.value.sdt.trim(), email: customerForm.value.email || null, ngaySinh: customerForm.value.ngaySinh || null,
+      gioiTinh: Number(customerForm.value.gioiTinh), trangThai: Number(customerForm.value.trangThai), avatar: customerForm.value.avatar || null,
+      addresses: processed
+    }
+
     await updateKhachHang(customerForm.value.id, payload)
     alert('🎉 Cập nhật thông tin khách hàng thành công!')
     quayLaiDanhSach()
@@ -304,7 +400,10 @@ const handleSubmitForm = async () => {
 </script>
 
 <style scoped>
-/* Giữ nguyên 100% CSS Scoped của bạn */
+/* 🌟 THÊM MỚI CSS BÁO LỖI ĐỎ: Đảm bảo giao diện đồng nhất */
+.form-cell.has-error input { border-color: #ef4444 !important; background-color: #fef2f2; }
+.error-text { color: #ef4444; font-size: 12px; margin-top: 4px; display: block; text-align: left;}
+
 .customer-form-container { background-color: #f9fbfd; padding: 20px; }
 .back-header { margin-bottom: 20px; text-align: left; }
 .btn-back-link { background: none; border: none; color: #909399; cursor: pointer; font-size: 14px; padding: 0; }

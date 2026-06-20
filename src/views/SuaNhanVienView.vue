@@ -114,8 +114,29 @@ import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import MainLayout from '../layouts/MainLayout.vue'
 // Hãy điều chỉnh các hàm tương tác API nhân viên theo đúng tên Service thực tế của dự án bạn nhé
-import { fetchAllNhanVien, updateNhanVien } from '@/service/NhanVienService'
+import { fetchAllNhanVien, updateNhanVien, checkDuplicate} from '@/service/NhanVienService'
 
+
+// Kiểm tra tên: trên 3 ký tự, dưới 100 ký tự, không chứa ký tự đặc biệt
+const validateTenNv = (name) => {
+  const nameRegex = /^[\p{L}\s]+$/u; // Chỉ cho phép chữ cái và khoảng trắng
+  if (name.length < 3 || name.length > 100) return 'Tên phải từ 3 đến 100 ký tự!';
+  if (!nameRegex.test(name)) return 'Tên không được chứa ký tự đặc biệt hoặc số!';
+  return '';
+};
+
+// Kiểm tra đủ 18 tuổi
+const validateTuoi = (ngaySinh) => {
+  if (!ngaySinh) return 'Vui lòng chọn ngày sinh!';
+  const birthDate = new Date(ngaySinh);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age >= 18 ? '' : 'Nhân viên phải đủ 18 tuổi!';
+};
 const route = useRoute()
 const router = useRouter()
 const employeeId = route.params.id // Hứng ID động từ thanh URL
@@ -249,11 +270,30 @@ const handleFormAvatarChange = (e) => {
 const quayLaiDanhSach = () => router.push('/nhan-vien')
 
 const handleSubmitForm = async () => {
-  const activeAddr = employeeForm.value.addresses[0]
+  // Validate cơ bản
+  const name = employeeForm.value.hoTen.trim();
+  if (validateTenNv(name) || validateTuoi(employeeForm.value.ngaySinh)) {
+    return alert('Thông tin cá nhân không hợp lệ!');
+  }
 
-  // Đóng gói Payload tương thích 100% với DTO Entity Nhân viên của bạn
+  // Check trùng lặp
+  try {
+    const isDuplicate = await checkDuplicateUpdate(
+      employeeForm.value.sdt.trim(), 
+      employeeForm.value.email.trim(), 
+      employeeForm.value.id
+    );
+    if (isDuplicate) {
+      return alert('⚠️ Cảnh báo: SĐT hoặc Email đã được sử dụng bởi nhân viên khác!');
+    }
+  } catch (err) {
+    return alert('Lỗi kiểm tra trùng lặp!');
+  }
+
+  // Tiếp tục xử lý Payload
+  const activeAddr = employeeForm.value.addresses[0];
   const payload = {
-    hoTen: employeeForm.value.hoTen.trim(),
+    hoTen: name,
     sdt: employeeForm.value.sdt.trim(),
     email: employeeForm.value.email.trim(),
     ngaySinh: employeeForm.value.ngaySinh || null,
@@ -261,15 +301,18 @@ const handleSubmitForm = async () => {
     trangThai: Number(employeeForm.value.trangThai),
     avatar: employeeForm.value.avatar || null,
     tinhThanh: activeAddr.tinhThanh,
-    phuongXa: `${activeAddr.phuongXa}, ${activeAddr.quanHuyen}`, // Chuỗi ghép đồng bộ
-    diaChiChiTiet: activeAddr.diaChiChiTiet.trim()
-  }
+    phuongXa: `${activeAddr.phuongXa}, ${activeAddr.quanHuyen}`,
+    diaChiChiTiet: activeAddr.diaChiChiTiet.trim(),
+    vaiTro: { id: Number(employeeForm.value.vaiTro) } // Đừng quên gửi kèm vai trò
+  };
 
   try {
-    await updateNhanVien(employeeForm.value.id, payload)
-    alert('🎉 Cập nhật thông tin nhân viên thành công!')
-    quayLaiDanhSach()
-  } catch (e) { alert('Thao tác cập nhật thất bại!') }
+    await updateNhanVien(employeeForm.value.id, payload);
+    alert('🎉 Cập nhật thông tin nhân viên thành công!');
+    quayLaiDanhSach();
+  } catch (e) { 
+    alert('Thao tác cập nhật thất bại! Vui lòng kiểm tra lại kết nối.'); 
+  }
 }
 </script>
 

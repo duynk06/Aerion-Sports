@@ -613,15 +613,7 @@ const cancelDetailMode = () => isDetailMode.value = false
 const switchToEditFromDetail = (raw) => { isDetailMode.value = false; openEditForm(raw) }
 
 const openAddForm = () => {
-  customerForm.value = { 
-    id: null, hoTen: '', sdt: '', email: '', ngaySinh: '', gioiTinh: '1', trangThai: 1, avatar: '', 
-    addresses: [{ 
-      id: 'ADDR_NEW_' + Date.now(),
-      tinhThanh: '', quanHuyen: '', phuongXa: '', diaChiChiTiet: '', nguoiNhan: '', sdt: '', macDinh: true, 
-      listQuanHuyenTmp: [], listPhuongXaTmp: [] 
-    }] 
-  }
-  isFormMode.value = true
+  router.push('/khach-hang/them')
 }
 
 const openEditForm = (khachHang) => {

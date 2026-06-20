@@ -1,4 +1,6 @@
+
 import QRCode from 'qrcode'
+
 export const printInvoice = async (
   hoaDon,
   danhSachSanPham,
@@ -50,43 +52,108 @@ const qrImage = await QRCode.toDataURL(qrData)
         <head>
           <title>${hoaDon.maHoaDon}</title>
   
-          <style>
-            body{
-              font-family:Arial;
-              padding:20px;
-            }
-  
-            .header{
-              text-align:center;
-            }
-  
-            .title{
-              font-size:26px;
-              font-weight:bold;
-            }
-  
-            .sub{
-              margin-top:5px;
-              color:#555;
-            }
-  
-            table{
-              width:100%;
-              border-collapse:collapse;
-              margin-top:15px;
-            }
-  
-            th,td{
-              border:1px solid #ddd;
-              padding:8px;
-              text-align:center;
-            }
-  
-            .total{
-  margin-top:20px;
-  text-align:left;
+<style>
+@page{
+   size:A4;
+   margin:8mm; /* giảm lề giấy */
 }
-          </style>
+
+body{
+    font-family:Arial,sans-serif;
+    padding:10px;
+    margin:0;
+}
+
+*{
+   -webkit-print-color-adjust:exact !important;
+   print-color-adjust:exact !important;
+   box-sizing:border-box;
+}
+
+/* Header */
+.header{
+    text-align:center;
+    background:#f79b66 !important;
+    color:white !important;
+    padding:18px;
+    border-radius:10px;
+    margin-bottom:15px;
+}
+
+.title{
+    font-size:26px;
+    font-weight:bold;
+    color:white;
+}
+
+.sub{
+    font-size:14px;
+    margin-top:5px;
+    color:white;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:12px;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:8px;
+    text-align:center;
+}
+
+thead th{
+    background:#f79b66 !important;
+    color:white;
+}
+
+tbody tr:nth-child(even){
+    background:#fff7f2;
+}
+
+.total{
+    margin-top:15px;
+}
+
+.total h2{
+    color:#f79b66;
+}
+
+hr{
+    border:none;
+    height:2px;
+    background:#f79b66;
+    margin:12px 0;
+}
+
+/* Không tách bảng */
+table{
+    page-break-inside:avoid;
+}
+
+tr{
+    page-break-inside:avoid;
+}
+
+/* QR */
+.qr-section{
+   text-align:center;
+   margin-top:15px;
+}
+
+/* Chỉ giảm QR nhẹ thôi */
+.qr-section img{
+   width:120px;
+   height:120px;
+}
+
+.footer{
+   text-align:center;
+   margin-top:20px;
+}
+</style>
         </head>
   
         <body>
@@ -201,35 +268,19 @@ const qrImage = await QRCode.toDataURL(qrData)
   
           <hr>
 
-<div
-  style="
-    margin-top:20px;
-    text-align:center;
-  "
->
-  <h3>Mã QR hóa đơn</h3>
+<div class="qr-section">
+    <h3>Mã QR hóa đơn</h3>
 
-  <img
-    src="${qrImage}"
-    width="140"
-    height="140"
-  />
+    <img src="${qrImage}" />
 
-  <p>
-    Quét để xem thông tin hóa đơn
-  </p>
+    <p>Quét để xem thông tin hóa đơn</p>
 </div>
 
 <hr>
 
-<div
-  style="
-    text-align:center;
-    margin-top:30px;
-  "
->
-  <h3>Cảm ơn quý khách!</h3>
-  <p>Hẹn gặp lại tại AERION SPORTS</p>
+<div class="footer">
+    <h3>Cảm ơn quý khách!</h3>
+    <p>Hẹn gặp lại tại AERION SPORTS</p>
 </div>
   
         </body>
@@ -237,5 +288,11 @@ const qrImage = await QRCode.toDataURL(qrData)
     `)
   
     printWindow.document.close()
-    printWindow.print()
+
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print()
+      },300)
+    }
+    
   }

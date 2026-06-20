@@ -7,11 +7,8 @@
     <div class="box-alert-info" v-if="productInfo.ma">
       Đang thêm mới biến thể cho sản phẩm: <strong>[{{ productInfo.ma }}] - {{ productInfo.ten }}</strong>
       <br />
-      <small v-if="isLockedMode" style="color: #16a34a; font-weight: bold;">
-        Hệ thống đã tự động khóa và kế thừa thông số cố định từ biến thể gốc trước đó.
-      </small>
-      <small v-else style="color: #b45309; font-weight: bold;">
-        Đây là biến thể đầu tiên của sản phẩm này. Vui lòng cấu hình đầy đủ thông số kỹ thuật làm gốc!
+      <small style="color: #16a34a; font-weight: bold;">
+        Thông số kỹ thuật cố định được kế thừa trực tiếp từ cấu hình nền của sản phẩm cha.
       </small>
     </div>
 
@@ -38,7 +35,7 @@
             <select v-model="editingForm.idMauSac">
               <option :value="null">-- Chọn màu sắc --</option>
               <option v-for="item in masterData.mauSac" :key="item.id" :value="item.id">
-                {{ item.tenMauSac || item.ten || item.ten_mau_sac }}
+                {{ item.tenMauSac || item.ten }}
               </option>
             </select>
           </div>
@@ -47,7 +44,7 @@
             <select v-model="editingForm.idTrongLuong">
               <option :value="null">-- Chọn trọng lượng --</option>
               <option v-for="item in masterData.trongLuong" :key="item.id" :value="item.id">
-                {{ item.tenTrongLuong || item.ten || item.ten_trong_luong }}
+                {{ item.tenTrongLuong || item.ten }}
               </option>
             </select>
           </div>
@@ -55,64 +52,34 @@
 
         <div class="form-row-flex">
           <div class="form-group-item">
-            <label>Độ cứng thân</label>
-            <select v-model="editingForm.idDoCung" :disabled="isLockedMode" :class="{ 'disabled-input': isLockedMode }">
-              <option :value="null">-- Chọn độ cứng --</option>
-              <option v-for="item in masterData.doCung" :key="item.id" :value="item.id">
-                {{ item.tenDoCung || item.ten || item.tenDoCungThanVot || item.doCung }}
-              </option>
-            </select>
+            <label>Độ cứng thân (Cố định từ sản phẩm cha)</label>
+            <input type="text" :value="productInfo.tenDoCung || 'Đang tải...'" disabled class="disabled-input" />
           </div>
           <div class="form-group-item">
-            <label>Điểm cân bằng</label>
-            <select v-model="editingForm.idDiemCanBang" :disabled="isLockedMode" :class="{ 'disabled-input': isLockedMode }">
-              <option :value="null">-- Chọn điểm cân bằng --</option>
-              <option v-for="item in masterData.diemCanBang" :key="item.id" :value="item.id">
-                {{ item.tenDiemCanBang || item.ten || item.diemCanBang }}
-              </option>
-            </select>
+            <label>Điểm cân bằng (Cố định từ sản phẩm cha)</label>
+            <input type="text" :value="productInfo.tenDiemCanBang || 'Đang tải...'" disabled class="disabled-input" />
           </div>
         </div>
 
         <div class="form-row-flex">
           <div class="form-group-item">
-            <label>Chu vi cán vợt</label>
-            <select v-model="editingForm.idChuViCanVot" :disabled="isLockedMode" :class="{ 'disabled-input': isLockedMode }">
-              <option :value="null">-- Chọn chu vi cán --</option>
-              <option v-for="item in masterData.chuViCan" :key="item.id" :value="item.id">
-                {{ item.tenChuViCanVot || item.ten || item.chuViCanVot }}
-              </option>
-            </select>
+            <label>Chu vi cán vợt (Cố định từ sản phẩm cha)</label>
+            <input type="text" :value="productInfo.tenChuViCanVot || 'Đang tải...'" disabled class="disabled-input" />
           </div>
           <div class="form-group-item">
-            <label>Danh mục phân loại</label>
-            <select v-model="editingForm.idDanhMuc" :disabled="isLockedMode" :class="{ 'disabled-input': isLockedMode }">
-              <option :value="null">-- Chọn danh mục --</option>
-              <option v-for="item in masterData.danhMuc" :key="item.id" :value="item.id">
-                {{ item.tenDanhMuc || item.ten || item.danhMuc }}
-              </option>
-            </select>
+            <label>Danh mục phân loại (Cố định từ sản phẩm cha)</label>
+            <input type="text" :value="productInfo.tenDanhMuc || 'Đang tải...'" disabled class="disabled-input" />
           </div>
         </div>
 
         <div class="form-row-flex">
           <div class="form-group-item">
-            <label>Chất liệu thân vợt</label>
-            <select v-model="editingForm.idChatLieuThanVot" :disabled="isLockedMode" :class="{ 'disabled-input': isLockedMode }">
-              <option :value="null">-- Chọn chất liệu thân --</option>
-              <option v-for="item in masterData.chatLieuThan" :key="item.id" :value="item.id">
-                {{ item.tenChatLieuThanVot || item.ten || item.chatLieuThan }}
-              </option>
-            </select>
+            <label>Chất liệu thân vợt (Cố định từ sản phẩm cha)</label>
+            <input type="text" :value="productInfo.tenChatLieuThanVot || 'Đang tải...'" disabled class="disabled-input" />
           </div>
           <div class="form-group-item">
-            <label>Chất liệu khung vợt</label>
-            <select v-model="editingForm.idChatLieuKhungVot" :disabled="isLockedMode" :class="{ 'disabled-input': isLockedMode }">
-              <option :value="null">-- Chọn chất liệu khung --</option>
-              <option v-for="item in masterData.chatLieuKhung" :key="item.id" :value="item.id">
-                {{ item.tenChatLieuKhungVot || item.ten || item.chatLieuKhung }}
-              </option>
-            </select>
+            <label>Chất liệu khung vợt (Cố định từ sản phẩm cha)</label>
+            <input type="text" :value="productInfo.tenChatLieuKhungVot || 'Đang tải...'" disabled class="disabled-input" />
           </div>
         </div>
         
@@ -147,7 +114,7 @@
       </div>
 
       <div class="form-box-footer">
-        <button class="btn-modal-cancel" @click="quayLaiDanhSachBienThe">Hủy bỏ</button>
+        <button class="btn-modal-cancel" @click="quayLaiDanhSachBienTe">Hủy bỏ</button>
         <button class="btn-modal-submit" @click="submitLuuDuLieuConfirm">Lưu dữ liệu</button>
       </div>
     </div>
@@ -163,17 +130,18 @@ import MainLayout from '@/layouts/MainLayout.vue';
 const route = useRoute();
 const router = useRouter();
 
-const productInfo = ref({ id: route.query.idSP || '', ma: route.query.maSP || '', ten: route.query.tenSP || '' });
-const masterData = ref({ mauSac: [], trongLuong: [], doCung: [], diemCanBang: [], chuViCan: [], danhMuc: [], chatLieuThan: [], chatLieuKhung: [] });
+const productInfo = ref({ 
+  id: route.query.idSP || '', ma: route.query.maSP || '', ten: route.query.tenSP || '',
+  tenDoCung: '', tenDiemCanBang: '', tenChuViCanVot: '', tenDanhMuc: '', tenChatLieuThanVot: '', tenChatLieuKhungVot: ''
+});
+const masterData = ref({ mauSac: [], trongLuong: [] });
 
-const isLockedMode = ref(false); 
 const fileUploadData = ref(null);
 const previewImageSrc = ref('https://placehold.co/100x100?text=Chọn+Ảnh');
 
 const editingForm = ref({
   id: null, maCtsp: '', soLuong: 10, giaBan: 1200000, giaNhap: 800000, trangThai: 1, hinhAnh: '',
-  idSanPham: parseInt(productInfo.value.id, 10), idMauSac: null, idTrongLuong: null, 
-  idDoCung: null, idDiemCanBang: null, idChatLieuThanVot: null, idChatLieuKhungVot: null, idDanhMuc: null, idChuViCanVot: null
+  idSanPham: parseInt(productInfo.value.id, 10), idMauSac: null, idTrongLuong: null
 });
 
 const formatDisplayPrice = (value) => value === null || value === undefined || value === '' ? '' : new Intl.NumberFormat('vi-VN').format(value);
@@ -190,38 +158,35 @@ const safeExtractArray = (res) => {
 
 const tuDongNapThongSoTuDatabase = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/chi-tiet-san-pham/search', {
-      params: { idSanPham: parseInt(productInfo.value.id, 10), page: 0, size: 200 }
+    const response = await axios.get('http://localhost:8080/api/san-pham/search', {
+      params: { keyword: productInfo.value.ma, page: 0, size: 10 }
     });
-    const danhSach = response.data.content || response.data || [];
-    
-    const g = danhSach.find(item => {
-      return (item.idDoCung || item.doCung?.id || item.id_do_cung) != null;
-    });
+    const danhSach = response.data.content || [];
+    const spCha = danhSach.find(item => Number(item.id) === Number(productInfo.value.id));
 
-    if (g) {
-      editingForm.value.idDoCung = g.idDoCung || g.doCung?.id || g.id_do_cung || null;
-      editingForm.value.idDiemCanBang = g.idDiemCanBang || g.diemCanBang?.id || g.id_diem_can_bang || null;
-      editingForm.value.idChuViCanVot = g.idChuViCanVot || g.chuViCanVot?.id || g.id_chu_vi_can_vot || null;
-      editingForm.value.idDanhMuc = g.idDanhMuc || g.danhMuc?.id || g.id_danh_muc || null;
-      editingForm.value.idChatLieuThanVot = g.idChatLieuThanVot || g.chatLieuThanVot?.id || g.id_chat_lieu_than_vot || null;
-      editingForm.value.idChatLieuKhungVot = g.idChatLieuKhungVot || g.chatLieuKhungVot?.id || g.id_chat_lieu_khung_vot || null;
-      isLockedMode.value = true;
-    } else {
-      isLockedMode.value = false;
+    if (spCha) {
+      productInfo.value.tenDoCung = spCha.tenDoCung || 'Chưa rõ';
+      productInfo.value.tenDiemCanBang = spCha.tenDiemCanBang || 'Chưa rõ';
+      productInfo.value.tenChuViCanVot = spCha.tenChuViCanVot || 'Chưa rõ';
+      productInfo.value.tenDanhMuc = spCha.tenDanhMuc || 'Chưa rõ';
+      productInfo.value.tenChatLieuThanVot = spCha.tenChatLieuThanVot || 'Chưa rõ';
+      productInfo.value.tenChatLieuKhungVot = spCha.tenChatLieuKhungVot || 'Chưa rõ';
     }
   } catch (error) {
-    console.error("Lỗi tự động nạp thuộc tính kỹ thuật:", error);
+    console.error("Lỗi tải thông tin nền từ sản phẩm cha:", error);
   }
 };
 
 const khoiTaoMaSKUBienTheTuDong = async () => {
   try {
     const maCha = productInfo.value.ma || 'SP';
-    const response = await axios.get('http://localhost:8080/api/chi-tiet-san-pham/search', {
-      params: { idSanPham: parseInt(productInfo.value.id, 10), page: 0, size: 9999 }
+    const response = await axios.get('http://localhost:8080/api/san-pham/search', {
+      params: { keyword: productInfo.value.ma, page: 0, size: 10 }
     });
-    const danhSach = response.data.content || [];
+    const list = response.data.content || [];
+    const currentProduct = list.find(item => Number(item.id) === Number(productInfo.value.id));
+    
+    const danhSach = currentProduct ? (currentProduct.bienThes || currentProduct.chiTietSanPhams || []) : [];
     let soTiepTheo = 1;
     if (danhSach.length > 0) {
       const danhSachSoCon = danhSach.map(item => {
@@ -241,24 +206,12 @@ const khoiTaoMaSKUBienTheTuDong = async () => {
 
 const loadMasterDataCombobox = async () => {
   try {
-    const [ms, tl, dc, dcb, cvc, dm, clt, clk] = await Promise.all([
+    const [ms, tl] = await Promise.all([
       axios.get('http://localhost:8080/api/mau-sac/all'),
-      axios.get('http://localhost:8080/api/trong-luong/all'),
-      axios.get('http://localhost:8080/api/do-cung/all'),
-      axios.get('http://localhost:8080/api/diem-can-bang/all'),
-      axios.get('http://localhost:8080/api/chu-vi-can-vot/active'),
-      axios.get('http://localhost:8080/api/danh-muc/all'),
-      axios.get('http://localhost:8080/api/chat-lieu-than-vot/all'), 
-      axios.get('http://localhost:8080/api/chat-lieu-khung-vot/all')
+      axios.get('http://localhost:8080/api/trong-luong/all')
     ]);
     masterData.value.mauSac = safeExtractArray(ms);
     masterData.value.trongLuong = safeExtractArray(tl);
-    masterData.value.doCung = safeExtractArray(dc);
-    masterData.value.diemCanBang = safeExtractArray(dcb);
-    masterData.value.chuViCan = safeExtractArray(cvc);
-    masterData.value.danhMuc = safeExtractArray(dm);
-    masterData.value.chatLieuThan = safeExtractArray(clt); 
-    masterData.value.chatLieuKhung = safeExtractArray(clk);
   } catch (e) { console.error(e); }
 };
 
@@ -271,23 +224,29 @@ const onFileChange = (event) => {
   }
 };
 
-// ⚡ ĐÃ CẢI TIẾN: Thêm luồng hỏi xác nhận và popup báo thêm mới thành công giống Form sản phẩm cha
 const submitLuuDuLieuConfirm = async () => {
   if (!editingForm.value.idMauSac) return alert("Vui lòng chọn Màu sắc biến thể!");
   if (!editingForm.value.idTrongLuong) return alert("Vui lòng chọn Trọng lượng biến thể!");
   if (!fileUploadData.value) return alert("Vui lòng chọn hình ảnh file đính kèm cho biến thể!");
 
-  // 1. ⚡ BẢNG HỎI XÁC NHẬN CHUẨN ĐỒNG BỘ
-  if (!confirm(`Bạn có muốn thêm biến thể [ ${editingForm.value.maCtsp} ] này không?`)) {
-    return; // Người dùng nhấn Hủy -> Dừng luồng xử lý
-  }
+  if (!confirm(`Bạn có muốn thêm biến thể [ ${editingForm.value.maCtsp} ] này không?`)) return;
   
   try {
-    // Lưu thông tin chi tiết cấu hình biến thể trước
-    const resCTSP = await axios.post('http://localhost:8080/api/chi-tiet-san-pham', editingForm.value);
+    const cleanPayload = {
+      idSanPham: editingForm.value.idSanPham,
+      idMauSac: editingForm.value.idMauSac,
+      idTrongLuong: editingForm.value.idTrongLuong,
+      maCtsp: editingForm.value.maCtsp,
+      giaNhap: editingForm.value.giaNhap,
+      giaBan: editingForm.value.giaBan,
+      soLuong: editingForm.value.soLuong,
+      trangThai: editingForm.value.trangThai,
+      hinhAnh: editingForm.value.hinhAnh
+    };
+
+    const resCTSP = await axios.post('http://localhost:8080/api/chi-tiet-san-pham', cleanPayload);
     const idChiTiet = resCTSP.data.id; 
 
-    // Đẩy tệp tin ảnh liên kết vào bảng hinh_anh_sp
     if (fileUploadData.value && idChiTiet) {
       const hinhAnhPayload = { 
         idSanPhamChiTiet: idChiTiet, 
@@ -298,20 +257,23 @@ const submitLuuDuLieuConfirm = async () => {
       await axios.post('http://localhost:8080/api/hinh-anh-sp', hinhAnhPayload);
     }
 
-    // 2. ⚡ POPUP BÁO THÀNH CÔNG 🎉
     alert("Thêm mới biến thể thành công! 🎉");
-    quayLaiDanhSachBienThe();
+    quayLaiDanhSachBienTe();
   } catch (error) { 
-    alert("Thao tác thất bại! Vui lòng kiểm tra lại kết nối hệ thống."); 
+    alert("Thao tác thất bại! Vui lòng kiểm tra lại cấu trúc dữ liệu."); 
   }
 };
 
-const quayLaiDanhSachBienThe = () => {
-  if (!productInfo.value.ma || productInfo.value.ma === 'SP') {
-    router.push('/san-pham/danh-sach-bien-the');
-  } else {
-    router.push({ path: '/san-pham/bien-the', query: { idSP: productInfo.value.id, maSP: productInfo.value.ma, tenSP: productInfo.value.ten } });
-  }
+// 🌟 ĐÃ SỬA: Quay về trang quản lý biến thể con kèm theo đầy đủ Query Params của sản phẩm cha
+const quayLaiDanhSachBienTe = () => {
+  router.push({
+    path: '/san-pham/bien-the',
+    query: { 
+      idSP: productInfo.value.id, 
+      maSP: productInfo.value.ma, 
+      tenSP: productInfo.value.ten 
+    }
+  });
 };
 
 onMounted(async () => {
@@ -323,6 +285,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* Giữ nguyên vẹn 100% CSS của bạn */
 .breadcrumb-container { display: flex; align-items: center; margin-bottom: 15px; }
 .breadcrumb-text { font-size: 14px; color: #333; }
 .box-alert-info { background-color: #fff7ed; border-left: 4px solid #f79b66; padding: 12px 15px; font-size: 14px; margin-bottom: 20px; color: #7c2d12; border-radius: 0 4px 4px 0; text-align: left; line-height: 1.5; }

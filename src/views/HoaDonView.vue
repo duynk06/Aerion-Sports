@@ -23,11 +23,11 @@
 
         <div>
   <label>Loại hóa đơn</label>
-  <select v-model="loaiHoaDonFilter">
-    <option :value="null">Tất cả</option>
-    <option :value="0">Tại quầy</option>
-    <option :value="1">Online</option>
-  </select>
+  <select v-model.number="loaiHoaDonFilter">
+  <option :value="null">Tất cả</option>
+  <option :value="0">Tại quầy</option>
+  <option :value="1">Online</option>
+</select>
 </div>
 
         <div>
@@ -532,13 +532,12 @@ const viewDetail = (id) => {
 
 const resetFilter = async () => {
   keyword.value = ''
-  loaiHoaDonFilter.value = ''
+  loaiHoaDonFilter.value = null
   trangThaiFilter.value = ''
 
-  const today =
-    new Date()
-      .toISOString()
-      .split('T')[0]
+  const today = new Date()
+    .toISOString()
+    .split('T')[0]
 
   tuNgay.value = today
   denNgay.value = today

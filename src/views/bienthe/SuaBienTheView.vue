@@ -1,5 +1,5 @@
 <template>
-  <MainLayout title="Cập Nhật Biến Thể">
+  <MainLayout>
     <div class="breadcrumb-container">
       <span class="breadcrumb-text">Quản lý sản phẩm / Quản lý biến thể / <strong style="color: #f97316;">Cập nhật chi tiết biến thể</strong></span>
     </div>
@@ -45,51 +45,33 @@
         <div class="form-row-flex">
           <div class="form-group-item">
             <label>Độ cứng thân (Cố định - Không được sửa)</label>
-            <select v-model="editingForm.idDoCung" disabled class="disabled-input">
-              <option :value="null">-- Chưa có dữ liệu --</option>
-              <option v-for="item in masterData.doCung" :key="item.id" :value="item.id">{{ item.tenDoCung }}</option>
-            </select>
+            <input type="text" :value="productInfo.tenDoCung || 'Chưa rõ'" disabled class="disabled-input" />
           </div>
           <div class="form-group-item">
             <label>Điểm cân bằng (Cố định - Không được sửa)</label>
-            <select v-model="editingForm.idDiemCanBang" disabled class="disabled-input">
-              <option :value="null">-- Chưa có dữ liệu --</option>
-              <option v-for="item in masterData.diemCanBang" :key="item.id" :value="item.id">{{ item.tenDiemCanBang }}</option>
-            </select>
+            <input type="text" :value="productInfo.tenDiemCanBang || 'Chưa rõ'" disabled class="disabled-input" />
           </div>
         </div>
 
         <div class="form-row-flex">
           <div class="form-group-item">
             <label>Chu vi cán vợt (Cố định - Không được sửa)</label>
-            <select v-model="editingForm.idChuViCanVot" disabled class="disabled-input">
-              <option :value="null">-- Chưa có dữ liệu --</option>
-              <option v-for="item in masterData.chuViCan" :key="item.id" :value="item.id">{{ item.tenChuViCanVot }}</option>
-            </select>
+            <input type="text" :value="productInfo.tenChuViCanVot || 'Chưa rõ'" disabled class="disabled-input" />
           </div>
           <div class="form-group-item">
             <label>Danh mục phân loại (Cố định - Không được sửa)</label>
-            <select v-model="editingForm.idDanhMuc" disabled class="disabled-input">
-              <option :value="null">-- Chưa có dữ liệu --</option>
-              <option v-for="item in masterData.danhMuc" :key="item.id" :value="item.id">{{ item.tenDanhMuc }}</option>
-            </select>
+            <input type="text" :value="productInfo.tenDanhMuc || 'Chưa rõ'" disabled class="disabled-input" />
           </div>
         </div>
 
         <div class="form-row-flex">
           <div class="form-group-item">
             <label>Chất liệu thân vợt (Cố định - Không được sửa)</label>
-            <select v-model="editingForm.idChatLieuThanVot" disabled class="disabled-input">
-              <option :value="null">-- Chưa có dữ liệu --</option>
-              <option v-for="item in masterData.chatLieuThan" :key="item.id" :value="item.id">{{ item.tenChatLieuThanVot }}</option>
-            </select>
+            <input type="text" :value="productInfo.tenChatLieuThanVot || 'Chưa rõ'" disabled class="disabled-input" />
           </div>
           <div class="form-group-item">
             <label>Chất liệu khung vợt (Cố định - Không được sửa)</label>
-            <select v-model="editingForm.idChatLieuKhungVot" disabled class="disabled-input">
-              <option :value="null">-- Chưa có dữ liệu --</option>
-              <option v-for="item in masterData.chatLieuKhung" :key="item.id" :value="item.id">{{ item.tenChatLieuKhungVot }}</option>
-            </select>
+            <input type="text" :value="productInfo.tenChatLieuKhungVot || 'Chưa rõ'" disabled class="disabled-input" />
           </div>
         </div>
         
@@ -151,16 +133,20 @@ const route = useRoute();
 const router = useRouter();
 
 const idBienThe = route.query.id; 
-const productInfo = ref({ id: route.query.idSP || '', ma: route.query.maSP || '', ten: route.query.tenSP || '' });
+// 🌟 ĐÃ SỬA: Lưu trữ thông tin tên thuộc tính cố định của sản phẩm cha
+const productInfo = ref({ 
+  id: route.query.idSP || '', ma: route.query.maSP || '', ten: route.query.tenSP || '',
+  tenDoCung: '', tenDiemCanBang: '', tenChuViCanVot: '', tenDanhMuc: '', tenChatLieuThanVot: '', tenChatLieuKhungVot: ''
+});
 
-const masterData = ref({ mauSac: [], trongLuong: [], doCung: [], diemCanBang: [], chuViCan: [], danhMuc: [], chatLieuThan: [], chatLieuKhung: [] });
+const masterData = ref({ mauSac: [], trongLuong: [] });
 const fileUploadData = ref(null);
 const previewImageSrc = ref('https://placehold.co/100x100?text=No+Image');
 
+// 🌟 ĐÃ SỬA: editingForm tối giản chỉ chứa idSanPham, idMauSac và idTrongLuong đúng cấu trúc DTO mới
 const editingForm = ref({
   id: null, maCtsp: '', soLuong: 0, giaBan: 0, giaNhap: 0, trangThai: 1, hinhAnh: '',
-  idSanPham: null, idMauSac: null, idTrongLuong: null, 
-  idDoCung: null, idDiemCanBang: null, idChatLieuThanVot: null, idChatLieuKhungVot: null, idDanhMuc: null, idChuViCanVot: null
+  idSanPham: null, idMauSac: null, idTrongLuong: null
 });
 
 const formatDisplayPrice = (value) => {
@@ -179,50 +165,50 @@ const onImageLoadError = (e) => {
 
 const loadChiTietBienTheHienTai = async () => {
   try {
-    const response = await axios.get(`http://localhost:8080/api/chi-tiet-san-pham/search`, {
-      params: { idSanPham: parseInt(productInfo.value.id, 10), page: 0, size: 200 }
+    // 🚀 1. GỌI API lấy thông tin chi tiết từ cây sản phẩm cha (Chứa toàn bộ 6 thuộc tính nền)
+    const resProduct = await axios.get(`http://localhost:8080/api/san-pham/search`, {
+      params: { keyword: productInfo.value.ma, page: 0, size: 10 }
     });
     
-    const danhSach = response.data.content || response.data || [];
-    const data = danhSach.find(item => Number(item.id) === Number(idBienThe));
+    const listProducts = resProduct.data.content || [];
+    const productGoc = listProducts.find(p => Number(p.id) === Number(productInfo.value.id));
     
-    if (data) {
-      console.log("Dữ liệu gốc từ Backend:", data);
+    if (productGoc) {
+      productInfo.value.tenDoCung = productGoc.tenDoCung;
+      productInfo.value.tenDiemCanBang = productGoc.tenDiemCanBang;
+      productInfo.value.tenChuViCanVot = productGoc.tenChuViCanVot;
+      productInfo.value.tenDanhMuc = productGoc.tenDanhMuc;
+      productInfo.value.tenChatLieuThanVot = productGoc.tenChatLieuThanVot;
+      productInfo.value.tenChatLieuKhungVot = productGoc.tenChatLieuKhungVot;
+      
+      // 🚀 2. Tìm kiếm đúng dòng biến thể con dựa vào maCtsp hoặc id
+      const variantsList = productGoc.chiTietSanPhams || [];
+      const data = variantsList.find(item => Number(item.id) === Number(idBienThe));
+      
+      if (data) {
+        console.log("Dữ liệu biến thể bóc tách từ cây sản phẩm:", data);
 
-      const timIdTheoTen = (danhSachMaster, trườngTên, giáTrịVănBản) => {
-        if (!giáTrịVănBản) return null;
-        const timThay = danhSachMaster.find(item => String(item[trườngTên]).trim().toLowerCase() === String(giáTrịVănBản).trim().toLowerCase());
-        return timThay ? timThay.id : null;
-      };
+        editingForm.value = {
+          id: data.id,
+          maCtsp: data.maCtsp,
+          soLuong: data.soLuong,
+          giaBan: data.giaBan,
+          giaNhap: data.giaNhap,
+          trangThai: data.trangThai,
+          hinhAnh: data.hinhAnh || '',
+          idSanPham: parseInt(productInfo.value.id, 10),
+          idMauSac: data.idMauSac,
+          idTrongLuong: data.idTrongLuong
+        };
 
-      editingForm.value = {
-        id: data.id,
-        maCtsp: data.maCtsp,
-        soLuong: data.soLuong,
-        giaBan: data.giaBan,
-        giaNhap: data.giaNhap,
-        trangThai: data.trangThai,
-        hinhAnh: data.duongDanAnh || data.hinhAnh || '',
-        idSanPham: data.idSanPham || data.id_san_pham || parseInt(productInfo.value.id, 10),
-        
-        idMauSac: timIdTheoTen(masterData.value.mauSac, 'tenMauSac', data.tenMauSac),
-        idTrongLuong: timIdTheoTen(masterData.value.trongLuong, 'tenTrongLuong', data.tenTrongLuong),
-        
-        idDoCung: timIdTheoTen(masterData.value.doCung, 'tenDoCung', data.tenDoCung),
-        idDiemCanBang: timIdTheoTen(masterData.value.diemCanBang, 'tenDiemCanBang', data.tenDiemCanBang),
-        idChatLieuThanVot: timIdTheoTen(masterData.value.chatLieuThan, 'tenChatLieuThanVot', data.tenChatLieuThanVot),
-        idChatLieuKhungVot: timIdTheoTen(masterData.value.chatLieuKhung, 'tenChatLieuKhungVot', data.tenChatLieuKhungVot),
-        idDanhMuc: timIdTheoTen(masterData.value.danhMuc, 'tenDanhMuc', data.tenDanhMuc),
-        idChuViCanVot: timIdTheoTen(masterData.value.chuViCan, 'tenChuViCanVot', data.tenChuViCanVot)
-      };
-
-      const pathAnh = data.duongDanAnh || data.hinhAnh;
-      if (pathAnh) {
-        previewImageSrc.value = pathAnh.startsWith('http') ? pathAnh : `http://localhost:8080${pathAnh}?t=${new Date().getTime()}`;
+        const pathAnh = data.hinhAnh;
+        if (pathAnh) {
+          previewImageSrc.value = pathAnh.startsWith('http') ? pathAnh : `http://localhost:8080${pathAnh}?t=${new Date().getTime()}`;
+        }
       }
     }
   } catch (error) {
-    console.error("Lỗi xử lý nạp chi tiết form:", error);
+    console.error("Lỗi xử lý nạp chi tiết form cập nhật:", error);
   }
 };
 
@@ -234,24 +220,12 @@ const safeExtractArray = (res) => {
 
 const loadMasterData = async () => {
   try {
-    const [ms, tl, dc, dcb, cvc, dm, clt, clk] = await Promise.all([
+    const [ms, tl] = await Promise.all([
       axios.get('http://localhost:8080/api/mau-sac/all'),
-      axios.get('http://localhost:8080/api/trong-luong/all'),
-      axios.get('http://localhost:8080/api/do-cung/all'),
-      axios.get('http://localhost:8080/api/diem-can-bang/all'),
-      axios.get('http://localhost:8080/api/chu-vi-can-vot/active'),
-      axios.get('http://localhost:8080/api/danh-muc/all'),
-      axios.get('http://localhost:8080/api/chat-lieu-than-vot/all'), 
-      axios.get('http://localhost:8080/api/chat-lieu-khung-vot/all')
+      axios.get('http://localhost:8080/api/trong-luong/all')
     ]);
     masterData.value.mauSac = safeExtractArray(ms);
     masterData.value.trongLuong = safeExtractArray(tl);
-    masterData.value.doCung = safeExtractArray(dc);
-    masterData.value.diemCanBang = safeExtractArray(dcb);
-    masterData.value.chuViCan = safeExtractArray(cvc);
-    masterData.value.danhMuc = safeExtractArray(dm);
-    masterData.value.chatLieuThan = safeExtractArray(clt); 
-    masterData.value.chatLieuKhung = safeExtractArray(clk);
   } catch (e) { console.error(e); }
 };
 
@@ -263,13 +237,10 @@ const onFileChange = (event) => {
   }
 };
 
-// 🌟 ĐÃ TÍCH HỢP: Bộ lọc chặn đứng và Validate dữ liệu toàn diện
 const submitCapNhat = async () => {
-  // 1. Kiểm tra thuộc tính cơ bản bắt buộc chọn
   if (!editingForm.value.idMauSac) return alert("Vui lòng chọn Màu sắc sản phẩm!");
   if (!editingForm.value.idTrongLuong) return alert("Vui lòng chọn Trọng lượng vợt!");
   
-  // 2. Kiểm tra Giá tiền rỗng hoặc âm
   if (editingForm.value.giaNhap === null || editingForm.value.giaNhap === undefined || editingForm.value.giaNhap <= 0) {
     return alert("Giá nhập kho phải lớn hơn 0 VNĐ!");
   }
@@ -277,25 +248,29 @@ const submitCapNhat = async () => {
     return alert("Giá bán lẻ phải lớn hơn 0 VNĐ!");
   }
 
-  // 3. Kiểm tra logic kinh doanh (Giá bán lẻ không được thấp hơn giá nhập gốc)
   if (parseInt(editingForm.value.giaBan, 10) < parseInt(editingForm.value.giaNhap, 10)) {
     return alert("Cảnh báo lỗi: Giá bán lẻ không được nhỏ hơn Giá nhập kho!");
   }
 
-  // 4. Kiểm tra Số lượng kho
   if (editingForm.value.soLuong === null || editingForm.value.soLuong === undefined || editingForm.value.soLuong < 0) {
     return alert("Số lượng tồn kho không được để trống hoặc là số âm!");
-  }
-  if (!Number.isInteger(editingForm.value.soLuong)) {
-    return alert("Số lượng tồn kho phải là một số nguyên dương chỉnh chu!");
   }
 
   try {
     let formData = new FormData();
     
-    // Tạo một bản sao dữ liệu sạch và xóa thuộc tính id phục vụ cho cấu trúc Jackson Mapping
-    const cleanPayload = { ...editingForm.value };
-    delete cleanPayload.id;
+    // 🌟 ĐÃ SỬA: Đóng gói payload sạch chỉ chứa Màu sắc, Trọng lượng, Giá và Số lượng chuyển đi
+    const cleanPayload = {
+      idSanPham: editingForm.value.idSanPham,
+      idMauSac: editingForm.value.idMauSac,
+      idTrongLuong: editingForm.value.idTrongLuong,
+      maCtsp: editingForm.value.maCtsp,
+      giaNhap: editingForm.value.giaNhap,
+      giaBan: editingForm.value.giaBan,
+      soLuong: editingForm.value.soLuong,
+      trangThai: editingForm.value.trangThai,
+      hinhAnh: editingForm.value.hinhAnh
+    };
 
     formData.append("data", JSON.stringify(cleanPayload));
     
@@ -303,6 +278,7 @@ const submitCapNhat = async () => {
       formData.append("file", fileUploadData.value);
     }
 
+    // Gửi put cập nhật thông tin đơn lẻ lên Controller
     await axios.put(`http://localhost:8080/api/san-pham/bien-the/update/${editingForm.value.id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" }
     });
@@ -337,7 +313,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* Giữ nguyên vẹn 100% CSS nguyên bản của bạn */
+/* Giữ nguyên vẹn 100% CSS ban đầu của bạn */
 .breadcrumb-container { display: flex; align-items: center; margin-bottom: 15px; }
 .breadcrumb-text { font-size: 14px; color: #333; }
 .box-alert-info { background-color: #fff7ed; border-left: 4px solid #f79b66; padding: 12px 15px; font-size: 14px; margin-bottom: 20px; color: #7c2d12; border-radius: 0 4px 4px 0; text-align: left; }
