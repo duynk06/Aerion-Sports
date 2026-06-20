@@ -4,18 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6ed6c808-4310-4e17-93ca-174aff479799" name="Changes" comment="phan">
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/dto/response/KhachHangResponse.java" afterDir="false" />
+    <list default="true" id="6ed6c808-4310-4e17-93ca-174aff479799" name="Changes" comment="phan 18/06/2026">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/ChiTietSanPhamController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/ChiTietSanPhamController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/ChuViCanVotController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/ChuViCanVotController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/KhachHangController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/KhachHangController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/repository/KhachHangRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/repository/KhachHangRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/KhachHangService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/KhachHangService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/impl/KhachHangServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/impl/KhachHangServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/NhanVienController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/NhanVienController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/repository/NhanVienRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/repository/NhanVienRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/ChiTietSanPhamService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/ChiTietSanPhamService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/NhanVienService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/NhanVienService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/impl/IChiTietSanPhamService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/impl/IChiTietSanPhamService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/impl/NhanVienServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/impl/NhanVienServiceImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/example/AerionSports_BE/controller/KhachHangController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/example/AerionSports_BE/controller/KhachHangController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/example/AerionSports_BE/repository/KhachHangRepository.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/example/AerionSports_BE/repository/KhachHangRepository.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/example/AerionSports_BE/service/KhachHangService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/example/AerionSports_BE/service/KhachHangService.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/example/AerionSports_BE/service/impl/KhachHangServiceImpl.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/example/AerionSports_BE/service/impl/KhachHangServiceImpl.class" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -145,7 +145,9 @@
       <workItem from="1781525349581" duration="7893000" />
       <workItem from="1781538257502" duration="2245000" />
       <workItem from="1781696569921" duration="3269000" />
-      <workItem from="1781758174057" duration="4079000" />
+      <workItem from="1781758174057" duration="4121000" />
+      <workItem from="1781801797671" duration="622000" />
+      <workItem from="1781844013204" duration="14091000" />
     </task>
     <task id="LOCAL-00001" summary="update chitietdotgiamgia">
       <option name="closed" value="true" />
@@ -203,7 +205,23 @@
       <option name="project" value="LOCAL" />
       <updated>1781696652395</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="phan 18/06/2026">
+      <option name="closed" value="true" />
+      <created>1781766456077</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1781766456077</updated>
+    </task>
+    <task id="LOCAL-00009" summary="phan 18/06/2026">
+      <option name="closed" value="true" />
+      <created>1781766473179</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1781766473179</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -226,7 +244,8 @@
     <MESSAGE value="Update san pham hoa don" />
     <MESSAGE value="update gd2" />
     <MESSAGE value="phan" />
-    <option name="LAST_COMMIT_MESSAGE" value="phan" />
+    <MESSAGE value="phan 18/06/2026" />
+    <option name="LAST_COMMIT_MESSAGE" value="phan 18/06/2026" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

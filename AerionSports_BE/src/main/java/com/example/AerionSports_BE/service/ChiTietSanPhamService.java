@@ -3,6 +3,7 @@ package com.example.AerionSports_BE.service;
 import com.example.AerionSports_BE.dto.request.ChiTietSanPhamFilter;
 import com.example.AerionSports_BE.dto.request.ChiTietSanPhamRequest;
 import com.example.AerionSports_BE.dto.response.ChiTietSanPhamResponse;
+import com.example.AerionSports_BE.dto.response.SanPhamResponse;
 import com.example.AerionSports_BE.entity.*;
 import com.example.AerionSports_BE.repository.ChiTietSanPhamRepository;
 import com.example.AerionSports_BE.repository.ChiTietDotGiamGiaRepository; // ⚡ THÊM IMPORT
@@ -161,5 +162,55 @@ public class ChiTietSanPhamService implements IChiTietSanPhamService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy biến thể sản phẩm!"));
         e.setTrangThai(trangThai);
         repo.save(e);
+    }
+
+    @Override
+    public List<SanPhamResponse> getAllProductsWithVariantsForCheck() {
+        // 1. Lấy mảng phẳng toàn bộ CTSP hoạt động từ Repository (Đã có JOIN FETCH sang Sản phẩm cha)
+        List<ChiTietSanPham> listFlat = repo.searchActiveProducts(null);
+
+        // 2. Gom nhóm các chi tiết sản phẩm dựa theo ID của Sản phẩm cha bằng Map
+        java.util.Map<SanPham, List<ChiTietSanPham>> groupMap = listFlat.stream()
+                .filter(ctsp -> ctsp.getIdSanPham() != null)
+                .collect(java.util.stream.Collectors.groupingBy(ChiTietSanPham::getIdSanPham));
+
+        // 3. Ánh xạ trực tiếp từ Thực thể Sản phẩm cha (SanPham) sang DTO SanPhamResponse của bạn
+        return groupMap.entrySet().stream().map(entry -> {
+            SanPham spChaEntity = entry.getKey(); // Đây chính là thực thể Sản phẩm cha chứa Thương hiệu & Xuất xứ
+            List<ChiTietSanPham> ctspList = entry.getValue();
+
+            // Chuyển đổi list thực thể con sang list DTO ChiTietSanPhamResponse bằng hàm toRes gốc của bạn
+            List<ChiTietSanPhamResponse> listVariantsDto = ctspList.stream().map(this::toRes).toList();
+
+            // Khởi tạo DTO SanPhamResponse chuẩn chỉnh của bạn
+            SanPhamResponse parentDto = new SanPhamResponse();
+
+            // 🌟 ĐÚNG CHUẨN: Bốc trực tiếp từ bảng Sản phẩm cha giống hệt logic database của bạn
+            parentDto.setId(spChaEntity.getId());
+            parentDto.setMaSanPham(spChaEntity.getMaSanPham());
+            parentDto.setTenSanPham(spChaEntity.getTenSanPham());
+            parentDto.setMoTa(spChaEntity.getMoTa());
+            parentDto.setBaoHanh(spChaEntity.getBaoHanh());
+            parentDto.setTrangThai(spChaEntity.getTrangThai());
+            parentDto.setNgayTao(spChaEntity.getNgayTao());
+            parentDto.setNgaySua(spChaEntity.getNgaySua());
+
+            // Gán ID và Tên Thương hiệu từ liên kết của bảng Sản phẩm
+            if (spChaEntity.getIdThuongHieu() != null) {
+                parentDto.setIdThuongHieu(spChaEntity.getIdThuongHieu().getId());
+                parentDto.setTenThuongHieu(spChaEntity.getIdThuongHieu().getTenThuongHieu());
+            }
+
+            // Gán ID và Tên Xuất xứ từ liên kết của bảng Sản phẩm
+            if (spChaEntity.getIdXuatXu() != null) {
+                parentDto.setIdXuatXu(spChaEntity.getIdXuatXu().getId());
+                parentDto.setTenXuatXu(spChaEntity.getIdXuatXu().getTenXuatXu());
+            }
+
+            // Đổ mảng biến thể con vào tập hợp Set của SanPhamResponse
+            parentDto.setChiTietSanPhams(new java.util.HashSet<>(listVariantsDto));
+
+            return parentDto;
+        }).toList();
     }
 }

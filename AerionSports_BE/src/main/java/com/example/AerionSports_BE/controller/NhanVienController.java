@@ -1,6 +1,7 @@
 package com.example.AerionSports_BE.controller;
 
 import com.example.AerionSports_BE.entity.NhanVien;
+import com.example.AerionSports_BE.repository.NhanVienRepository;
 import com.example.AerionSports_BE.service.NhanVienService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,8 @@ public class NhanVienController {
 
     @Autowired
     private NhanVienService nhanVienService;
+    @Autowired
+    private NhanVienRepository NhanVienRepository;
 
     @GetMapping("/hien-thi")
     public ResponseEntity<List<NhanVien>> getAll() {
@@ -31,9 +34,9 @@ public class NhanVienController {
         return ResponseEntity.ok(nhanVienService.findById(id));
     }
 
-    @PostMapping("/create")
+    @PostMapping("/add")
     public ResponseEntity<NhanVien> add(@RequestBody NhanVien nhanVien) {
-        return ResponseEntity.ok(nhanVienService.create(nhanVien));
+        return ResponseEntity.ok(nhanVienService.add(nhanVien));
     }
 
     @PutMapping("/update/{id}")
@@ -61,5 +64,20 @@ public class NhanVienController {
         return ResponseEntity.ok(
                 nhanVienService.search(tenNv)
         );
+    }
+    // Trong NhanVienController.java
+    @GetMapping("/check-duplicate")
+    public ResponseEntity<Boolean> checkDuplicate(@RequestParam String sdt, @RequestParam String email) {
+        // Gọi Service để kiểm tra trong Database
+        boolean exists = NhanVienRepository.existsBySdtOrEmail(sdt, email);
+        return ResponseEntity.ok(exists);
+    }
+    @GetMapping("/check-duplicate-update")
+    public ResponseEntity<Boolean> checkDuplicateUpdate(@RequestParam String sdt,
+                                                        @RequestParam String email,
+                                                        @RequestParam Integer id) {
+        boolean sdtExists = NhanVienRepository.existsBySdtAndIdNot(sdt, id);
+        boolean emailExists = NhanVienRepository.existsByEmailAndIdNot(email, id);
+        return ResponseEntity.ok(sdtExists || emailExists);
     }
 }

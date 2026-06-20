@@ -28,7 +28,7 @@ public class ChuViCanVotController {
 
     // 2. Tìm kiếm, lọc và phân trang (Hiển thị lên bảng danh mục Quản lý chu vi cán)
     @GetMapping("/search")
-    public ResponseEntity<Page<ChuViCanVot>> search(ChuViCanVotFilter filter) {
+    public ResponseEntity<Page<ChuViCanVot>> search(@ModelAttribute ChuViCanVotFilter filter) {
         return ResponseEntity.ok(service.search(filter));
     }
 

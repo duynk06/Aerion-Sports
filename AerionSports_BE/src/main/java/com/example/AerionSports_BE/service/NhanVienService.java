@@ -10,7 +10,7 @@ public interface NhanVienService {
 
     NhanVien findById(Integer id);
 
-    NhanVien create(NhanVien nhanVien);
+    NhanVien add(NhanVien nhanVien);
 
     NhanVien update(Integer id, NhanVien nhanVien);
 
@@ -18,4 +18,5 @@ public interface NhanVienService {
 
     List<NhanVien> search(String tenNv);
 
+    void changeStatus(Integer id, Integer trangThai);
 }

@@ -34,7 +34,20 @@ public class NhanVienServiceImpl implements NhanVienService {
     }
 
     @Override
-    public NhanVien create(NhanVien nhanVien) {
+    public void changeStatus(Integer id, Integer trangThai) {
+        // 1. Tìm kiếm nhân viên
+        NhanVien nv = nhanVienRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + id));
+
+        // 2. Cập nhật trạng thái
+        nv.setTrangThai(trangThai);
+
+        // 3. Lưu vào cơ sở dữ liệu
+        nhanVienRepository.save(nv);
+    }
+
+    @Override
+    public NhanVien add(NhanVien nhanVien) {
 
         // --- LOGIC TỰ TĂNG MÃ NHÂN VIÊN TUẦN TỰ ---
         if (nhanVien.getMaNv() == null || nhanVien.getMaNv().trim().isEmpty()) {

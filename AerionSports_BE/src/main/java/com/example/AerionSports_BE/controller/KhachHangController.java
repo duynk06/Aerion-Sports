@@ -71,4 +71,29 @@ public class KhachHangController {
         // Gọi sang hàm getAllSummary() bạn vừa khai báo ở Service để bốc dữ liệu
         return ResponseEntity.ok(khachHangService.getAllSummary());
     }
+
+    @GetMapping("/check-trung")
+    public ResponseEntity<?> checkTrungData(@RequestParam(value = "sdt", required = false) String sdt,
+                                            @RequestParam(value = "email", required = false) String email) {
+        boolean trungSdt = false;
+        boolean trungEmail = false;
+
+        if (sdt != null && !sdt.trim().isEmpty()) {
+            trungSdt = khachHangService.getAll().stream()
+                    .anyMatch(kh -> sdt.trim().equals(kh.getSdt()));
+            // Hoặc dùng trực tiếp repo nếu bạn muốn tối ưu: trungSdt = khachHangRepository.existsBySdt(sdt.trim());
+        }
+
+        if (email != null && !email.trim().isEmpty()) {
+            trungEmail = khachHangService.getAll().stream()
+                    .anyMatch(kh -> email.trim().equalsIgnoreCase(kh.getEmail()));
+            // Hoặc dùng trực tiếp repo: trungEmail = khachHangRepository.existsByEmail(email.trim());
+        }
+
+        // Trả về JSON chứa trạng thái trùng lặp
+        return ResponseEntity.ok(java.util.Map.of(
+                "trungSdt", trungSdt,
+                "trungEmail", trungEmail
+        ));
+    }
 }
