@@ -33,6 +33,37 @@ public class SanPham {
     @JsonIgnore
     private XuatXu idXuatXu;
 
+    // 🌟 6 THUỘC TÍNH NỀN ĐƯỢC DỊCH CHUYỂN LÊN ĐÂY
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_do_cung")
+    @JsonIgnore
+    private DoCung idDoCung;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_diem_can_bang")
+    @JsonIgnore
+    private DiemCanBang idDiemCanBang;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_chat_lieu_than_vot")
+    @JsonIgnore
+    private ChatLieuThanVot idChatLieuThanVot;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_chat_lieu_khung_vot")
+    @JsonIgnore
+    private ChatLieuKhungVot idChatLieuKhungVot;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_danh_muc")
+    @JsonIgnore
+    private DanhMuc idDanhMuc;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_chu_vi_can_vot")
+    @JsonIgnore
+    private ChuViCanVot idChuViCanVot;
+
     @Column(name = "ma_san_pham", nullable = false, length = 50)
     private String maSanPham;
 
@@ -63,5 +94,4 @@ public class SanPham {
     @OneToMany(mappedBy = "idSanPham", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnoreProperties("idSanPham")
     private Set<ChiTietSanPham> chiTietSanPhams = new LinkedHashSet<>();
-
 }

@@ -31,6 +31,6 @@ public class DiemCanBang {
 
     @JsonIgnore
     @OneToMany(mappedBy = "idDiemCanBang")
-    private Set<ChiTietSanPham> chiTietSanPhams = new LinkedHashSet<>();
+    private Set<SanPham> sanPhams = new LinkedHashSet<>();
 
 }

@@ -1,15 +1,7 @@
 package com.example.AerionSports_BE.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,7 +10,6 @@ import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -38,6 +29,7 @@ public class ChiTietSanPham {
     @JsonIgnore
     private SanPham idSanPham;
 
+    // 🌟 CHỈ GIỮ LẠI MÀU SẮC VÀ TRỌNG LƯỢNG LÀM BIẾN THỂ TỔ HỢP PHẲNG
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_mau_sac")
     @JsonIgnore
@@ -47,36 +39,6 @@ public class ChiTietSanPham {
     @JoinColumn(name = "id_trong_luong")
     @JsonIgnore
     private TrongLuong idTrongLuong;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_do_cung")
-    @JsonIgnore
-    private DoCung idDoCung;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_diem_can_bang")
-    @JsonIgnore
-    private DiemCanBang idDiemCanBang;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnore
-    @JoinColumn(name = "id_chat_lieu_than_vot")
-    private ChatLieuThanVot idChatLieuThanVot;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnore
-    @JoinColumn(name = "id_chat_lieu_khung_vot")
-    private ChatLieuKhungVot idChatLieuKhungVot;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_danh_muc")
-    @JsonIgnore
-    private DanhMuc idDanhMuc;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnore
-    @JoinColumn(name = "id_chu_vi_can_vot")
-    private ChuViCanVot idChuViCanVot;
 
     @Column(name = "ma_ctsp", length = 100)
     private String maCtsp;
@@ -103,7 +65,7 @@ public class ChiTietSanPham {
     @Column(name = "trang_thai")
     private Integer trangThai;
 
-    @jakarta.persistence.OneToMany(mappedBy = "idSanPhamChiTiet", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "idSanPhamChiTiet", fetch = FetchType.LAZY)
     @JsonIgnore
     private java.util.List<HinhAnhSp> hinhAnhs;
 }

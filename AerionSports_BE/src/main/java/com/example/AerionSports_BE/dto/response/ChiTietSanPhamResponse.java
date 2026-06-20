@@ -17,14 +17,14 @@ public class ChiTietSanPhamResponse {
     private Integer idSanPham;
     private String maSanPham;
     private String maCtsp;
+
+    // 🌟 RÚT GỌN: Chỉ giữ lại đặc tính riêng biệt của từng biến thể
+    private Integer idMauSac;
     private String tenMauSac;
+
+    private Integer idTrongLuong;
     private String tenTrongLuong;
-    private String tenChuViCanVot; // Giữ lại trường này để nhận tên danh mục (VD: G5, G4...)
-    private String tenDoCung;
-    private String tenDiemCanBang;
-    private String tenChatLieuThanVot;
-    private String tenChatLieuKhungVot;
-    private String tenDanhMuc;
+
     private BigDecimal giaNhap;
     private BigDecimal giaBan;
     private Integer soLuong;
@@ -32,6 +32,8 @@ public class ChiTietSanPhamResponse {
     private Instant ngayTao;
     private Instant ngayCapNhat;
     private String hinhAnh;
+
+    // Các trường phục vụ quét chương trình khuyến mại
     private BigDecimal giaDaGiam;
     private BigDecimal phanTramGiam;
 }

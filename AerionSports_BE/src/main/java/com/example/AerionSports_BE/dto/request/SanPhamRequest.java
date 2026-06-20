@@ -12,8 +12,30 @@ import java.util.List;
 @Getter
 @Setter
 public class SanPhamRequest {
+    @NotNull(message = "Vui lòng chọn Thương hiệu")
     private Integer idThuongHieu;
+
+    @NotNull(message = "Vui lòng chọn Xuất xứ")
     private Integer idXuatXu;
+
+    // 🌟 ĐÃ THÊM: 6 thuộc tính nền được nhấc lên cấp Sản phẩm cha
+    @NotNull(message = "Vui lòng chọn Chu vi cán")
+    private Integer idChuViCanVot;
+
+    @NotNull(message = "Vui lòng chọn Độ cứng")
+    private Integer idDoCung;
+
+    @NotNull(message = "Vui lòng chọn Điểm cân bằng")
+    private Integer idDiemCanBang;
+
+    @NotNull(message = "Vui lòng chọn Chất liệu thân")
+    private Integer idChatLieuThanVot;
+
+    @NotNull(message = "Vui lòng chọn Chất liệu khung")
+    private Integer idChatLieuKhungVot;
+
+    @NotNull(message = "Vui lòng chọn Danh mục")
+    private Integer idDanhMuc;
 
     @NotBlank(message = "Mã sản phẩm không được để trống")
     @Size(max = 50, message = "Mã không được quá 50 ký tự")

@@ -19,23 +19,21 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
     boolean existsByMaCtsp(String maCtsp);
     java.util.Optional<ChiTietSanPham> findByMaCtsp(String maCtsp);
 
-    @EntityGraph(attributePaths = {
-            "idSanPham", "idMauSac", "idTrongLuong", "idChuViCanVot",
-            "idDoCung", "idDiemCanBang", "idChatLieuThanVot",
-            "idChatLieuKhungVot", "idDanhMuc"
-    })
+    // 🌟 ĐÃ SỬA: EntityGraph rút gọn, chỉ nạp mối quan hệ thực tế còn lại ở bảng CTSP con
+    @EntityGraph(attributePaths = {"idSanPham", "idMauSac", "idTrongLuong"})
     @Query("SELECT c FROM ChiTietSanPham c " +
-            "JOIN FETCH c.idSanPham sp " + // Ép nạp trực tiếp sản phẩm cha để bốc maSanPham sạch sẽ
+            "JOIN FETCH c.idSanPham sp " +
             "LEFT JOIN FETCH c.idMauSac ms " +
             "LEFT JOIN FETCH c.idTrongLuong tl " +
-            "LEFT JOIN FETCH c.idChuViCanVot cvc " +
-            "LEFT JOIN FETCH c.idDoCung dc " +
-            "LEFT JOIN FETCH c.idDiemCanBang dcb " +
-            "LEFT JOIN FETCH c.idChatLieuThanVot cltv " +
-            "LEFT JOIN FETCH c.idChatLieuKhungVot clk " +
-            "LEFT JOIN FETCH c.idDanhMuc dm " +
+            // Bọc mối nối gián tiếp qua sản phẩm cha để lấy tên hiển thị ngoài bảng
+            "LEFT JOIN FETCH sp.idChuViCanVot cvc " +
+            "LEFT JOIN FETCH sp.idDoCung dc " +
+            "LEFT JOIN FETCH sp.idDiemCanBang dcb " +
+            "LEFT JOIN FETCH sp.idChatLieuThanVot cltv " +
+            "LEFT JOIN FETCH sp.idChatLieuKhungVot clk " +
+            "LEFT JOIN FETCH sp.idDanhMuc dm " +
             "WHERE " +
-            "(:k IS NULL OR c.maCtsp LIKE %:k% OR sp.maSanPham LIKE %:k% OR sp.tenSanPham LIKE %:k%) " +
+            "(:k IS NULL OR LOWER(c.maCtsp) LIKE LOWER(CONCAT('%', :k, '%')) OR LOWER(sp.maSanPham) LIKE LOWER(CONCAT('%', :k, '%')) OR LOWER(sp.tenSanPham) LIKE LOWER(CONCAT('%', :k, '%'))) " +
             "AND (:sp IS NULL OR sp.id = :sp) " +
             "AND (:dm IS NULL OR dm.id = :dm) " +
             "AND (:ms IS NULL OR ms.id = :ms) " +
@@ -54,20 +52,21 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
                                 @Param("giaDen") BigDecimal giaDen, Pageable p);
 
 
+    // 🌟 ĐÃ SỬA: Hàm search active (Màn bán hàng/POS) quét thông số nền bắc cầu từ sản phẩm cha
     @Query("SELECT c FROM ChiTietSanPham c " +
             "JOIN FETCH c.idSanPham sp " +
             "LEFT JOIN FETCH sp.idXuatXu xx " +
             "LEFT JOIN FETCH sp.idThuongHieu th " +
+            "LEFT JOIN FETCH sp.idChuViCanVot cv " +
+            "LEFT JOIN FETCH sp.idDoCung dc " +
+            "LEFT JOIN FETCH sp.idDiemCanBang dcb " +
+            "LEFT JOIN FETCH sp.idChatLieuThanVot cltv " +
+            "LEFT JOIN FETCH sp.idChatLieuKhungVot clk " +
+            "LEFT JOIN FETCH sp.idDanhMuc dm " +
             "LEFT JOIN FETCH c.idMauSac ms " +
             "LEFT JOIN FETCH c.idTrongLuong tl " +
-            "LEFT JOIN FETCH c.idChuViCanVot cv " +
-            "LEFT JOIN FETCH c.idDoCung dc " +
-            "LEFT JOIN FETCH c.idDiemCanBang dcb " +
-            "LEFT JOIN FETCH c.idChatLieuThanVot cltv " +
-            "LEFT JOIN FETCH c.idChatLieuKhungVot clk " +
-            "LEFT JOIN FETCH c.idDanhMuc dm " +
             "WHERE c.trangThai = 1 AND " +
-            "(:keyword IS NULL OR c.maCtsp LIKE %:keyword% OR sp.maSanPham LIKE %:keyword% OR sp.tenSanPham LIKE %:keyword%) " +
+            "(:keyword IS NULL OR LOWER(c.maCtsp) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(sp.maSanPham) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(sp.tenSanPham) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
             "ORDER BY c.id DESC")
     List<ChiTietSanPham> searchActiveProducts(@Param("keyword") String keyword);
 }

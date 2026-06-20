@@ -4,18 +4,32 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6ed6c808-4310-4e17-93ca-174aff479799" name="Changes" comment="phan 18/06/2026">
+    <list default="true" id="6ed6c808-4310-4e17-93ca-174aff479799" name="Changes" comment="phan 20/06/2026">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/ChiTietSanPhamController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/ChiTietSanPhamController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/ChuViCanVotController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/ChuViCanVotController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/KhachHangController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/KhachHangController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/NhanVienController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/NhanVienController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/repository/NhanVienRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/repository/NhanVienRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/DotGiamGiaController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/controller/DotGiamGiaController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/dto/request/ChiTietSanPhamFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/dto/request/ChiTietSanPhamFilter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/dto/request/ChiTietSanPhamRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/dto/request/ChiTietSanPhamRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/dto/request/SanPhamFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/dto/request/SanPhamFilter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/dto/request/SanPhamRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/dto/request/SanPhamRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/dto/response/ChiTietSanPhamResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/dto/response/ChiTietSanPhamResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/dto/response/SanPhamResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/dto/response/SanPhamResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/entity/ChatLieuKhungVot.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/entity/ChatLieuKhungVot.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/entity/ChatLieuThanVot.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/entity/ChatLieuThanVot.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/entity/ChiTietSanPham.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/entity/ChiTietSanPham.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/entity/ChuViCanVot.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/entity/ChuViCanVot.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/entity/DanhMuc.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/entity/DanhMuc.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/entity/DiemCanBang.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/entity/DiemCanBang.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/entity/DoCung.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/entity/DoCung.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/entity/SanPham.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/entity/SanPham.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/repository/ChiTietDotGiamGiaRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/repository/ChiTietDotGiamGiaRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/repository/ChiTietSanPhamRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/repository/ChiTietSanPhamRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/repository/SanPhamRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/repository/SanPhamRepository.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/ChiTietSanPhamService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/ChiTietSanPhamService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/NhanVienService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/NhanVienService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/impl/IChiTietSanPhamService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/impl/IChiTietSanPhamService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/impl/NhanVienServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/impl/NhanVienServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/DotGiamGiaService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/DotGiamGiaService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/SanPhamService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/AerionSports_BE/service/SanPhamService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/example/AerionSports_BE/service/ChiTietSanPhamService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/example/AerionSports_BE/service/ChiTietSanPhamService.class" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -148,6 +162,7 @@
       <workItem from="1781758174057" duration="4121000" />
       <workItem from="1781801797671" duration="622000" />
       <workItem from="1781844013204" duration="14091000" />
+      <workItem from="1781945375134" duration="4775000" />
     </task>
     <task id="LOCAL-00001" summary="update chitietdotgiamgia">
       <option name="closed" value="true" />
@@ -221,7 +236,15 @@
       <option name="project" value="LOCAL" />
       <updated>1781766473179</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="phan 20/06/2026">
+      <option name="closed" value="true" />
+      <created>1781945399806</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1781945399806</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -245,7 +268,8 @@
     <MESSAGE value="update gd2" />
     <MESSAGE value="phan" />
     <MESSAGE value="phan 18/06/2026" />
-    <option name="LAST_COMMIT_MESSAGE" value="phan 18/06/2026" />
+    <MESSAGE value="phan 20/06/2026" />
+    <option name="LAST_COMMIT_MESSAGE" value="phan 20/06/2026" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

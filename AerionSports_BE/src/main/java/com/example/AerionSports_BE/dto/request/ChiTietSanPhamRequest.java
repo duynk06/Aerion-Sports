@@ -13,17 +13,12 @@ import java.math.BigDecimal;
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ChiTietSanPhamRequest {
-    @NotNull(message = "Sản phẩm cha không được để trống")
+    // Để trống hoặc không cần bắt buộc khi thêm dạng Cascade lồng từ sản phẩm cha
     private Integer idSanPham;
 
+    // 🌟 CHỈ GIỮ LẠI MÀU SẮC VÀ TRỌNG LƯỢNG LÀM BIẾN THỂ PHẲNG
     private Integer idMauSac;
     private Integer idTrongLuong;
-    private Integer idChuViCanVot;
-    private Integer idDoCung;
-    private Integer idDiemCanBang;
-    private Integer idChatLieuThanVot;
-    private Integer idChatLieuKhungVot;
-    private Integer idDanhMuc;
 
     @NotBlank(message = "Mã chi tiết sản phẩm không được trống")
     private String maCtsp;
@@ -40,11 +35,9 @@ public class ChiTietSanPhamRequest {
     @Min(value = 0, message = "Số lượng không được âm")
     private Integer soLuong;
 
-    private String chuViCanVot;
-
     @NotNull(message = "Trạng thái không được trống")
     private Integer trangThai;
 
-    @NotNull(message = "Hình ảnh không được trống")
+    @NotBlank(message = "Hình ảnh không được trống") // Sửa thành @NotBlank cho chuỗi String
     private String hinhAnh;
 }
