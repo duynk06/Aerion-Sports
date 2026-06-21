@@ -6,7 +6,7 @@ import com.example.AerionSports_BE.dto.response.ChiTietSanPhamResponse;
 import com.example.AerionSports_BE.dto.response.SanPhamResponse;
 import com.example.AerionSports_BE.entity.*;
 import com.example.AerionSports_BE.repository.ChiTietSanPhamRepository;
-//import com.example.AerionSports_BE.repository.ChiTietDotGiamGiaRepository;
+import com.example.AerionSports_BE.repository.ChiTietDotGiamGiaRepository;
 import com.example.AerionSports_BE.service.impl.IChiTietSanPhamService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +26,8 @@ public class ChiTietSanPhamService implements IChiTietSanPhamService {
     @Autowired
     private ChiTietSanPhamRepository repo;
 
-//    @Autowired
-//    private ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
+    @Autowired
+    private ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
 
     private ChiTietSanPhamResponse toRes(ChiTietSanPham e) {
         if (e == null) return null;
@@ -72,16 +72,16 @@ public class ChiTietSanPhamService implements IChiTietSanPhamService {
         java.math.BigDecimal phanTramGiam = java.math.BigDecimal.ZERO;
         java.math.BigDecimal giaDaGiam = e.getGiaBan();
         java.time.LocalDateTime gioHienTaiVN = java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
-//        List<ChiTietDotGiamGia> discountLinks = chiTietDotGiamGiaRepository.findBestActiveByChiTietSanPhamId(e.getId(), gioHienTaiVN);
+        List<ChiTietDotGiamGia> discountLinks = chiTietDotGiamGiaRepository.findBestActiveByChiTietSanPhamId(e.getId(), gioHienTaiVN);
 
-//        if (discountLinks != null && !discountLinks.isEmpty()) {
-//            DotGiamGia dgg = discountLinks.get(0).getDotGiamGia();
-//            if (dgg != null && dgg.getGiaTriGiam() != null) {
-//                phanTramGiam = dgg.getGiaTriGiam();
-//                java.math.BigDecimal heSo = java.math.BigDecimal.valueOf(100).subtract(phanTramGiam);
-//                giaDaGiam = e.getGiaBan().multiply(heSo).divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
-//            }
-//        }
+        if (discountLinks != null && !discountLinks.isEmpty()) {
+            DotGiamGia dgg = discountLinks.get(0).getDotGiamGia();
+            if (dgg != null && dgg.getGiaTriGiam() != null) {
+                phanTramGiam = dgg.getGiaTriGiam();
+                java.math.BigDecimal heSo = java.math.BigDecimal.valueOf(100).subtract(phanTramGiam);
+                giaDaGiam = e.getGiaBan().multiply(heSo).divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+            }
+        }
         dto.setGiaDaGiam(giaDaGiam);
         dto.setPhanTramGiam(phanTramGiam);
 
