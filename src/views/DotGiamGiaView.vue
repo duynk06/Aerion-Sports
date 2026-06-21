@@ -182,7 +182,7 @@
         :product-keyword="productKeyword"
         :product-loading="productLoading"
         :product-page="productPage"
-        :product-page-size="productProductPageSize"
+        :product-page-size="productPageSize"
         :product-total-pages="productTotalPages"
         :product-total-pages-display="productTotalPagesDisplay"
         :selected-product-ids="selectedProductIds"
@@ -488,7 +488,9 @@ const loadData = async () => {
     totalPages.value = 0
     totalPagesDisplay.value = 1
     errorMessage.value = error?.message || 'Không thể tải dữ liệu đợt giảm giá'
-  } shrink: loading.value = false
+  } finally {
+    loading.value = false
+  }
 }
 
 // ⚡ ĐÃ CẢI TIẾN TOÀN DIỆN: Hàm nạp API gộp nhóm theo cây sản phẩm cha cho khung bên phải
@@ -683,7 +685,7 @@ const toggleSelectAllVisible = () => {
     if (g.mangBienTheCon) allVisibleCon.push(...g.mangBienTheCon)
   })
   
-  selectedProductIds.value = honestCon.map(b => b.idChiTietSanPham)
+  selectedProductIds.value = allVisibleCon.map(b => b.idChiTietSanPham)
   selectedProductDetails.value = [...allVisibleCon]
 }
 
