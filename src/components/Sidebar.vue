@@ -1,6 +1,10 @@
 <template>
 <div class="menu-list">
 
+  <router-link to="/" class="item">
+    <i class="fa-solid fa-store"></i> <span>Giao diện bán hàng</span>
+  </router-link>
+
   <router-link to="/trang-chu" class="item">
     <i class="fa-solid fa-house"></i> <span>Trang chủ</span>
   </router-link>

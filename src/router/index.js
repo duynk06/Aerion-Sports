@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+import ShopLayout from '../layouts/ShopLayout.vue'
+
 import TrangChuView from '../views/TrangChuView.vue'
 import ThongKeView from '../views/ThongKeView.vue'
 import BanHang from '../views/BanHangView.vue'
@@ -29,8 +31,19 @@ import DanhSachBienTheView from '../views/bienthe/DanhSachBienTheView.vue'
 import SuaKhachHangView from '../views/SuaKhachHangView.vue'
 import SuaNhanVienView from '../views/SuaNhanVienView.vue'
 const routes = [
-  { path: '/', redirect: '/trang-chu' },
+  {
+    path: '/',
+    component: ShopLayout,
+    children: [
+      { path: '', name: 'ShopHome', component: () => import('../../client/src/pages/Home/HomePage.vue') },
+      { path: 'products', name: 'ShopProducts', component: () => import('../../client/src/pages/Products/ProductsPage.vue') },
+      { path: 'products/:id', name: 'ShopProductDetail', component: () => import('../../client/src/pages/ProductDetail/ProductDetailPage.vue') },
+      { path: 'cart', name: 'ShopCart', component: () => import('../../client/src/pages/Cart/CartPage.vue') },
+      { path: 'checkout', name: 'ShopCheckout', component: () => import('../../client/src/pages/Checkout/CheckoutPage.vue') },
+    ],
+  },
 
+  { path: '/admin', redirect: '/trang-chu' },
   { path: '/trang-chu', component: TrangChuView },
   { path: '/thong-ke', component: ThongKeView },
 

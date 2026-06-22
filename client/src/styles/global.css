@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-inter bg-gray-50 text-gray-800;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-montserrat font-bold text-primary-color;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-secondary-color text-white px-6 py-3 rounded font-semibold transition-all duration-300 inline-flex items-center justify-center gap-2 hover:bg-secondary-hover hover:-translate-y-0.5 hover:shadow-lg;
+  }
+  .btn-outline {
+    @apply bg-transparent text-primary-color border-2 border-primary-color px-6 py-2.5 rounded font-semibold transition-all duration-300 hover:bg-primary-color hover:text-white;
+  }
+}
