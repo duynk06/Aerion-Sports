@@ -122,17 +122,17 @@ public class SanPhamService implements ISanPhamService {
         java.math.BigDecimal phanTramGiam = java.math.BigDecimal.ZERO;
         java.math.BigDecimal giaDaGiam = ct.getGiaBan();
         java.time.LocalDateTime gioHienTaiVietNam = java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
-       List<com.example.AerionSports_BE.entity.ChiTietDotGiamGia> discountLinks =
-               chiTietDotGiamGiaRepository.findBestActiveByChiTietSanPhamId(ct.getId(), gioHienTaiVietNam);
+        List<com.example.AerionSports_BE.entity.ChiTietDotGiamGia> discountLinks =
+                chiTietDotGiamGiaRepository.findBestActiveByChiTietSanPhamId(ct.getId(), gioHienTaiVietNam);
 
-       if (discountLinks != null && !discountLinks.isEmpty()) {
-           com.example.AerionSports_BE.entity.DotGiamGia dgg = discountLinks.get(0).getDotGiamGia();
-           if (dgg != null && dgg.getGiaTriGiam() != null) {
-               phanTramGiam = dgg.getGiaTriGiam();
-               java.math.BigDecimal heSo = java.math.BigDecimal.valueOf(100).subtract(phanTramGiam);
-               giaDaGiam = ct.getGiaBan().multiply(heSo).divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
-           }
-     }
+        if (discountLinks != null && !discountLinks.isEmpty()) {
+            com.example.AerionSports_BE.entity.DotGiamGia dgg = discountLinks.get(0).getDotGiamGia();
+            if (dgg != null && dgg.getGiaTriGiam() != null) {
+                phanTramGiam = dgg.getGiaTriGiam();
+                java.math.BigDecimal heSo = java.math.BigDecimal.valueOf(100).subtract(phanTramGiam);
+                giaDaGiam = ct.getGiaBan().multiply(heSo).divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+            }
+        }
 
         ChiTietSanPhamResponse res = new ChiTietSanPhamResponse();
         res.setId(ct.getId());

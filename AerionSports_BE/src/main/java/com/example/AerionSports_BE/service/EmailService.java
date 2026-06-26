@@ -1,17 +1,39 @@
 package com.example.AerionSports_BE.service;
 
+import com.example.AerionSports_BE.dto.response.ThongKeCardResponse;
+import com.example.AerionSports_BE.dto.response.ThongKeChiTietResponse;
 import jakarta.mail.internet.MimeMessage;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import java.io.ByteArrayOutputStream;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 @Service
 public class EmailService {
 
     @Autowired
     private JavaMailSender mailSender;
+
+    @Autowired
+    private ThongKeService thongKeService;
+
+
+
+    // Tự động bốc email gửi của bạn (vietphan0925@gmail.com) làm email nhận báo cáo chính luôn
+    @Value("${spring.mail.username}")
+    private String emailChinhNhanBaoCao;
 
     /**
      * Tính năng 1: Gửi email cấp tài khoản và mật khẩu tạm thời cho Nhân viên mới
@@ -94,6 +116,137 @@ public class EmailService {
             System.out.println(">>> [MAIL SUCCESS] Đã phát hành và gửi voucher thành công tới khách hàng: " + toEmail);
         } catch (Exception e) {
             System.err.println(">>> [MAIL ERROR] Lỗi khi phát hành voucher tới mail " + toEmail + ". Chi tiết: " + e.getMessage());
+        }
+    }
+
+    @Scheduled(cron = "0 0 17 * * *", zone = "Asia/Ho_Chi_Minh")
+    public void tuDongGuiBaoCaoCuoiNgayScheduled() {
+        System.out.println(">>> [CRON JOB] Đã đến 17h00 chiều! Hệ thống bắt đầu kết xuất báo cáo doanh thu tự động...");
+        this.executeExportExcelAndSendEmail();
+    }
+
+    /**
+     * TÁC VỤ 3.2: Hàm cốt lõi xử lý kết xuất bảng Excel và gửi đính kèm qua Email
+     */
+    public void executeExportExcelAndSendEmail() {
+        LocalDate homNay = LocalDate.now();
+        String chuoiNgay = homNay.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+
+        // 🌟 ĐÃ SỬA: Lấy mốc LocalDateTime từ đầu ngày đến cuối ngày hôm nay để đồng bộ tuyệt đối với Database
+        LocalDateTime batDauHomNay = homNay.atStartOfDay();
+        LocalDateTime ketThucHomNay = homNay.atTime(LocalTime.MAX);
+
+        // Thu thập số liệu từ database
+        ThongKeCardResponse dataCard = thongKeService.getSingleCardData("today");
+
+        // Đồng bộ dữ liệu bảng theo mốc ngày của hôm nay
+        ThongKeChiTietResponse dataTable = thongKeService.getThongKeChiTietDuLieuDong(homNay, homNay);
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Thống Kê Ngày " + homNay.toString());
+
+            // Thiết kế style tiêu đề cột màu cam Aerion đồng bộ
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerFont.setColor(IndexedColors.WHITE.getIndex());
+
+            CellStyle headerStyle = workbook.createCellStyle();
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.ORANGE.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+
+            // Dòng tiêu đề lớn trong Excel
+            Row titleRow = sheet.createRow(0);
+            titleRow.createCell(0).setCellValue("BÁO CÁO DOANH THU & HIỆU SUẤT KINH DOANH NGÀY " + chuoiNgay);
+
+            // Khối I: Chỉ số tổng quan hàng trên
+            sheet.createRow(2).createCell(0).setCellValue("I. CHỈ SỐ TỔNG QUAN");
+            sheet.createRow(3).createCell(0).setCellValue("Tổng Doanh Thu Hợp Lệ:");
+            sheet.createRow(3).createCell(1).setCellValue(dataCard.getDoanhThu() != null ? dataCard.getDoanhThu().doubleValue() : 0.0);
+            sheet.createRow(4).createCell(0).setCellValue("Tổng Đơn Hàng Phát Sinh:");
+            sheet.createRow(4).createCell(1).setCellValue(dataCard.getTongDonHang() != null ? dataCard.getTongDonHang() : 0);
+            sheet.createRow(5).createCell(0).setCellValue("Số Sản Phẩm Bán Được:");
+            sheet.createRow(5).createCell(1).setCellValue(dataCard.getSoSanPhamDaBan() != null ? dataCard.getSoSanPhamDaBan() : 0);
+
+            // Khối II: Trạng thái & Tiến độ đơn hàng
+            int currRow = 7;
+            sheet.createRow(currRow++).createCell(0).setCellValue("II. TIẾN ĐỘ ĐƠN HÀNG TRONG NGÀY");
+            Row headStatus = sheet.createRow(currRow++);
+            headStatus.createCell(0).setCellValue("Trạng Thái Đơn");
+            headStatus.createCell(1).setCellValue("Số Lượng");
+            headStatus.getCell(0).setCellStyle(headerStyle);
+            headStatus.getCell(1).setCellStyle(headerStyle);
+
+            if (dataTable.getTrangThaiDonHang() != null) {
+                for (ThongKeChiTietResponse.TrangThaiDonHang tt : dataTable.getTrangThaiDonHang()) {
+                    Row r = sheet.createRow(currRow++);
+                    r.createCell(0).setCellValue(tt.getTenTrangThai());
+                    r.createCell(1).setCellValue(tt.getSoLuong());
+                }
+            }
+
+            // Khối III: Top sản phẩm bán chạy hôm nay
+            currRow += 2;
+            sheet.createRow(currRow++).createCell(0).setCellValue("III. TOP SẢN PHẨM BÁN CHẠY TRONG NGÀY");
+            Row headSp = sheet.createRow(currRow++);
+            headSp.createCell(0).setCellValue("Tên Sản Phẩm");
+            headSp.createCell(1).setCellValue("Đã Bán");
+            headSp.createCell(2).setCellValue("Tồn Kho");
+            headSp.getCell(0).setCellStyle(headerStyle);
+            headSp.getCell(1).setCellStyle(headerStyle);
+            headSp.getCell(2).setCellStyle(headerStyle);
+
+            if (dataTable.getTopBanChay() != null) {
+                for (ThongKeChiTietResponse.TopBanChay sp : dataTable.getTopBanChay()) {
+                    Row r = sheet.createRow(currRow++);
+                    r.createCell(0).setCellValue(sp.getTenSanPham());
+                    r.createCell(1).setCellValue(sp.getDaBan());
+                    r.createCell(2).setCellValue(sp.getTonKho());
+                }
+            }
+
+            // Tự động nới rộng ô vừa khít chữ
+            sheet.autoSizeColumn(0);
+            sheet.autoSizeColumn(1);
+            sheet.autoSizeColumn(2);
+
+            // Đẩy luồng file Excel ra mảng Byte
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            workbook.write(bos);
+            byte[] excelBytes = bos.toByteArray();
+
+            // TIẾN HÀNH GỬI MAIL ĐÍNH KÈM FILE EXCEL
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setTo(emailChinhNhanBaoCao);
+            helper.setSubject("📊 [AERION SPORTS] Báo cáo Excel kết quả kinh doanh ngày " + chuoiNgay);
+
+            double doanhThuHienTai = dataCard.getDoanhThu() != null ? dataCard.getDoanhThu().doubleValue() : 0.0;
+
+            String htmlContent = "<div style='font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; max-width: 500px;'>"
+                    + "  <h3 style='color: #f79b66;'>Kính gửi Quản trị viên,</h3>"
+                    + "  <p>Hệ thống tự động xin gửi báo cáo kết quả doanh thu tổng hợp tính đến thời điểm hiện tại ngày <b>" + chuoiNgay + "</b>:</p>"
+                    + "  <table style='width:100%; border-collapse: collapse; font-size:13px; margin: 15px 0;'>"
+                    + "    <tr style='background:#f8fafc;'><td style='padding:8px; border:1px solid #e2e8f0;'>💰 <b>Doanh thu:</b></td><td style='padding:8px; border:1px solid #e2e8f0; font-weight:bold; color:#2563eb;'>" + String.format("%,.0f", doanhThuHienTai) + " đ</td></tr>"
+                    + "    <tr><td style='padding:8px; border:1px solid #e2e8f0;'>📦 <b>Tổng số đơn:</b></td><td style='padding:8px; border:1px solid #e2e8f0; font-weight:bold;'>" + dataCard.getTongDonHang() + " đơn</td></tr>"
+                    + "    <tr style='background:#f8fafc;'><td style='padding:8px; border:1px solid #e2e8f0;'>✅ <b>Đơn hoàn thành:</b></td><td style='padding:8px; border:1px solid #e2e8f0; font-weight:bold; color:#137333;'>" + dataCard.getDonHoanThanh() + " đơn</td></tr>"
+                    + "  </table>"
+                    + "  <p><i>*Chi tiết bảng biểu Top mặt hàng bán chạy, danh sách khách hàng tiềm năng chi tiêu lớn và cảnh báo tồn kho đã được đóng gói đính kèm trong file Excel dưới đây.</i></p>"
+                    + "  <hr style='border:none; border-top:1px solid #f1f5f9; margin:15px 0;'/>"
+                    + "  <p style='font-size:11px; color:#94a3b8; text-align:center;'>Hệ thống báo cáo tự động Aerion Sports &copy; 2026</p>"
+                    + "</div>";
+
+            helper.setText(htmlContent, true);
+            helper.addAttachment("BaoCao_DoanhThu_Ngay_" + homNay.toString() + ".xlsx", new ByteArrayResource(excelBytes));
+
+            mailSender.send(message);
+            System.out.println(">>> [MAIL SUCCESS] Đã gửi đính kèm file Excel báo cáo thành công về hòm thư chính!");
+
+        } catch (Exception e) {
+            System.err.println(">>> [MAIL ERROR] Thất bại khi xuất Excel gửi mail báo cáo: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
