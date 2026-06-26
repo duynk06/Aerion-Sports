@@ -9,6 +9,7 @@ import com.example.AerionSports_BE.entity.SanPham;
 import com.example.AerionSports_BE.repository.ChiTietDotGiamGiaRepository;
 import com.example.AerionSports_BE.repository.ChiTietSanPhamRepository;
 import com.example.AerionSports_BE.repository.DotGiamGiaRepository;
+import com.example.AerionSports_BE.realtime.CatalogRealtimeService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -36,6 +37,7 @@ public class DotGiamGiaService {
     private final DotGiamGiaRepository dotGiamGiaRepository;
     private final ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
     private final ChiTietSanPhamRepository chiTietSanPhamRepository;
+    private final CatalogRealtimeService catalogRealtimeService;
     private static final int TRANG_THAI_DANG_DIEN_RA = 2;
     private static final ZoneId ZONE_VIETNAM = ZoneId.of("Asia/Ho_Chi_Minh");
 
@@ -87,7 +89,9 @@ public class DotGiamGiaService {
 
         DotGiamGia saved = dotGiamGiaRepository.save(entity);
         saveChiTietList(saved, dto.getChiTietList());
-        return getById(saved.getId());
+        DotGiamGiaDTO response = getById(saved.getId());
+        catalogRealtimeService.publishCatalogChange("dot-giam-gia", saved.getId(), "created");
+        return response;
     }
 
     @Transactional
@@ -109,9 +113,12 @@ public class DotGiamGiaService {
         entity.setTrangThai(calculateTrangThai(entity.getNgayBatDau(), entity.getNgayKetThuc()));
 
         dotGiamGiaRepository.save(entity);
+        catalogRealtimeService.publishCatalogChange("dot-giam-gia", id, "deleted");
         chiTietDotGiamGiaRepository.deleteByDotGiamGia_Id(id);
         saveChiTietList(entity, dto.getChiTietList());
-        return getById(id);
+        DotGiamGiaDTO response = getById(id);
+        catalogRealtimeService.publishCatalogChange("dot-giam-gia", id, "updated");
+        return response;
     }
 
     @Transactional
@@ -129,6 +136,7 @@ public class DotGiamGiaService {
         validateTrangThai(trangThai);
         entity.setTrangThai(trangThai);
         dotGiamGiaRepository.save(entity);
+        catalogRealtimeService.publishCatalogChange("dot-giam-gia", id, "status-updated");
         return toDTO(entity);
     }
 

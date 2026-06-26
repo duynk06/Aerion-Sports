@@ -5,8 +5,10 @@ import com.example.AerionSports_BE.dto.request.ChiTietSanPhamRequest;
 import com.example.AerionSports_BE.dto.response.ChiTietSanPhamResponse;
 import com.example.AerionSports_BE.dto.response.SanPhamResponse;
 import com.example.AerionSports_BE.entity.*;
+import com.example.AerionSports_BE.repository.ChiTietDotGiamGiaRepository;
 import com.example.AerionSports_BE.repository.ChiTietSanPhamRepository;
 //import com.example.AerionSports_BE.repository.ChiTietDotGiamGiaRepository;
+import com.example.AerionSports_BE.realtime.CatalogRealtimeService;
 import com.example.AerionSports_BE.service.impl.IChiTietSanPhamService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +28,11 @@ public class ChiTietSanPhamService implements IChiTietSanPhamService {
     @Autowired
     private ChiTietSanPhamRepository repo;
 
-//    @Autowired
-//    private ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
+   @Autowired
+   private ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
+
+   @Autowired
+   private CatalogRealtimeService catalogRealtimeService;
 
     private ChiTietSanPhamResponse toRes(ChiTietSanPham e) {
         if (e == null) return null;
@@ -72,16 +77,16 @@ public class ChiTietSanPhamService implements IChiTietSanPhamService {
         java.math.BigDecimal phanTramGiam = java.math.BigDecimal.ZERO;
         java.math.BigDecimal giaDaGiam = e.getGiaBan();
         java.time.LocalDateTime gioHienTaiVN = java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
-//        List<ChiTietDotGiamGia> discountLinks = chiTietDotGiamGiaRepository.findBestActiveByChiTietSanPhamId(e.getId(), gioHienTaiVN);
+       List<ChiTietDotGiamGia> discountLinks = chiTietDotGiamGiaRepository.findBestActiveByChiTietSanPhamId(e.getId(), gioHienTaiVN);
 
-//        if (discountLinks != null && !discountLinks.isEmpty()) {
-//            DotGiamGia dgg = discountLinks.get(0).getDotGiamGia();
-//            if (dgg != null && dgg.getGiaTriGiam() != null) {
-//                phanTramGiam = dgg.getGiaTriGiam();
-//                java.math.BigDecimal heSo = java.math.BigDecimal.valueOf(100).subtract(phanTramGiam);
-//                giaDaGiam = e.getGiaBan().multiply(heSo).divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
-//            }
-//        }
+       if (discountLinks != null && !discountLinks.isEmpty()) {
+           DotGiamGia dgg = discountLinks.get(0).getDotGiamGia();
+           if (dgg != null && dgg.getGiaTriGiam() != null) {
+               phanTramGiam = dgg.getGiaTriGiam();
+               java.math.BigDecimal heSo = java.math.BigDecimal.valueOf(100).subtract(phanTramGiam);
+               giaDaGiam = e.getGiaBan().multiply(heSo).divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+           }
+       }
         dto.setGiaDaGiam(giaDaGiam);
         dto.setPhanTramGiam(phanTramGiam);
 
@@ -107,7 +112,9 @@ public class ChiTietSanPhamService implements IChiTietSanPhamService {
         mapFields(e, r);
         e.setNgayTao(Instant.now());
         e.setNgayCapNhat(Instant.now());
-        return toRes(repo.save(e));
+        ChiTietSanPhamResponse response = toRes(repo.save(e));
+        catalogRealtimeService.publishCatalogChange("chi-tiet-san-pham", response != null ? response.getId() : null, "created");
+        return response;
     }
 
     @Override
@@ -115,7 +122,9 @@ public class ChiTietSanPhamService implements IChiTietSanPhamService {
         ChiTietSanPham e = repo.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy biến thể sản phẩm!"));
         mapFields(e, r);
         e.setNgayCapNhat(Instant.now());
-        return toRes(repo.save(e));
+        ChiTietSanPhamResponse response = toRes(repo.save(e));
+        catalogRealtimeService.publishCatalogChange("chi-tiet-san-pham", id, "updated");
+        return response;
     }
 
     private void mapFields(ChiTietSanPham e, ChiTietSanPhamRequest r) {
@@ -134,6 +143,7 @@ public class ChiTietSanPhamService implements IChiTietSanPhamService {
         ChiTietSanPham e = repo.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy!"));
         e.setTrangThai(0);
         repo.save(e);
+        catalogRealtimeService.publishCatalogChange("chi-tiet-san-pham", id, "deleted");
     }
 
     @Override
@@ -141,6 +151,7 @@ public class ChiTietSanPhamService implements IChiTietSanPhamService {
         ChiTietSanPham e = repo.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy biến thể sản phẩm!"));
         e.setTrangThai(trangThai);
         repo.save(e);
+        catalogRealtimeService.publishCatalogChange("chi-tiet-san-pham", id, "status-updated");
     }
 
     @Override

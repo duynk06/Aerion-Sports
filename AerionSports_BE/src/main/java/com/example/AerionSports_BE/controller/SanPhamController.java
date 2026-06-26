@@ -18,13 +18,12 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/san-pham")
-@CrossOrigin("*") // Mở cổng cho Vue thoải mái gọi API
+@CrossOrigin("*")
 public class SanPhamController {
 
     @Autowired
     private SanPhamService svc;
 
-    // 1. API Tìm kiếm phân trang
     @GetMapping("/search")
     public ResponseEntity<?> search(
             @RequestParam(value = "keyword", required = false) String keyword,
@@ -46,7 +45,11 @@ public class SanPhamController {
         return ResponseEntity.ok(result);
     }
 
-    // 2. ⚡ TỰ ĐỘNG HÓA 1: API Thêm sản phẩm đơn giản (Có kèm file ảnh)
+    @GetMapping("/detail/{id}")
+    public ResponseEntity<?> getDetail(@PathVariable Integer id) {
+        return ResponseEntity.ok(svc.getById(id));
+    }
+
     @PostMapping(value = "/save-simple", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> create(
             @RequestParam("data") String data,
@@ -57,29 +60,28 @@ public class SanPhamController {
         return ResponseEntity.ok(svc.save(request, files));
     }
 
-    // 3. ⚡ TỰ ĐỘNG HÓA 2: API Thêm sản phẩm tổ hợp Ma trận biến thể (Tự lưu file tĩnh chuẩn)
     @PostMapping(value = "/create-variants", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createProductWithVariants(
-            @RequestParam("data") String dataJson, // Đồng bộ đổi từ @RequestPart sang @RequestParam cho mượt
+            @RequestParam("data") String dataJson,
             @RequestParam(value = "files", required = false) List<MultipartFile> files
     ) {
         try {
             return ResponseEntity.ok(svc.createProductWithVariants(dataJson, files));
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("Lỗi xử lý lưu hệ thống sản phẩm tổ hợp: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Loi xu ly luu he thong san pham to hop: " + e.getMessage());
         }
     }
 
-    // 4. API Cập nhật trạng thái nhanh
     @PutMapping("/{id}/trang-thai")
     public ResponseEntity<?> updateTrangThai(
             @PathVariable Integer id,
             @RequestParam("trangThai") Integer trangThai
     ) {
         svc.updateTrangThai(id, trangThai);
-        return ResponseEntity.ok("Cập nhật trạng thái thành công!");
+        return ResponseEntity.ok("Cap nhat trang thai thanh cong!");
     }
+
     @PutMapping(value = "/bien-the/update/{idCtsp}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateSingleVariant(
             @PathVariable Integer idCtsp,
@@ -91,22 +93,21 @@ public class SanPhamController {
             ChiTietSanPhamRequest req = mapper.readValue(dataJson, ChiTietSanPhamRequest.class);
 
             svc.updateSingleVariantWithImage(idCtsp, req, file);
-            return ResponseEntity.ok("Cập nhật thông tin và ảnh biến thể thành công!");
+            return ResponseEntity.ok("Cap nhat thong tin va anh bien the thanh cong!");
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("Lỗi cập nhật biến thể lẻ: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Loi cap nhat bien the: " + e.getMessage());
         }
     }
-    // 5. API Cập nhật thông tin sản phẩm
+
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable Integer id, @Valid @RequestBody SanPhamRequest r) {
         return ResponseEntity.ok(svc.update(id, r));
     }
 
-    // 6. API Xóa sản phẩm
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable Integer id) {
         svc.delete(id);
-        return ResponseEntity.ok("Xóa hoàn toàn sản phẩm khỏi hệ thống thành công!");
+        return ResponseEntity.ok("Xoa san pham thanh cong!");
     }
 }

@@ -12,6 +12,7 @@ import java.util.List;
 
 public interface ISanPhamService {
     Page<SanPhamResponse> search(SanPhamFilter f);
+    SanPhamResponse getById(Integer id);
     void updateTrangThai(Integer id, Integer trangThai);
     SanPhamResponse save(SanPhamRequest r, List<MultipartFile> files);
     SanPhamResponse update(Integer id, SanPhamRequest r);

@@ -2,6 +2,7 @@ package com.example.AerionSports_BE.service;
 
 import com.example.AerionSports_BE.entity.DotGiamGia;
 import com.example.AerionSports_BE.repository.DotGiamGiaRepository;
+import com.example.AerionSports_BE.realtime.CatalogRealtimeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -22,6 +23,7 @@ import java.util.List;
 public class DotGiamGiaScheduler {
 
     private final DotGiamGiaRepository dotGiamGiaRepository;
+    private final CatalogRealtimeService catalogRealtimeService;
 
     /**
      * Chạy mỗi phút để cập nhật trạng thái
@@ -37,6 +39,7 @@ public class DotGiamGiaScheduler {
             if (dgg.getNgayBatDau() != null && !now.isBefore(dgg.getNgayBatDau())) {
                 dgg.setTrangThai(2);
                 dotGiamGiaRepository.save(dgg);
+                catalogRealtimeService.publishCatalogChange("dot-giam-gia", dgg.getId(), "status-updated");
                 log.info("Đợt giảm giá {} đã chuyển sang trạng thái 'Đang diễn ra'", dgg.getMaDotGiamGia());
             }
         }
@@ -47,6 +50,7 @@ public class DotGiamGiaScheduler {
             if (dgg.getNgayKetThuc() != null && now.isAfter(dgg.getNgayKetThuc())) {
                 dgg.setTrangThai(3);
                 dotGiamGiaRepository.save(dgg);
+                catalogRealtimeService.publishCatalogChange("dot-giam-gia", dgg.getId(), "status-updated");
                 log.info("Đợt giảm giá {} đã chuyển sang trạng thái 'Đã kết thúc'", dgg.getMaDotGiamGia());
             }
         }

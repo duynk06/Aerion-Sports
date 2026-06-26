@@ -9,6 +9,7 @@ import com.example.AerionSports_BE.entity.ChiTietSanPham;
 import com.example.AerionSports_BE.entity.HinhAnhSp;
 import com.example.AerionSports_BE.entity.SanPham;
 import com.example.AerionSports_BE.repository.*;
+import com.example.AerionSports_BE.realtime.CatalogRealtimeService;
 import com.example.AerionSports_BE.service.impl.ISanPhamService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +47,8 @@ public class SanPhamService implements ISanPhamService {
     @Autowired private DanhMucRepository danhMucRepo;
     @Autowired private DiemCanBangRepository diemCanBangRepo;
     @Autowired private ChuViCanVotRepository chuViCanVotRepo;
-//    @Autowired private ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
+    @Autowired private ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
+    @Autowired private CatalogRealtimeService catalogRealtimeService;
 
     @Transactional
     public SanPhamResponse createProductWithVariants(String dataJson, List<MultipartFile> files) throws Exception {
@@ -95,7 +97,9 @@ public class SanPhamService implements ISanPhamService {
                 fileIndex++;
             }
         }
-        return toRes(repo.findById(savedSanPham.getId()).orElse(savedSanPham));
+        SanPhamResponse response = toRes(repo.findById(savedSanPham.getId()).orElse(savedSanPham));
+        catalogRealtimeService.publishCatalogChange("san-pham", response != null ? response.getId() : null, "created");
+        return response;
     }
 
     private ChiTietSanPhamResponse toChiTietRes(ChiTietSanPham ct) {
@@ -118,17 +122,17 @@ public class SanPhamService implements ISanPhamService {
         java.math.BigDecimal phanTramGiam = java.math.BigDecimal.ZERO;
         java.math.BigDecimal giaDaGiam = ct.getGiaBan();
         java.time.LocalDateTime gioHienTaiVietNam = java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
-//        List<com.example.AerionSports_BE.entity.ChiTietDotGiamGia> discountLinks =
-//                chiTietDotGiamGiaRepository.findBestActiveByChiTietSanPhamId(ct.getId(), gioHienTaiVietNam);
+       List<com.example.AerionSports_BE.entity.ChiTietDotGiamGia> discountLinks =
+               chiTietDotGiamGiaRepository.findBestActiveByChiTietSanPhamId(ct.getId(), gioHienTaiVietNam);
 
-//        if (discountLinks != null && !discountLinks.isEmpty()) {
-//            com.example.AerionSports_BE.entity.DotGiamGia dgg = discountLinks.get(0).getDotGiamGia();
-//            if (dgg != null && dgg.getGiaTriGiam() != null) {
-//                phanTramGiam = dgg.getGiaTriGiam();
-//                java.math.BigDecimal heSo = java.math.BigDecimal.valueOf(100).subtract(phanTramGiam);
-//                giaDaGiam = ct.getGiaBan().multiply(heSo).divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
-//            }
-//        }
+       if (discountLinks != null && !discountLinks.isEmpty()) {
+           com.example.AerionSports_BE.entity.DotGiamGia dgg = discountLinks.get(0).getDotGiamGia();
+           if (dgg != null && dgg.getGiaTriGiam() != null) {
+               phanTramGiam = dgg.getGiaTriGiam();
+               java.math.BigDecimal heSo = java.math.BigDecimal.valueOf(100).subtract(phanTramGiam);
+               giaDaGiam = ct.getGiaBan().multiply(heSo).divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+           }
+     }
 
         ChiTietSanPhamResponse res = new ChiTietSanPhamResponse();
         res.setId(ct.getId());
@@ -199,10 +203,19 @@ public class SanPhamService implements ISanPhamService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public SanPhamResponse getById(Integer id) {
+        SanPham sanPham = repo.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm!"));
+        return toRes(sanPham);
+    }
+
+    @Transactional
+    @Override
     public void updateTrangThai(Integer id, Integer trangThai) {
         SanPham sanPham = repo.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm!"));
         sanPham.setTrangThai(trangThai);
         repo.save(sanPham);
+        catalogRealtimeService.publishCatalogChange("san-pham", id, "status-updated");
     }
 
     @Transactional
@@ -252,7 +265,9 @@ public class SanPhamService implements ISanPhamService {
                 }
             }
         }
-        return toRes(repo.findById(sanPhamDaLuu.getId()).orElse(sanPhamDaLuu));
+        SanPhamResponse response = toRes(repo.findById(sanPhamDaLuu.getId()).orElse(sanPhamDaLuu));
+        catalogRealtimeService.publishCatalogChange("san-pham", response != null ? response.getId() : null, "created");
+        return response;
     }
 
     @Transactional
@@ -278,7 +293,9 @@ public class SanPhamService implements ISanPhamService {
                 chiTietRepo.save(ctEntity);
             }
         }
-        return toRes(repo.findById(savedSanPham.getId()).orElse(savedSanPham));
+        SanPhamResponse response = toRes(repo.findById(savedSanPham.getId()).orElse(savedSanPham));
+        catalogRealtimeService.publishCatalogChange("san-pham", response != null ? response.getId() : null, "updated");
+        return response;
     }
 
     private void mapFields(SanPham e, SanPhamRequest r) {
@@ -300,10 +317,12 @@ public class SanPhamService implements ISanPhamService {
         e.setTrangThai(r.getTrangThai());
     }
 
+    @Transactional
     @Override
     public void delete(Integer id) {
         if (!repo.existsById(id)) throw new RuntimeException("Không tìm thấy sản phẩm cần xóa");
         repo.deleteById(id);
+        catalogRealtimeService.publishCatalogChange("san-pham", id, "deleted");
     }
 
     private String saveFileToDisk(MultipartFile file) throws IOException {
@@ -343,6 +362,11 @@ public class SanPhamService implements ISanPhamService {
             anhEntity.setTrangThai(1);
 
             hinhAnhRepo.save(anhEntity);
+        }
+
+        catalogRealtimeService.publishCatalogChange("chi-tiet-san-pham", idCtsp, "updated");
+        if (savedCt.getIdSanPham() != null && savedCt.getIdSanPham().getId() != null) {
+            catalogRealtimeService.publishCatalogChange("san-pham", savedCt.getIdSanPham().getId(), "updated");
         }
     }
 }
