@@ -179,6 +179,7 @@ import axios from 'axios';
 import { useRouter } from 'vue-router'; 
 import MainLayout from '@/layouts/MainLayout.vue';
 import * as XLSX from 'xlsx';
+import { useCatalogRealtime } from '@/composables/useCatalogRealtime';
 
 const router = useRouter();
 
@@ -346,6 +347,13 @@ const exportToExcel = () => {
 };
 
 onMounted(() => loadToanBoDuLieu());
+
+useCatalogRealtime((payload) => {
+  if (!payload || payload.type !== 'catalog-update') return
+  if (['san-pham', 'chi-tiet-san-pham', 'dot-giam-gia'].includes(payload.entityType)) {
+    loadToanBoDuLieu()
+  }
+});
 </script>
 
 <style scoped>

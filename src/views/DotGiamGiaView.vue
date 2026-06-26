@@ -260,6 +260,7 @@ import DotGiamGiaCreateModal from '../components/modals/DotGiamGiaCreateModal.vu
 import DotGiamGiaDetailModal from '../components/modals/DotGiamGiaDetailModal.vue'
 import DotGiamGiaEditModal from '../components/modals/DotGiamGiaEditModal.vue'
 import DotGiamGiaToast from '../components/toasts/DotGiamGiaToast.vue'
+import { useCatalogRealtime } from '@/composables/useCatalogRealtime'
 import {
   createDotGiamGia,
   fetchDotGiamGiaById,
@@ -854,6 +855,14 @@ onUnmounted(() => {
 })
 
 watch(() => [filters.tuNgay, filters.denNgay], () => { validateDateFilters() })
+
+useCatalogRealtime((payload) => {
+  if (!payload || payload.type !== 'catalog-update') return
+  if (!isCreateMode.value && !isEditMode.value && !isDetailOpen.value && ['san-pham', 'chi-tiet-san-pham', 'dot-giam-gia'].includes(payload.entityType)) {
+    loadData()
+    loadProducts()
+  }
+})
 </script>
 
 <style scoped>

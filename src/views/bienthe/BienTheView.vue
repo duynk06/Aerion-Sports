@@ -217,6 +217,7 @@ import axios from 'axios';
 import MainLayout from '@/layouts/MainLayout.vue';
 import * as XLSX from 'xlsx';
 import QRCode from 'qrcode'; 
+import { useCatalogRealtime } from '@/composables/useCatalogRealtime';
 
 const route = useRoute();
 const router = useRouter();
@@ -403,6 +404,13 @@ const exportToExcelConfirm = () => {
 
 onMounted(() => {
   fetchDataBienThe();
+});
+
+useCatalogRealtime((payload) => {
+  if (!payload || payload.type !== 'catalog-update') return
+  if (['san-pham', 'chi-tiet-san-pham', 'dot-giam-gia'].includes(payload.entityType)) {
+    fetchDataBienThe()
+  }
 });
 </script>
 

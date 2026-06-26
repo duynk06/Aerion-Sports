@@ -40,6 +40,9 @@ const routes = [
       { path: 'products/:id', name: 'ShopProductDetail', component: () => import('../../client/src/pages/ProductDetail/ProductDetailPage.vue') },
       { path: 'cart', name: 'ShopCart', component: () => import('../../client/src/pages/Cart/CartPage.vue') },
       { path: 'checkout', name: 'ShopCheckout', component: () => import('../../client/src/pages/Checkout/CheckoutPage.vue') },
+      { path: 'login', name: 'Login', component: () => import('../../client/src/pages/Auth/LoginPage.vue') },
+      { path: 'register', name: 'Register', component: () => import('../../client/src/pages/Auth/RegisterPage.vue') },
+      { path: 'profile', name: 'Profile', component: () => import('../../client/src/pages/Profile/ProfilePage.vue') },
     ],
   },
 

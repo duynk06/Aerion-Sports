@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff8a00"/>
+      <stop offset="100%" stop-color="#ff4500"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Orange Swoosh -->
+  <path d="M10,50 Q20,20 50,15 T90,30 Q70,5 30,10 T5,50 Q15,80 40,90 T95,80 Q70,95 30,85 T10,50" fill="url(#orangeGrad)"/>
+  
+  <!-- Racket Head Navy -->
+  <ellipse cx="65" cy="45" rx="18" ry="24" transform="rotate(45 65 45)" fill="none" stroke="#0b162c" stroke-width="6"/>
+  <!-- Racket Shaft -->
+  <line x1="50" y1="60" x2="25" y2="85" stroke="#0b162c" stroke-width="6" stroke-linecap="round"/>
+</svg>

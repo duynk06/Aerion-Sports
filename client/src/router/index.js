@@ -6,8 +6,10 @@ const routes = [
   { path: '/products/:id', name: 'ProductDetail', component: () => import('../pages/ProductDetail/ProductDetailPage.vue') },
   { path: '/cart', name: 'Cart', component: () => import('../pages/Cart/CartPage.vue') },
   { path: '/checkout', name: 'Checkout', component: () => import('../pages/Checkout/CheckoutPage.vue') },
+  { path: '/login', name: 'Login', component: () => import('../pages/Auth/LoginPage.vue') },
+  { path: '/register', name: 'Register', component: () => import('../pages/Auth/RegisterPage.vue') },
+  { path: '/profile', name: 'Profile', component: () => import('../pages/Profile/ProfilePage.vue') },
 ]
-
 const router = createRouter({
   history: createWebHistory(),
   routes,

@@ -66,25 +66,37 @@
 
       <div class="flex-1">
         <div class="bg-white p-8 rounded-xl border border-gray-200 sticky top-24">
-          <h3 class="text-xl font-bold mb-6 text-primary-color"><ShoppingCartOutlined /> Đơn Hàng Của Bạn</h3>
-          <div class="border-b border-gray-200 pb-5 mb-5 space-y-4">
-            <div v-for="item in orderItems" :key="item.id" class="flex justify-between items-center text-sm">
-              <span class="font-medium text-gray-800">{{ item.name }} x {{ item.quantity }}</span>
-              <span class="font-bold">{{ formatPrice(item.price * item.quantity) }}</span>
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-primary-color"><ShoppingCartOutlined /> Đơn Hàng Của Bạn</h3>
+            <div v-if="loading" class="text-xs text-gray-500">Đang cập nhật giá...</div>
+          </div>
+
+          <div v-if="!loading && hydratedItems.length === 0" class="py-8 text-center text-gray-500">
+            Giỏ hàng đang trống.
+          </div>
+
+          <template v-else>
+            <div class="border-b border-gray-200 pb-5 mb-5 space-y-4">
+              <div v-for="item in hydratedItems" :key="item.id" class="flex justify-between items-center text-sm gap-4">
+                <span class="font-medium text-gray-800">{{ item.name }} x {{ item.quantity }}</span>
+                <span class="font-bold text-right">{{ formatPrice(item.price * item.quantity) }}</span>
+              </div>
             </div>
-          </div>
-          <div class="flex justify-between mb-4 text-gray-700">
-            <span>Tạm tính</span>
-            <span class="font-semibold">{{ formatPrice(orderTotals.subtotal) }}</span>
-          </div>
-          <div class="flex justify-between mb-4 text-gray-700">
-            <span>Phí vận chuyển</span>
-            <span class="font-semibold text-green-600">Miễn phí</span>
-          </div>
-          <div class="flex justify-between mt-6 pt-6 border-t-2 border-gray-200 text-lg font-bold">
-            <span class="text-primary-color">Tổng cộng</span>
-            <span class="text-secondary-color text-2xl">{{ formatPrice(orderTotals.total) }}</span>
-          </div>
+
+            <div class="flex justify-between mb-4 text-gray-700">
+              <span>Tạm tính</span>
+              <span class="font-semibold">{{ formatPrice(summary.subtotal) }}</span>
+            </div>
+            <div class="flex justify-between mb-4 text-gray-700">
+              <span>Phí vận chuyển</span>
+              <span class="font-semibold text-green-600">Miễn phí</span>
+            </div>
+            <div class="flex justify-between mt-6 pt-6 border-t-2 border-gray-200 text-lg font-bold">
+              <span class="text-primary-color">Tổng cộng</span>
+              <span class="text-secondary-color text-2xl">{{ formatPrice(summary.total) }}</span>
+            </div>
+          </template>
+
           <button class="btn-primary w-full text-center block mt-8 py-4 text-lg"><CheckCircleOutlined /> ĐẶT HÀNG NGAY</button>
         </div>
       </div>
@@ -93,8 +105,103 @@
 </template>
 
 <script setup>
+import { computed, onMounted, ref, watch } from 'vue'
 import { UserOutlined, CreditCardOutlined, ShoppingCartOutlined, CheckCircleOutlined } from '@ant-design/icons-vue'
-import { cartItems as orderItems, cartSummary as orderTotals, checkoutShipping } from '../../data/mockShopData'
+import { getProductDetail, resolveMediaUrl } from '../../services/api'
+import fallbackImage from '../../assets/mock_racket.png'
+import { useCart } from '../../composables/useCart'
+import { useCatalogRealtime } from '../../composables/useCatalogRealtime'
+
+const { cartItems } = useCart()
+
+const checkoutShipping = {
+  city: 'Hà Nội',
+  district: 'Cầu Giấy',
+}
+
+const loading = ref(false)
+const hydratedItems = ref([])
 
 const formatPrice = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value || 0))} đ`
+
+const normalizeProduct = (payload, cartItem) => {
+  const variants = Array.isArray(payload?.chiTietSanPhams) ? payload.chiTietSanPhams : Array.from(payload?.chiTietSanPhams || [])
+  const mappedVariants = variants
+    .filter(Boolean)
+    .map((variant) => ({
+      key: variant?.id ?? `${variant?.maCtsp ?? 'variant'}-${variant?.tenMauSac ?? ''}-${variant?.tenTrongLuong ?? ''}`,
+      image: resolveMediaUrl(variant?.hinhAnh) || fallbackImage,
+      price: Number(variant?.giaDaGiam ?? variant?.giaBan ?? 0),
+      oldPrice: Number(variant?.giaBan ?? 0),
+      stock: Number(variant?.soLuong || 0),
+      color: variant?.tenMauSac || '',
+      weight: variant?.tenTrongLuong || '',
+    }))
+
+  const matchedVariant =
+    mappedVariants.find((variant) => String(variant.key) === String(cartItem.variantKey)) ||
+    mappedVariants[0] ||
+    null
+
+  if (!matchedVariant) return null
+
+  return {
+    id: cartItem.id,
+    productId: payload?.id,
+    name: payload?.tenSanPham || `Sản phẩm ${payload?.id ?? ''}`,
+    variantLabel: [matchedVariant.color, matchedVariant.weight].filter(Boolean).join(' · ') || matchedVariant.key,
+    image: matchedVariant.image,
+    price: matchedVariant.price,
+    oldPrice: matchedVariant.oldPrice > matchedVariant.price ? matchedVariant.oldPrice : null,
+    quantity: Number(cartItem.quantity || 1),
+    stock: matchedVariant.stock,
+  }
+}
+
+const hydrateCart = async () => {
+  const shouldShowLoading = hydratedItems.value.length === 0
+  if (shouldShowLoading) {
+    loading.value = true
+  }
+
+  try {
+    const items = cartItems.value
+    if (!items.length) {
+      hydratedItems.value = []
+      return
+    }
+
+    const uniqueProductIds = [...new Set(items.map((item) => item.productId))]
+    const productResponses = await Promise.all(
+      uniqueProductIds.map(async (productId) => {
+        const response = await getProductDetail(productId)
+        return { productId, data: response.data }
+      })
+    )
+
+    const responseMap = new Map(productResponses.map((entry) => [String(entry.productId), entry.data]))
+    hydratedItems.value = items
+      .map((cartItem) => normalizeProduct(responseMap.get(String(cartItem.productId)), cartItem))
+      .filter(Boolean)
+  } catch {
+    if (hydratedItems.value.length === 0) {
+      hydratedItems.value = []
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+const summary = computed(() => {
+  const subtotal = hydratedItems.value.reduce((total, item) => total + Number(item.price || 0) * Number(item.quantity || 0), 0)
+  return {
+    subtotal,
+    total: subtotal,
+  }
+})
+
+watch(cartItems, hydrateCart, { deep: true })
+onMounted(hydrateCart)
+
+useCatalogRealtime(hydrateCart)
 </script>
