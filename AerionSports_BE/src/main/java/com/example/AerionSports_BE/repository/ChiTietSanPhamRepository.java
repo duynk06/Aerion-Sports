@@ -69,4 +69,59 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "(:keyword IS NULL OR LOWER(c.maCtsp) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(sp.maSanPham) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(sp.tenSanPham) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
             "ORDER BY c.id DESC")
     List<ChiTietSanPham> searchActiveProducts(@Param("keyword") String keyword);
+
+    @EntityGraph(attributePaths = {
+            "idSanPham",
+            "idMauSac",
+            "idTrongLuong",
+            "hinhAnhs"
+    })
+    @Query("""
+    SELECT ct
+    FROM ChiTietSanPham ct
+    WHERE
+    (:keyword IS NULL
+    OR LOWER(ct.idSanPham.tenSanPham)
+    LIKE LOWER(CONCAT('%',:keyword,'%')))
+
+    AND (:idMauSac IS NULL
+    OR ct.idMauSac.id=:idMauSac)
+
+    AND (:idTrongLuong IS NULL
+    OR ct.idTrongLuong.id=:idTrongLuong)
+
+    AND (:giaMin IS NULL
+    OR ct.giaBan>=:giaMin)
+
+    AND (:giaMax IS NULL
+    OR ct.giaBan<=:giaMax)
+
+    AND (
+    :trangThai IS NULL
+    OR
+    (:trangThai=1 AND ct.soLuong>0)
+    OR
+    (:trangThai=0 AND ct.soLuong=0)
+    )
+    """)
+    Page<ChiTietSanPham> locSanPham(
+            String keyword,
+            Integer idMauSac,
+            Integer idTrongLuong,
+            BigDecimal giaMin,
+            BigDecimal giaMax,
+            Integer trangThai,
+            Pageable pageable
+    );
+    @Query("""
+SELECT MIN(ct.giaBan)
+FROM ChiTietSanPham ct
+""")
+    BigDecimal getGiaMin();
+
+    @Query("""
+SELECT MAX(ct.giaBan)
+FROM ChiTietSanPham ct
+""")
+    BigDecimal getGiaMax();
 }

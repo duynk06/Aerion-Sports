@@ -17,7 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/chi-tiet-san-pham")
 @CrossOrigin("*")
-public class ChiTietSanPhamController {
+public class  ChiTietSanPhamController {
 
     @Autowired
     private ChiTietSanPhamService service;

@@ -33,7 +33,7 @@ public class ThanhToan {
     @JoinColumn(name = "id_hoa_don", nullable = false)
     private HoaDon hoaDon;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_hinh_thuc_thanh_toan", nullable = false)
     private PhuongThucThanhToan hinhThucThanhToan;
 
@@ -60,4 +60,10 @@ public class ThanhToan {
 
     @Column(name = "trang_thai")
     private Integer trangThai = 1;
+
+    @Column(name = "tien_khach_dua", precision = 18, scale = 2)
+    private BigDecimal tienKhachDua;
+
+    @Column(name = "tien_thua", precision = 18, scale = 2)
+    private BigDecimal tienThua;
 }
