@@ -22,7 +22,7 @@ import {
 import {
   getLichSuHoaDon
 } from '@/service/ChiTietHoaDonService'
-
+import { chuyenTrangThaiHoaDon } from '@/service/HoaDonService'
 const formatCurrency = (value) => {
   if (!value) return '0 đ'
 
@@ -244,12 +244,8 @@ const loadHoaDon = async () => {
     const response = await getHoaDonById(idHoaDon)
     hoaDon.value = response
 
-    // Sửa lại logic so sánh số 0 (Tại quầy)
-    if (response.loaiHoaDon === 0) { 
-      currentStatus.value = 5
-    } else {
-      currentStatus.value = response.trangThai
-    }
+    // Cập nhật: Bỏ ép cứng giá trị 5 cho đơn tại quầy để lấy đúng trạng thái (0, 5, hoặc 6)
+    currentStatus.value = response.trangThai
   } catch (error) {
     console.error(error)
   }
@@ -284,93 +280,99 @@ const onlineSteps = [
   { value: 5, label: 'Đã hoàn thành', icon: 'fa-flag-checkered' }
 ]
 const orderSteps = computed(() => {
+  // Trạng thái hiện tại
+  const status = currentStatus.value
 
-// Đơn tại quầy
-if (isTaiQuay.value) {
-  return [
-    {
-      value: 5,
-      label: 'Đã hoàn thành',
-      icon: 'fa-flag-checkered'
+  // Đơn tại quầy
+  if (isTaiQuay.value) {
+    if (status === 0) {
+      return [
+        { value: 0, label: 'Chờ xác nhận', icon: 'fa-hourglass-start' }
+      ]
+    } else if (status === 6) {
+      return [
+        { value: 6, label: 'Đã huỷ', icon: 'fa-ban' }
+      ]
+    } else {
+      // Mặc định hoặc trạng thái 5
+      return [
+        { value: 5, label: 'Đã hoàn thành', icon: 'fa-flag-checkered' }
+      ]
     }
-  ]
-}
+  }
 
-// Trạng thái hiện tại
-const status = currentStatus.value
+  // Trạng thái trước khi huỷ
+  const previousStatus =
+    lichSuList.value.find(
+      x => x.trangThaiMoi === 7
+    )?.trangThaiCu ?? 0
 
-// Trạng thái trước khi huỷ
-const previousStatus =
-  lichSuList.value.find(
-    x => x.trangThaiMoi === 7
-  )?.trangThaiCu ?? 0
+  // Đơn online bình thường
+  if (![6, 7, 8].includes(status)) {
+    return onlineSteps.filter(
+      step => step.value >= 0 && step.value <= 5
+    )
+  }
 
-// Đơn online bình thường
-if (![6, 7, 8].includes(status)) {
-  return onlineSteps.filter(
-    step => step.value >= 0 && step.value <= 5
-  )
-}
+  // Yêu cầu huỷ
+  if (status === 7) {
+    return [
+      ...onlineSteps.filter(
+        step =>
+          step.value >= 0 &&
+          step.value <= previousStatus
+      ),
+      {
+        value: 7,
+        label: 'Yêu cầu huỷ',
+        icon: 'fa-triangle-exclamation'
+      }
+    ]
+  }
 
-// Yêu cầu huỷ
-if (status === 7) {
-  return [
-    ...onlineSteps.filter(
-      step =>
-        step.value >= 0 &&
-        step.value <= previousStatus
-    ),
-    {
-      value: 7,
-      label: 'Yêu cầu huỷ',
-      icon: 'fa-triangle-exclamation'
-    }
-  ]
-}
+  // Đã huỷ
+  if (status === 6) {
+    return [
+      ...onlineSteps.filter(
+        step =>
+          step.value >= 0 &&
+          step.value <= previousStatus
+      ),
+      {
+        value: 7,
+        label: 'Yêu cầu huỷ',
+        icon: 'fa-triangle-exclamation'
+      },
+      {
+        value: 6,
+        label: 'Đã huỷ',
+        icon: 'fa-ban'
+      }
+    ]
+  }
 
-// Đã huỷ
-if (status === 6) {
-  return [
-    ...onlineSteps.filter(
-      step =>
-        step.value >= 0 &&
-        step.value <= previousStatus
-    ),
-    {
-      value: 7,
-      label: 'Yêu cầu huỷ',
-      icon: 'fa-triangle-exclamation'
-    },
-    {
-      value: 6,
-      label: 'Đã huỷ',
-      icon: 'fa-ban'
-    }
-  ]
-}
+  // Đã hoàn tiền
+  if (status === 8) {
+    return [
+      ...onlineSteps.filter(
+        step =>
+          step.value >= 0 &&
+          step.value <= previousStatus
+      ),
+      {
+        value: 7,
+        label: 'Yêu cầu huỷ',
+        icon: 'fa-triangle-exclamation'
+      },
+      {
+        value: 8,
+        label: 'Đã hoàn tiền',
+        icon: 'fa-money-bill-transfer'
+      }
+    ]
+  }
 
-// Đã hoàn tiền
-if (status === 8) {
-  return [
-    ...onlineSteps.filter(
-      step =>
-        step.value >= 0 &&
-        step.value <= previousStatus
-    ),
-    {
-      value: 7,
-      label: 'Yêu cầu huỷ',
-      icon: 'fa-triangle-exclamation'
-    },
-    {
-      value: 8,
-      label: 'Đã hoàn tiền',
-      icon: 'fa-money-bill-transfer'
-    }
-  ]
-}
-
-return []
+  return []
 })
 const isStepActive = (stepValue) => {
 
@@ -521,6 +523,90 @@ await loadLichSuThanhToan()
 await loadChiTietHoaDon()
 
 })
+const ghiChu = ref('')
+
+// Computed: trạng thái tiếp theo dựa theo loại đơn và trạng thái hiện tại
+const nextStatus = computed(() => {
+    const status = currentStatus.value
+    const loai = hoaDon.value?.loaiHoaDon
+
+    if (status === 5 || status === 6) return null // Không thể chuyển tiếp
+
+    // Đơn tại quầy: chỉ có 0 → 5
+    if (loai === 0) {
+        if (status === 0) return 5
+        return null
+    }
+
+    // Đơn online: tiến tuần tự 0→1→2→3→4→5
+    if (status < 5) return status + 1
+
+    return null
+})
+
+// Danh sách các trạng thái có thể chuyển tới (để hiện select)
+const danhSachTrangThaiCoTheChon = computed(() => {
+    const status = currentStatus.value
+    const loai = hoaDon.value?.loaiHoaDon
+
+    if (status === 5 || status === 6) return []
+
+    const options = []
+
+    // Luôn có thể hủy (trừ khi đã hoàn thành/hủy)
+    if (status !== 5 && status !== 6) {
+        options.push({ value: 6, label: 'Đã hủy' })
+    }
+
+    // Bước tiếp theo
+    if (loai === 0 && status === 0) {
+        options.unshift({ value: 5, label: 'Đã hoàn thành' })
+    } else if (loai !== 0 && status < 5) {
+        options.unshift({ value: status + 1, label: getTrangThaiText(status + 1) })
+    }
+
+    return options
+})
+
+// Trạng thái được chọn trong modal
+const selectedNextStatus = ref(null)
+
+// Khi mở modal → tự set mặc định là bước tiếp theo
+watch(showChangeStatusModal, (val) => {
+    if (val) {
+        selectedNextStatus.value = nextStatus.value
+        ghiChu.value = ''
+    }
+})
+
+// Hàm thực hiện chuyển trạng thái
+const changeStatus = async () => {
+    if (selectedNextStatus.value === null) {
+        alert('Không có trạng thái tiếp theo!')
+        return
+    }
+
+    try {
+        await chuyenTrangThaiHoaDon(
+            idHoaDon,
+            selectedNextStatus.value,
+            ghiChu.value
+        )
+
+        // Cập nhật UI
+        currentStatus.value = selectedNextStatus.value
+        showChangeStatusModal.value = false
+        ghiChu.value = ''
+
+        // Reload lịch sử
+        await loadLichSuHoaDon()
+        await loadHoaDon()
+
+        alert('Chuyển trạng thái thành công!')
+    } catch (error) {
+        alert(error.message || 'Lỗi chuyển trạng thái!')
+    }
+}
 </script>
 <template>
   <MainLayout title="Chi tiết hóa đơn">
@@ -679,12 +765,12 @@ await loadChiTietHoaDon()
 
   <div class="info-row">
   <label>Họ tên:</label>
-  <span>{{ hoaDon.tenNguoiNhan }}</span>
+  <span>{{ hoaDon.tenKhachHang }}</span>
 </div>
 
 <div class="info-row">
   <label>SĐT:</label>
-  <span>{{ hoaDon.sdtNguoiNhan }}</span>
+  <span>{{ hoaDon.sdtKhachHang }}</span>
 </div>
 
 <div class="info-row">
@@ -702,7 +788,7 @@ await loadChiTietHoaDon()
   </div>
   <div class="info-row">
   <label>Địa chỉ:</label>
-  <span>{{ hoaDon.diaChiNhan }}</span>
+  <span>{{ hoaDon.diaChiMacDinhKhachHang}}</span>
 </div>
 
 <div class="info-row">
@@ -1012,104 +1098,123 @@ await loadChiTietHoaDon()
   </div>
   
 </div>
-<div
-  v-if="showChangeStatusModal"
-  class="modal-overlay"
-  @click.self="showChangeStatusModal = false"
->
-  <div class="status-modal">
+<div v-if="showChangeStatusModal" class="modal-overlay"
+     @click.self="showChangeStatusModal = false">
+    <div class="status-modal">
 
-    <div class="modal-header">
-      <h3>
-        <i class="fa-solid fa-arrows-rotate"></i>
-        Chuyển trạng thái đơn hàng
-      </h3>
-
-      <button
-        class="close-btn"
-        @click="showChangeStatusModal = false"
-      >
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-    </div>
-
-    <div class="modal-body">
-
-     <div>
-  <label>Hóa đơn:</label>&nbsp;
-  <span>{{ hoaDon.maHoaDon }}</span>
-</div>
-
-      <br>
-      <div class="form-group">
-        <label>Ghi chú</label>
-
-        <textarea
-          v-model="ghiChu"
-          rows="3"
-          placeholder="Nhập ghi chú..."
-        />
-      </div>
-
-      <div class="status-preview">
-
-        <span>Chuyển trạng thái:</span>
-
-        <span class="status-old">
-          {{ getTrangThaiText(currentStatus) }}
-        </span>
-
-        <i class="fa-solid fa-arrow-right"></i>
-
-        <span class="status-new">
-          {{ getTrangThaiText(nextStatus) }}
-        </span>
-
-      </div>
-
-      <div class="status-flow">
-
-        <span>Trạng thái hiện tại</span>
-
-        <div class="status-box old">
-          {{ getTrangThaiText(currentStatus) }}
+        <div class="modal-header">
+            <h3>
+                <i class="fa-solid fa-arrows-rotate"></i>
+                Chuyển trạng thái đơn hàng
+            </h3>
+            <button class="close-btn" @click="showChangeStatusModal = false">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
         </div>
 
-        <i class="fa-solid fa-arrow-right"></i>
+        <div class="modal-body">
 
-        <span>Trạng thái mới</span>
+            <!-- Thông tin hóa đơn -->
+            <div style="display: flex; gap: 24px; margin-bottom: 16px;">
+                <div>
+                    <label style="font-size: 12px; color: #888;">Mã hóa đơn</label>
+                    <div style="font-weight: 600;">{{ hoaDon.maHoaDon }}</div>
+                </div>
+                <div>
+                    <label style="font-size: 12px; color: #888;">Ngày tạo</label>
+                    <div style="font-weight: 600;">
+                        {{ hoaDon.ngayTao
+                            ? new Date(hoaDon.ngayTao).toLocaleString('vi-VN')
+                            : '' }}
+                    </div>
+                </div>
+            </div>
 
-        <div class="status-box new">
-          {{ getTrangThaiText(nextStatus) }}
+            <!-- Trạng thái hiện tại → mới -->
+            <div class="status-flow" style="display: flex; align-items: center;
+                 gap: 12px; padding: 12px; background: #f9fafb;
+                 border-radius: 8px; margin-bottom: 16px;">
+                <div>
+                    <div style="font-size: 11px; color: #888; margin-bottom: 4px;">
+                        Trạng thái hiện tại
+                    </div>
+                    <div class="status-box old"
+                         style="padding: 6px 12px; border-radius: 6px;
+                                background: #fee2e2; color: #b91c1c;
+                                font-weight: 600; font-size: 13px;">
+                        {{ getTrangThaiText(currentStatus) }}
+                    </div>
+                </div>
+
+                <i class="fa-solid fa-arrow-right"
+                   style="color: #888; font-size: 18px; margin-top: 14px;"></i>
+
+                <div>
+                    <div style="font-size: 11px; color: #888; margin-bottom: 4px;">
+                        Chuyển sang
+                    </div>
+                    <select
+                        v-model="selectedNextStatus"
+                        style="padding: 6px 12px; border-radius: 6px;
+                               border: 1px solid #d1d5db; font-size: 13px;
+                               font-weight: 600; color: #065f46;
+                               background: #d1fae5; cursor: pointer;"
+                    >
+                        <option
+                            v-for="opt in danhSachTrangThaiCoTheChon"
+                            :key="opt.value"
+                            :value="opt.value"
+                        >
+                            {{ opt.label }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Không thể chuyển -->
+            <div v-if="danhSachTrangThaiCoTheChon.length === 0"
+                 style="color: #888; font-size: 13px; text-align: center;
+                        padding: 12px; background: #f3f4f6; border-radius: 8px;">
+                Đơn hàng này không thể chuyển trạng thái nữa.
+            </div>
+
+            <!-- Ghi chú -->
+            <div class="form-group" v-if="danhSachTrangThaiCoTheChon.length > 0">
+                <label style="font-size: 13px; font-weight: 600;
+                              display: block; margin-bottom: 6px;">
+                    Ghi chú
+                </label>
+                <textarea
+                    v-model="ghiChu"
+                    rows="3"
+                    placeholder="Nhập ghi chú (không bắt buộc)..."
+                    style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px;
+                           padding: 8px 12px; font-size: 13px; resize: none;"
+                />
+            </div>
+
+            <p style="font-size: 12px; color: #f59e0b; margin-top: 8px;">
+                ⚠️ Hành động này sẽ cập nhật trạng thái và ghi nhận lịch sử thay đổi.
+            </p>
         </div>
 
-      </div>
-
-      <p class="warning-text">
-        Hành động này sẽ cập nhật trạng thái đơn hàng và ghi nhận lịch sử thay đổi.
-      </p>
-
-    </div>
-
-    <div class="modal-footer">
-
-      <button
-        class="btn-cancel"
-        @click="showChangeStatusModal = false"
-      >
-        Hủy
-      </button>
-
-      <button
-        class="btn-confirm"
-        @click="changeStatus"
-      >
-        Xác nhận
-      </button>
+        <div class="modal-footer"
+             style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 12px;">
+            <button class="btn-cancel" @click="showChangeStatusModal = false">
+                Hủy
+            </button>
+            <button
+                class="btn-confirm"
+                @click="changeStatus"
+                :disabled="danhSachTrangThaiCoTheChon.length === 0 || selectedNextStatus === null"
+                :style="danhSachTrangThaiCoTheChon.length === 0
+                    ? { opacity: 0.5, cursor: 'not-allowed' } : {}"
+            >
+                Xác nhận
+            </button>
+        </div>
 
     </div>
-
-  </div>
 </div>
 </template>
 

@@ -90,3 +90,18 @@ export const searchHoaDon = async (keyword) => {
   
     return await response.json()
   }
+  // HoaDonService.js — thêm hàm
+  export const chuyenTrangThaiHoaDon = async (id, trangThaiMoi, ghiChu = '') => {
+    const params = new URLSearchParams({ trangThaiMoi });
+    if (ghiChu) params.append('ghiChu', ghiChu);
+  
+    const response = await fetch(
+        `http://localhost:8080/hoa-don/${id}/chuyen-trang-thai?${params}`,
+        { method: 'PUT' }
+    );
+    if (!response.ok) {
+        const msg = await response.text();
+        throw new Error(msg);
+    }
+    return await response.json();
+  }
