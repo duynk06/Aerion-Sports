@@ -120,9 +120,10 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import ProductCard from '../../components/product/ProductCard.vue'
 import { HomeOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons-vue'
+import { useRoute } from 'vue-router'
 import { getProductsPage, resolveMediaUrl } from '../../services/api'
 import fallbackImage from '../../assets/mock_racket.png'
 import { useCatalogRealtime } from '../../composables/useCatalogRealtime'
@@ -146,6 +147,12 @@ const allProducts = ref([])
 const currentPage = ref(0)
 const sortKey = ref('newest')
 const pageSize = 200
+const route = useRoute()
+const sanitizeSearchKeyword = (value) =>
+  String(value || '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 
 const selectedBrands = ref([])
 const selectedPriceRanges = ref([])
@@ -184,6 +191,7 @@ const fetchProducts = async () => {
       page: 0,
       size: pageSize,
       trangThai: 1,
+      keyword: sanitizeSearchKeyword(typeof route.query.keyword === 'string' ? route.query.keyword : ''),
     })
 
     const payload = response.data
@@ -281,7 +289,14 @@ watch([selectedBrands, selectedPriceRanges, selectedWeightRanges, sortKey], () =
   currentPage.value = 0
 })
 
-onMounted(fetchProducts)
+watch(
+  () => route.query.keyword,
+  () => {
+    currentPage.value = 0
+    fetchProducts()
+  },
+  { immediate: true }
+)
 
 useCatalogRealtime(fetchProducts)
 </script>
