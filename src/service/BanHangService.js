@@ -252,3 +252,12 @@ export const kiemTraGiaSanPham = async (idHoaDon) => {
     if (!response.ok) return [];
     return await response.json();
 }
+
+// Thêm API tìm sản phẩm theo mã CTSP
+export const timSanPhamTheoMa = async (maCtsp) => {
+    const response = await fetch(
+        `http://localhost:8080/ban-hang/san-pham/tim-theo-ma?maCtsp=${encodeURIComponent(maCtsp)}`
+    );
+    if (!response.ok) throw new Error("Không tìm thấy sản phẩm với mã này!");
+    return await response.json();
+}

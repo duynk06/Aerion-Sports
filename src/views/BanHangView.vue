@@ -79,9 +79,20 @@
           <div class="section-header">
             <h3>Sản phẩm</h3>
             <div class="actions">
-              <button class="btn-outline" @click="showProductModal = true">+ Thêm sản phẩm</button>
-              
-            </div>
+    <button class="btn-outline" @click="showProductModal = true">+ Thêm sản phẩm</button>
+    
+    <!-- ✅ Nút quét QR mới -->
+    <button class="btn-outline" @click="moModalQuetQR"
+        style="display: flex; align-items: center; gap: 6px;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+             stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+            <path d="M14 14h3v3m0 4h4m-4 0v-4m-3 4h-1m1-4h-1v-1"/>
+        </svg>
+        Quét QR
+    </button>
+</div>
           </div>
 
           <table class="product-table">
@@ -875,6 +886,40 @@ bản ghi</span>
         </div>
     </div>
 </div>
+<!-- Modal Quét QR sản phẩm -->
+<div class="modal-overlay" v-if="showQrScanModal" @click.self="dongModalQuetQR">
+    <div class="modal-content" style="max-width: 420px;">
+        <div class="modal-header">
+            <h2>Quét mã QR sản phẩm</h2>
+            <button class="btn-close" @click="dongModalQuetQR">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor"
+                     stroke-width="2" fill="none">
+                    <path d="M18 6L6 18M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body" style="text-align: center; padding: 24px;">
+            <!-- Vùng camera quét QR -->
+            <div id="qr-reader"
+                 style="width: 100%; border-radius: 8px; overflow: hidden; border: 2px solid #f79b66;">
+            </div>
+            <p style="margin-top: 12px; color: #888; font-size: 13px;">
+                Hướng camera vào mã QR trên sản phẩm
+            </p>
+            <!-- Kết quả quét -->
+            <div v-if="qrScanKetQua"
+                 style="margin-top: 12px; padding: 10px; background: #f6ffed;
+                        border: 1px solid #b7eb8f; border-radius: 6px; font-size: 13px;">
+                ✅ Đã quét: <strong>{{ qrScanKetQua }}</strong>
+            </div>
+            <div v-if="qrScanLoi"
+                 style="margin-top: 12px; padding: 10px; background: #fff2f0;
+                        border: 1px solid #ffccc7; border-radius: 6px; font-size: 13px; color: #cf1322;">
+                ❌ {{ qrScanLoi }}
+            </div>
+        </div>
+    </div>
+</div>
   </MainLayout>
 </template>
 
@@ -901,10 +946,13 @@ getDiaChiKhachHang,
 getPhieuGiamGiaTotNhat,
 apDungPhieuGiamGia,
 boPhieuGiamGia,
-kiemTraGiaSanPham
+kiemTraGiaSanPham,
+timSanPhamTheoMa
 } from "../service/BanHangService"
+import { Html5Qrcode } from "html5-qrcode"
 
-
+const showQrScanModal = ref(false)
+let html5QrCode = null
 const KHACH_HANG_VANG_LAI = {
   id: 999, // Đổi sang 999 theo DB mới
   hoTen: "Khách hàng vãng lai",
@@ -932,6 +980,125 @@ const trangThai = ref(null)
 const phieuGiamGiaHienTai = ref(null)
 const totalElements = ref(0)
 let dangCapNhatSanPham = false
+const qrScanKetQua = ref('')
+const qrScanLoi = ref('')
+const moModalQuetQR = async () => {
+    if (!activeHoaDon.value) {
+        showThongBao("Vui lòng chọn hoặc tạo hóa đơn trước!", 'error');
+        return;
+    }
+    qrScanKetQua.value = '';
+    qrScanLoi.value = '';
+    showQrScanModal.value = true;
+
+    // Đợi DOM render xong mới khởi động camera
+    await nextTick();
+
+    html5QrCode = new Html5Qrcode("qr-reader");
+
+    try {
+        await html5QrCode.start(
+            { facingMode: "environment" },  // dùng camera sau
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            async (decodedText) => {
+                // ✅ Quét thành công — dừng camera ngay
+                await html5QrCode.stop();
+                qrScanKetQua.value = decodedText;
+                await xuLyQrQuetDuoc(decodedText);
+            },
+            () => {} // bỏ qua lỗi frame không đọc được
+        );
+    } catch (err) {
+        qrScanLoi.value = "Không thể truy cập camera. Vui lòng kiểm tra quyền!";
+        console.error(err);
+    }
+}
+
+const dongModalQuetQR = async () => {
+    if (html5QrCode) {
+        try {
+            const state = html5QrCode.getState();
+            // 2 = SCANNING, dừng nếu đang chạy
+            if (state === 2) await html5QrCode.stop();
+        } catch (e) {
+            // ignore
+        }
+        html5QrCode = null;
+    }
+    showQrScanModal.value = false;
+    qrScanKetQua.value = '';
+    qrScanLoi.value = '';
+}
+
+const xuLyQrQuetDuoc = async (maCtsp) => {
+    try {
+        // Tìm sản phẩm theo mã CTSP
+        const sanPham = await timSanPhamTheoMa(maCtsp);
+
+        if (!sanPham) {
+            qrScanLoi.value = `Không tìm thấy sản phẩm với mã: ${maCtsp}`;
+            return;
+        }
+
+        if (sanPham.soLuongTon <= 0) {
+            qrScanLoi.value = `Sản phẩm ${maCtsp} đã hết hàng!`;
+            return;
+        }
+
+        // Thêm vào hóa đơn
+        const payload = {
+            idHoaDon: activeHoaDon.value,
+            idSanPhamChiTiet: sanPham.id,
+            soLuong: 1,
+            donGia: sanPham.gia
+        };
+
+        const response = await themChiTietHoaDon(payload);
+
+        dangCapNhatSanPham = true;
+        chiTietHoaDonHienTai.value = [...(response.sanPham || [])];
+
+        const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
+        if (index !== -1) {
+            hoaDonCho.value[index].chiTietHoaDon = [...(response.sanPham || [])];
+            hoaDonCho.value[index].tongTienHang = response.tongTienHang;
+        }
+
+        await nextTick();
+        dangCapNhatSanPham = false;
+
+        await loadData();
+        await kiemTraGia();
+
+        // Đóng modal sau khi thêm thành công
+        showQrScanModal.value = false;
+        qrScanKetQua.value = '';
+        qrScanLoi.value = '';
+        showThongBao(`Đã thêm ${sanPham.ten || maCtsp} vào hóa đơn!`, 'success');
+
+    } catch (error) {
+        dangCapNhatSanPham = false;
+        qrScanLoi.value = error.message || `Không tìm thấy sản phẩm: ${maCtsp}`;
+        // Khởi động lại camera để quét tiếp nếu có lỗi
+        if (html5QrCode) {
+            try {
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    async (decodedText) => {
+                        await html5QrCode.stop();
+                        qrScanKetQua.value = decodedText;
+                        qrScanLoi.value = '';
+                        await xuLyQrQuetDuoc(decodedText);
+                    },
+                    () => {}
+                );
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }
+}
 const taoHoaDon = async () => {
     if (hoaDonCho.value.length >= 5) {
         alert("Đã đạt tối đa 5 hóa đơn chờ. Vui lòng hoàn tất hoặc hủy bớt hóa đơn!");
