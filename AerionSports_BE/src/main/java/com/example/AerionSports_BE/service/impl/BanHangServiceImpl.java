@@ -1,6 +1,7 @@
 package com.example.AerionSports_BE.service.impl;
 
 import com.example.AerionSports_BE.dto.ChiTietEmailDTO;
+import com.example.AerionSports_BE.dto.SanPhamPosDTO;
 import com.example.AerionSports_BE.dto.request.ThanhToanRequest;
 import com.example.AerionSports_BE.dto.request.ThemSanPhamRequest;
 import com.example.AerionSports_BE.dto.response.*;
@@ -690,20 +691,49 @@ public class BanHangServiceImpl implements BanHangService {
                     BigDecimal giaCu = cthd.getDonGia();
                     boolean daThayDoi = giaMoi.compareTo(giaCu) != 0;
 
-                    return new KiemTraGiaResponse(
+                    KiemTraGiaResponse res = new KiemTraGiaResponse(
                             cthd.getId(),
                             spct.getMaCtsp(),
                             giaCu,
                             giaMoi,
-                            daThayDoi
+                            daThayDoi,
+                            spct.getTrangThai() == 1   // ✅ field trangThai đúng chỗ
                     );
+                    return res;
                 })
                 .collect(Collectors.toList());
     }
-    public SanPhamPosResponse timSanPhamTheoMa(String maCtsp) {
-        ChiTietSanPham ctsp = chiTietSanPhamRepository
-                .findByMaCtsp(maCtsp)
+
+    // BanHangServiceImpl.java
+    @Override
+    @Transactional(readOnly = true)   // ✅ Giữ session để load lazy entities
+    public SanPhamPosDTO timSanPhamTheoMa(String maCtsp) {
+        ChiTietSanPham ctsp = chiTietSanPhamRepository.findByMaCtsp(maCtsp)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm: " + maCtsp));
-        return new SanPhamPosResponse(ctsp); // dùng lại DTO hiện có
+
+        if (ctsp.getTrangThai() != 1) {
+            throw new RuntimeException("Sản phẩm này đã ngừng kinh doanh!");
+        }
+
+        SanPhamPosDTO dto = new SanPhamPosDTO();
+        dto.setId(ctsp.getId());
+        dto.setMa(ctsp.getMaCtsp());
+        dto.setTen(ctsp.getIdSanPham().getTenSanPham());    // ✅ lazy load an toàn trong @Transactional
+        dto.setMauSac(ctsp.getIdMauSac() != null
+                ? ctsp.getIdMauSac().getTenMauSac() : "");
+        dto.setTrongLuong(ctsp.getIdTrongLuong() != null
+                ? ctsp.getIdTrongLuong().getTenTrongLuong() : "");
+        dto.setGia(ctsp.getGiaBan());
+        dto.setSoLuongTon(ctsp.getSoLuong());
+
+        // Lấy ảnh chính
+        if (ctsp.getHinhAnhs() != null) {
+            ctsp.getHinhAnhs().stream()
+                    .filter(h -> Boolean.TRUE.equals(h.getLaAnhChinh()))
+                    .findFirst()
+                    .ifPresent(h -> dto.setAnh("http://localhost:8080" + h.getDuongDanAnh()));
+        }
+
+        return dto;
     }
 }

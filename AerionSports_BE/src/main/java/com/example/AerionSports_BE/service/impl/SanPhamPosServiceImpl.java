@@ -7,6 +7,7 @@ import com.example.AerionSports_BE.service.SanPhamPosService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,29 +20,26 @@ public class SanPhamPosServiceImpl
 
     private final ChiTietSanPhamRepository chiTietSanPhamRepository;
 
+    // SanPhamPosServiceImpl.java — sửa query
     @Override
     public Page<SanPhamPosResponse> locSanPham(
-            String keyword,
-            Integer idMauSac,
-            Integer idTrongLuong,
-            BigDecimal giaMin,
-            BigDecimal giaMax,
-            Integer trangThai,
-            int page,
-            int size
-    ) {
+            String keyword, Integer idMauSac, Integer idTrongLuong,
+            BigDecimal giaMin, BigDecimal giaMax, Integer trangThai,
+            int page, int size) {
 
-        return chiTietSanPhamRepository
-                .locSanPham(
-                        keyword,
-                        idMauSac,
-                        idTrongLuong,
-                        giaMin,
-                        giaMax,
-                        trangThai,
-                        PageRequest.of(page,size)
-                )
-                .map(SanPhamPosResponse::new);
+        // ✅ Luôn chỉ lấy trangThai = 1 (hoạt động)
+        // Nếu caller truyền trangThai=null thì mặc định = 1
+        // Nếu caller truyền trangThai=0 (hết hàng) thì lấy soLuong=0 nhưng vẫn phải trangThai=1
+        Integer trangThaiFilter = 1; // ✅ Luôn cố định = 1
+
+        Pageable pageable = PageRequest.of(page, size);
+        return chiTietSanPhamRepository.locSanPhamPos(
+                keyword, idMauSac, idTrongLuong,
+                giaMin, giaMax,
+                trangThai,         // ← tồn kho filter (null/0/1)
+                trangThaiFilter,   // ← trangThai CTSP luôn = 1
+                pageable
+        ).map(SanPhamPosResponse::new);
     }
     @Override
     public Map<String, BigDecimal> getKhoangGia() {

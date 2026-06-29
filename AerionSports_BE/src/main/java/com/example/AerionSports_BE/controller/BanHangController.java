@@ -1,10 +1,13 @@
 package com.example.AerionSports_BE.controller;
 
+import com.example.AerionSports_BE.dto.SanPhamPosDTO;
 import com.example.AerionSports_BE.dto.request.ThanhToanRequest;
 import com.example.AerionSports_BE.dto.request.ThemSanPhamRequest;
 import com.example.AerionSports_BE.dto.response.BanHangResponse;
 import com.example.AerionSports_BE.dto.response.KhachHangPosResponse;
 import com.example.AerionSports_BE.dto.response.SanPhamPosResponse;
+import com.example.AerionSports_BE.entity.ChiTietSanPham;
+import com.example.AerionSports_BE.repository.ChiTietSanPhamRepository;
 import com.example.AerionSports_BE.service.BanHangService;
 import com.example.AerionSports_BE.service.KhachHangPosService;
 import com.example.AerionSports_BE.service.SanPhamPosService;
@@ -28,6 +31,7 @@ public class BanHangController {
     private final
     SanPhamPosService sanPhamPosService;
     private final KhachHangPosService khachHangPosService;
+
     @PostMapping("/tao-hoa-don")
     public ResponseEntity<BanHangResponse> taoHoaDon(){
 
@@ -225,11 +229,12 @@ public class BanHangController {
     public ResponseEntity<?> kiemTraGia(@PathVariable Integer id) {
         return ResponseEntity.ok(banHangService.kiemTraGiaThayDoi(id));
     }
+    // BanHangController.java
+    // BanHangController.java — sửa endpoint timSanPhamTheoMa
     @GetMapping("/san-pham/tim-theo-ma")
     public ResponseEntity<?> timSanPhamTheoMa(@RequestParam String maCtsp) {
         try {
-            SanPhamPosResponse sp = banHangService.timSanPhamTheoMa(maCtsp);
-            return ResponseEntity.ok(sp);
+            return ResponseEntity.ok(banHangService.timSanPhamTheoMa(maCtsp));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

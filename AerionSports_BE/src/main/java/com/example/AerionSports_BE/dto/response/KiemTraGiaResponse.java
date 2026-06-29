@@ -17,4 +17,6 @@ public class KiemTraGiaResponse {
     private BigDecimal giaCu;         // giá đang lưu trong hóa đơn
     private BigDecimal giaMoi;        // giá hiện tại của sản phẩm
     private boolean daThayDoi;
+    // KiemTraGiaResponse.java — thêm field
+    private Boolean trangThai; // true = hoạt động, false = ngừng
 }

@@ -1,5 +1,6 @@
 package com.example.AerionSports_BE.service;
 
+import com.example.AerionSports_BE.dto.SanPhamPosDTO;
 import com.example.AerionSports_BE.dto.request.ThanhToanRequest;
 import com.example.AerionSports_BE.dto.request.ThemSanPhamRequest;
 import com.example.AerionSports_BE.dto.response.*;
@@ -40,5 +41,6 @@ public interface BanHangService {
     BanHangResponse apDungPhieuGiamGia(Integer idHoaDon, Integer idPhieuGiamGia);
     BanHangResponse boPhieuGiamGia(Integer idHoaDon);
     List<KiemTraGiaResponse> kiemTraGiaThayDoi(Integer idHoaDon);
-    SanPhamPosResponse timSanPhamTheoMa(String maCtsp);
+    // BanHangService.java — thêm method
+    SanPhamPosDTO timSanPhamTheoMa(String maCtsp);
 }
