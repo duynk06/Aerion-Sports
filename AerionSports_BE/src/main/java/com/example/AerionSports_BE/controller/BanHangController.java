@@ -225,4 +225,13 @@ public class BanHangController {
     public ResponseEntity<?> kiemTraGia(@PathVariable Integer id) {
         return ResponseEntity.ok(banHangService.kiemTraGiaThayDoi(id));
     }
+    @GetMapping("/san-pham/tim-theo-ma")
+    public ResponseEntity<?> timSanPhamTheoMa(@RequestParam String maCtsp) {
+        try {
+            SanPhamPosResponse sp = banHangService.timSanPhamTheoMa(maCtsp);
+            return ResponseEntity.ok(sp);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

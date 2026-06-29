@@ -2,10 +2,7 @@ package com.example.AerionSports_BE.service;
 
 import com.example.AerionSports_BE.dto.request.ThanhToanRequest;
 import com.example.AerionSports_BE.dto.request.ThemSanPhamRequest;
-import com.example.AerionSports_BE.dto.response.BanHangResponse;
-import com.example.AerionSports_BE.dto.response.DiaChiKhachHangResponse;
-import com.example.AerionSports_BE.dto.response.KiemTraGiaResponse;
-import com.example.AerionSports_BE.dto.response.PhieuGiamGiaPosResponse;
+import com.example.AerionSports_BE.dto.response.*;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -43,4 +40,5 @@ public interface BanHangService {
     BanHangResponse apDungPhieuGiamGia(Integer idHoaDon, Integer idPhieuGiamGia);
     BanHangResponse boPhieuGiamGia(Integer idHoaDon);
     List<KiemTraGiaResponse> kiemTraGiaThayDoi(Integer idHoaDon);
+    SanPhamPosResponse timSanPhamTheoMa(String maCtsp);
 }

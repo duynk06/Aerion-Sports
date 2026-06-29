@@ -3,10 +3,7 @@ package com.example.AerionSports_BE.service.impl;
 import com.example.AerionSports_BE.dto.ChiTietEmailDTO;
 import com.example.AerionSports_BE.dto.request.ThanhToanRequest;
 import com.example.AerionSports_BE.dto.request.ThemSanPhamRequest;
-import com.example.AerionSports_BE.dto.response.BanHangResponse;
-import com.example.AerionSports_BE.dto.response.DiaChiKhachHangResponse;
-import com.example.AerionSports_BE.dto.response.KiemTraGiaResponse;
-import com.example.AerionSports_BE.dto.response.PhieuGiamGiaPosResponse;
+import com.example.AerionSports_BE.dto.response.*;
 import com.example.AerionSports_BE.entity.*;
 import com.example.AerionSports_BE.repository.*;
 import com.example.AerionSports_BE.service.BanHangService;
@@ -702,5 +699,11 @@ public class BanHangServiceImpl implements BanHangService {
                     );
                 })
                 .collect(Collectors.toList());
+    }
+    public SanPhamPosResponse timSanPhamTheoMa(String maCtsp) {
+        ChiTietSanPham ctsp = chiTietSanPhamRepository
+                .findByMaCtsp(maCtsp)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm: " + maCtsp));
+        return new SanPhamPosResponse(ctsp); // dùng lại DTO hiện có
     }
 }

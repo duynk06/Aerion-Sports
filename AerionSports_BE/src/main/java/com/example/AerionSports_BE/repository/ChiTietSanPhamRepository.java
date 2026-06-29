@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, Integer> {
@@ -124,4 +125,5 @@ SELECT MAX(ct.giaBan)
 FROM ChiTietSanPham ct
 """)
     BigDecimal getGiaMax();
+
 }
