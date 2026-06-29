@@ -74,6 +74,16 @@
           <span>Nhân viên</span>
         </router-link>
 
+        <router-link to="/giao-ca" class="item">
+          <i class="fa-solid fa-business-time"></i>
+          <span>Giao ca</span>
+        </router-link>
+
+        <router-link to="/lich-lam-viec" class="item">
+          <i class="fa-solid fa-calendar-days"></i>
+          <span>Lịch làm việc</span>
+        </router-link>
+
         <router-link to="/khach-hang" class="item">
           <i class="fa-solid fa-users"></i>
           <span>Khách hàng</span>
@@ -139,7 +149,6 @@ defineProps({
 
 const showMenu = ref(false)
 
-// Khai báo các trạng thái đóng mở menu phụ lồng nhau
 const isSanPhamOpen = ref(false)
 const isThuocTinhOpen = ref(false)
 </script>
@@ -187,7 +196,6 @@ const isThuocTinhOpen = ref(false)
   gap:6px;
 }
 
-/* Định dạng CSS item chung cho cả liên kết thẳng và nút bấm dropdown cha */
 .item, .item-toggle-header {
   display:flex;
   align-items:center;
@@ -212,13 +220,11 @@ const isThuocTinhOpen = ref(false)
   background:#fff8f3;
 }
 
-/* Đánh dấu màu khi kích hoạt router link chính xác */
 .item.router-link-active {
   background:#fff4ed;
   color:#d87d4a;
 }
 
-/* Kiểu định dạng bổ sung cho nút cha khi menu đang mở rộng */
 .active-parent {
   color: #d87d4a;
   background: #fffbf7;
@@ -230,7 +236,6 @@ const isThuocTinhOpen = ref(false)
   color: #9ca3af;
 }
 
-/* Khối hộp submenu bọc danh sách liên kết con thụt lề */
 .submenu-container {
   display: flex;
   flex-direction: column;
@@ -257,7 +262,6 @@ const isThuocTinhOpen = ref(false)
   color: #d87d4a;
 }
 
-/* Giữ trạng thái sáng màu cam khi đang đứng ở trang con */
 .sub-item.router-link-active {
   background-color: #fff4ed;
   color: #d87d4a;

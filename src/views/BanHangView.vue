@@ -924,955 +924,677 @@ bản ghi</span>
 </template>
 
 <script setup>
-import { ref, onMounted,nextTick, onUnmounted, watch, computed } from "vue"
+import { ref, onMounted, nextTick, onUnmounted, watch, computed } from "vue"
 import MainLayout from "../layouts/MainLayout.vue"
 import {
-taoHoaDonCho,
-getSanPham,
-getMauSac,
-getTrongLuong,
-getKhoangGia,
-getKhachHangPos,
-updateKhachHangHoaDon,
-themChiTietHoaDon,
-capNhatSoLuong,
-getHoaDonCho,
-huyHoaDon,
-xoaChiTietHoaDon,
-thanhToanHoaDon,
-capNhatLoaiHoaDon,
-capNhatPhiVanChuyen,
-getDiaChiKhachHang,
-getPhieuGiamGiaTotNhat,
-apDungPhieuGiamGia,
-boPhieuGiamGia,
-kiemTraGiaSanPham,
-timSanPhamTheoMa
+  taoHoaDonCho,
+  getSanPham,
+  getMauSac,
+  getTrongLuong,
+  getKhoangGia,
+  getKhachHangPos,
+  updateKhachHangHoaDon,
+  themChiTietHoaDon,
+  capNhatSoLuong,
+  getHoaDonCho,
+  huyHoaDon,
+  xoaChiTietHoaDon,
+  thanhToanHoaDon,
+  capNhatLoaiHoaDon,
+  capNhatPhiVanChuyen,
+  getDiaChiKhachHang,
+  getPhieuGiamGiaTotNhat,
+  apDungPhieuGiamGia,
+  boPhieuGiamGia,
+  kiemTraGiaSanPham,
+  timSanPhamTheoMa
 } from "../service/BanHangService"
 import { Html5Qrcode } from "html5-qrcode"
 
-const showQrScanModal = ref(false)
-let html5QrCode = null
+// --- CONSTANTS ---
 const KHACH_HANG_VANG_LAI = {
-  id: 999, // Đổi sang 999 theo DB mới
+  id: 999,
   hoTen: "Khách hàng vãng lai",
   sdt: null,
   email: null,
   diaChi: null
 };
-const hoaDonCho = ref([])
-const activeHoaDon = ref(null)
-const dsMauSac = ref([])
-const dsTrongLuong = ref([])
-
-// --- MODAL STATE ---
-const showProductModal = ref(false)
-const chiTietHoaDonHienTai = ref([])
-const idMauSac = ref(null)
-const idTrongLuong = ref(null)
-const sanPhamGiaThayDoi = ref({})
-const minPrice = ref(0)
-const maxPrice = ref(0)
-const ghiChu = ref('')
-const giaMin = ref(0)
-const giaMax = ref(0)
-const trangThai = ref(null)
-const phieuGiamGiaHienTai = ref(null)
-const totalElements = ref(0)
-let dangCapNhatSanPham = false
-const qrScanKetQua = ref('')
-const qrScanLoi = ref('')
-const moModalQuetQR = async () => {
-    if (!activeHoaDon.value) {
-        showThongBao("Vui lòng chọn hoặc tạo hóa đơn trước!", 'error');
-        return;
-    }
-    qrScanKetQua.value = '';
-    qrScanLoi.value = '';
-    showQrScanModal.value = true;
-
-    // Đợi DOM render xong mới khởi động camera
-    await nextTick();
-
-    html5QrCode = new Html5Qrcode("qr-reader");
-
-    try {
-        await html5QrCode.start(
-            { facingMode: "environment" },  // dùng camera sau
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            async (decodedText) => {
-                // ✅ Quét thành công — dừng camera ngay
-                await html5QrCode.stop();
-                qrScanKetQua.value = decodedText;
-                await xuLyQrQuetDuoc(decodedText);
-            },
-            () => {} // bỏ qua lỗi frame không đọc được
-        );
-    } catch (err) {
-        qrScanLoi.value = "Không thể truy cập camera. Vui lòng kiểm tra quyền!";
-        console.error(err);
-    }
-}
-
-const dongModalQuetQR = async () => {
-    if (html5QrCode) {
-        try {
-            const state = html5QrCode.getState();
-            // 2 = SCANNING, dừng nếu đang chạy
-            if (state === 2) await html5QrCode.stop();
-        } catch (e) {
-            // ignore
-        }
-        html5QrCode = null;
-    }
-    showQrScanModal.value = false;
-    qrScanKetQua.value = '';
-    qrScanLoi.value = '';
-}
-
-const xuLyQrQuetDuoc = async (maCtsp) => {
-    try {
-        // Tìm sản phẩm theo mã CTSP
-        const sanPham = await timSanPhamTheoMa(maCtsp);
-
-        if (!sanPham) {
-            qrScanLoi.value = `Không tìm thấy sản phẩm với mã: ${maCtsp}`;
-            return;
-        }
-
-        if (sanPham.soLuongTon <= 0) {
-            qrScanLoi.value = `Sản phẩm ${maCtsp} đã hết hàng!`;
-            return;
-        }
-
-        // Thêm vào hóa đơn
-        const payload = {
-            idHoaDon: activeHoaDon.value,
-            idSanPhamChiTiet: sanPham.id,
-            soLuong: 1,
-            donGia: sanPham.gia
-        };
-
-        const response = await themChiTietHoaDon(payload);
-
-        dangCapNhatSanPham = true;
-        chiTietHoaDonHienTai.value = [...(response.sanPham || [])];
-
-        const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
-        if (index !== -1) {
-            hoaDonCho.value[index].chiTietHoaDon = [...(response.sanPham || [])];
-            hoaDonCho.value[index].tongTienHang = response.tongTienHang;
-        }
-
-        await nextTick();
-        dangCapNhatSanPham = false;
-
-        await loadData();
-        await kiemTraGia();
-
-        // Đóng modal sau khi thêm thành công
-        showQrScanModal.value = false;
-        qrScanKetQua.value = '';
-        qrScanLoi.value = '';
-        showThongBao(`Đã thêm ${sanPham.ten || maCtsp} vào hóa đơn!`, 'success');
-
-    } catch (error) {
-        dangCapNhatSanPham = false;
-        qrScanLoi.value = error.message || `Không tìm thấy sản phẩm: ${maCtsp}`;
-        // Khởi động lại camera để quét tiếp nếu có lỗi
-        if (html5QrCode) {
-            try {
-                await html5QrCode.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 250, height: 250 } },
-                    async (decodedText) => {
-                        await html5QrCode.stop();
-                        qrScanKetQua.value = decodedText;
-                        qrScanLoi.value = '';
-                        await xuLyQrQuetDuoc(decodedText);
-                    },
-                    () => {}
-                );
-            } catch (e) {
-                console.error(e);
-            }
-        }
-    }
-}
-const taoHoaDon = async () => {
-    if (hoaDonCho.value.length >= 5) {
-        alert("Đã đạt tối đa 5 hóa đơn chờ. Vui lòng hoàn tất hoặc hủy bớt hóa đơn!");
-        return;
-    }
-
-    try {
-        const hoaDonMoi = await taoHoaDonCho();
-
-        // ✅ Thêm vào đầu mảng thay vì cuối
-        hoaDonCho.value.unshift({
-            ...hoaDonMoi,
-            chiTietHoaDon: hoaDonMoi.sanPham || [],
-            khachHang: KHACH_HANG_VANG_LAI
-        });
-
-        activeHoaDon.value = hoaDonMoi.id;
-
-        // ✅ Thông báo nhỏ thay vì alert cứng
-        showThongBao(`Đã tạo hóa đơn ${hoaDonMoi.maHoaDon}`, 'success');
-
-    } catch(error) {
-        showThongBao(error.message || "Tạo hóa đơn thất bại", 'error');
-    }
-}
-
-// đóng hóa đơn
-const dongHoaDon = async (id) => {
-    const hd = hoaDonCho.value.find(h => h.id === id);
-    const coSanPham = hd?.chiTietHoaDon?.length > 0;
-
-    const message = coSanPham
-        ? "Hóa đơn có sản phẩm. Xác nhận hủy sẽ hoàn lại tồn kho và lưu trạng thái HỦY?"
-        : "Xác nhận xóa hóa đơn trống này?";
-
-    const confirmed = confirm(message);
-    if (!confirmed) return;
-
-    try {
-        await huyHoaDon(id);
-
-        hoaDonCho.value = hoaDonCho.value.filter(hd => hd.id !== id);
-        if (activeHoaDon.value === id) {
-            activeHoaDon.value = hoaDonCho.value[0]?.id || null;
-        }
-        loadData();
-    } catch (error) {
-        alert(error.message || "Lỗi: Không thể hủy hóa đơn!");
-    }
-}
-const danhSach = ref([])
-
-const page = ref(0)
-const size = ref(5)
-
-const totalPages = ref(0)
-
-const keyword = ref("")
-const resetFilter = () => {
-  // 1. Đặt lại các trường nhập liệu và dropdown về mặc định
-  keyword.value = ""
-  idMauSac.value = null
-  idTrongLuong.value = null
-  trangThai.value = null
-
-  // 2. Đặt lại khoảng giá về từ 0 đến mức giá cao nhất
-  giaMin.value = 0
-  giaMax.value = maxPrice.value 
-
-  // 3. Đưa về trang đầu tiên
-  page.value = 0
-
-  // 4. Gọi lại API để tải danh sách sản phẩm chưa bị lọc
-  loadData()
-}
-// --- MODAL KHÁCH HÀNG STATE ---
-const showCustomerModal = ref(false)
-const searchKhachHang = ref('')
-
-// XÓA MẢNG DỮ LIỆU GIẢ VÀ THAY BẰNG MẢNG RỖNG
-const dsKhachHang = ref([])
-
-// Thêm các biến quản lý phân trang cho khách hàng
-const pageKh = ref(0)
-const sizeKh = ref(5) // Số bản ghi trên 1 trang
-const totalPagesKh = ref(0)
-const totalElementsKh = ref(0)
-const showQRModal = ref(false)
-const qrThongTin = ref({ maHoaDon: '', soTien: 0 })
-// Biến lưu trữ khách hàng đang được chọn
-const khachHangDuocChon = computed(() => {
-  if (!activeHoaDon.value) return null;
-  // Tìm hóa đơn đang được chọn hiện tại
-  const hdHienTai = hoaDonCho.value.find(hd => hd.id === activeHoaDon.value);
-  // Trả về thông tin khách hàng của hóa đơn đó (nếu có)
-  return hdHienTai ? hdHienTai.khachHang : null;
-});
-
-// --- HÀM LOAD DỮ LIỆU KHÁCH HÀNG TỪ API ---
-const loadKhachHang = async () => {
-  try {
-    const response = await getKhachHangPos(
-      searchKhachHang.value,
-      pageKh.value,
-      sizeKh.value
-    )
-    dsKhachHang.value = response.content
-    totalPagesKh.value = response.totalPages
-    totalElementsKh.value = response.totalElements
-  } catch (error) {
-    console.log("Lỗi tải khách hàng:", error)
-  }
-}
-
-// --- HÀM XỬ LÝ CHỌN KHÁCH HÀNG ---
-const chonKhachHang = async (kh) => {
-    if (!activeHoaDon.value) {
-        alert("Vui lòng tạo hoặc chọn một hóa đơn trước!");
-        return;
-    }
-
-    try {
-        await updateKhachHangHoaDon(activeHoaDon.value, kh.id);
-
-        const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
-        if (index !== -1) {
-            hoaDonCho.value[index].khachHang = {
-                id: kh.id,
-                hoTen: kh.hoTen,
-                sdt: kh.sdt,
-                email: kh.email,
-                diaChi: kh.diaChi,        // ✅ địa chỉ đầy đủ để hiển thị
-                tinhThanh: kh.tinhThanh   // ✅ tỉnh/thành để tính phí ship
-            };
-        }
-
-        showCustomerModal.value = false;
-
-        // Nếu đang giao hàng → tự cập nhật phí vận chuyển
-        if (loaiHoaDonHienTai.value === 1) {
-            await capNhatPhiVanChuyenHoaDon();
-        }
-
-    } catch (error) {
-        console.error(error);
-        alert("Lỗi: Không thể gán khách hàng vào hóa đơn này!");
-    }
-}
-
-const chonKhachVangLai = async () => {
-  if (!activeHoaDon.value) return;
-  
-  try {
-    // Gọi backend update với ID = 999
-    await updateKhachHangHoaDon(activeHoaDon.value, 999); 
-
-    const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
-    if (index !== -1) {
-      hoaDonCho.value[index].khachHang = KHACH_HANG_VANG_LAI; // Gán object cố định
-    }
-    showCustomerModal.value = false;
-  } catch (error) {
-    alert("Lỗi: Không thể gán khách vãng lai!");
-  }
-}
-// --- HÀM PHÂN TRANG KHÁCH HÀNG ---
-const prevPageKh = () => {
-  if (pageKh.value > 0) {
-    pageKh.value--
-    loadKhachHang()
-  }
-}
-
-const nextPageKh = () => {
-  if (pageKh.value + 1 < totalPagesKh.value) {
-    pageKh.value++
-    loadKhachHang()
-  }
-}
-
-// --- WATCHERS CHO KHÁCH HÀNG ---
-// Tự động load dữ liệu khi mở Modal nếu danh sách còn trống
-watch(showCustomerModal, (newVal) => {
-  if (newVal && dsKhachHang.value.length === 0) {
-    loadKhachHang()
-  }
-})
-
-// Xử lý tìm kiếm delay 300ms (debounce)
-let searchKhTimeout = null
-watch(searchKhachHang, () => {
-  pageKh.value = 0
-  clearTimeout(searchKhTimeout)
-  searchKhTimeout = setTimeout(() => {
-    loadKhachHang()
-  }, 300)
-})
-const loadData = async () => {
-
-try {
-
-    const response = await getSanPham(
-        keyword.value,
-        idMauSac.value,
-        idTrongLuong.value,
-        giaMin.value,
-        giaMax.value,
-        trangThai.value,
-        page.value,
-        size.value
-    )
-
-    danhSach.value = response.content
-    totalPages.value = response.totalPages
-    totalElements.value = response.totalElements
-
-} catch(error){
-    console.log(error)
-}
-}
-
-const nextPage=()=>{
-
-    if(page.value+1<totalPages.value){
-
-        page.value++
-        loadData()
-
-    }
-}
-
-const prevPage=()=>{
-
-    if(page.value>0){
-
-        page.value--
-        loadData()
-
-    }
-}
-
-const search=()=>{
-
-    page.value=0
-    loadData()
-}
-
-// Thêm vào onMounted
-onMounted(async () => {
-    loadData()
-    loadFilterData()
-
-    try {
-        const dsHoaDon = await getHoaDonCho();
-        hoaDonCho.value = dsHoaDon.map(hd => ({
-            ...hd,
-            chiTietHoaDon: hd.sanPham || [],
-            khachHang: hd.idKhachHang ? {
-                id: hd.idKhachHang,
-                hoTen: hd.tenKhachHang,
-                sdt: hd.sdt,
-                diaChi: hd.diaChiKhachHang || "",
-                tinhThanh: hd.tinhThanhKhachHang || ""
-            } : KHACH_HANG_VANG_LAI
-        }));
-// Trong onMounted, sau khi set activeHoaDon
-
-        if (hoaDonCho.value.length > 0) {
-            activeHoaDon.value = hoaDonCho.value[0].id;
-        }
-        if (hoaDonCho.value.length > 0) {
-    activeHoaDon.value = hoaDonCho.value[0].id;
-    // ✅ Đồng bộ ngay
-    dongBoChiTietHienTai();
-}
-    } catch (error) {
-        console.log("Lỗi load hóa đơn chờ:", error);
-    }
-
-    // ✅ Khi user quay lại tab này → tự kiểm tra giá
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-})
-
-// ✅ Cleanup khi component unmount
-onUnmounted(() => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
-})
-
-const handleVisibilityChange = async () => {
-    if (document.visibilityState === 'visible' && activeHoaDon.value) {
-        await kiemTraGia();
-        await lamMoiPhieuGiamGia(); // ✅ Thêm dòng này
-    }
-}
-watch(keyword,()=>{
-
-page.value=0
-
-clearTimeout(window.searchTimeout)
-
-window.searchTimeout=setTimeout(()=>{
-    loadData()
-},300)
-
-})
-watch(
-[
-idMauSac,
-idTrongLuong,
-giaMin,
-giaMax,
-trangThai
-],
-()=>{
-
-    page.value=0
-    loadData()
-
-}
-)
-watch([giaMin, giaMax], () => {
-
-if(Number(giaMin.value) > Number(giaMax.value)){
-    giaMin.value = giaMax.value
-}
-
-})
-
-const loadFilterData = async()=>{
-
-try{
-
-const mauSacData = await getMauSac()
-dsMauSac.value = mauSacData
-
-const trongLuongData = await getTrongLuong()
-dsTrongLuong.value = trongLuongData
-
-const giaData = await getKhoangGia()
-
-minPrice.value = giaData.giaMin
-maxPrice.value = giaData.giaMax
-
-giaMin.value = 0
-giaMax.value = giaData.giaMax
-
-}
-catch(error){
-
-console.log(error)
-
-}
-
-}
-// Hàm helper — gọi sau mọi thao tác thêm/xóa/cập nhật SP
-const dongBoChiTietHienTai = () => {
-    if (!activeHoaDon.value) {
-        chiTietHoaDonHienTai.value = [];
-        return;
-    }
-    const hd = hoaDonCho.value.find(h => h.id === activeHoaDon.value);
-    chiTietHoaDonHienTai.value = hd ? [...(hd.chiTietHoaDon || [])] : [];
-}
-
-
-// Computed property để lấy danh sách sản phẩm của hóa đơn đang active
-const danhSachSanPhamHienTai = computed(() => chiTietHoaDonHienTai.value)
-
-// Hàm xử lý khi bấm nút "Chọn"
-const themSanPhamVaoHoaDon = async (sanPham) => {
-    if (!activeHoaDon.value) { alert("Vui lòng chọn hoặc tạo hóa đơn trước!"); return; }
-    if (sanPham.soLuongTon <= 0) { alert("Sản phẩm này đã hết hàng!"); return; }
-
-    try {
-        const payload = {
-            idHoaDon: activeHoaDon.value,
-            idSanPhamChiTiet: sanPham.id,
-            soLuong: 1,
-            donGia: sanPham.gia
-        };
-
-        const response = await themChiTietHoaDon(payload);
-
-        // ✅ Set flag TRƯỚC khi thay đổi bất kỳ thứ gì
-        dangCapNhatSanPham = true;
-
-        // Cập nhật ref hiển thị ngay lập tức
-        chiTietHoaDonHienTai.value = [...(response.sanPham || [])];
-
-        // Cập nhật hoaDonCho
-        const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
-        if (index !== -1) {
-            hoaDonCho.value[index].chiTietHoaDon = [...(response.sanPham || [])];
-            hoaDonCho.value[index].tongTienHang = response.tongTienHang;
-        }
-
-        // Tắt flag sau nextTick để watch đã chạy xong
-        await nextTick();
-        dangCapNhatSanPham = false;
-
-        await loadData();
-        await kiemTraGia();
-        showThongBao("Đã thêm vào hóa đơn thành công!", 'success');
-
-    } catch (error) {
-        dangCapNhatSanPham = false;
-        console.error(error);
-        showThongBao("Lỗi: Không thể thêm sản phẩm vào hóa đơn", 'error');
-    }
-}
-
-const tongTienHienTai = computed(() => {
-    return danhSachSanPhamHienTai.value.reduce((sum, sp) => {
-        return sum + (sp.donGia * sp.soLuong);
-    }, 0);
-});
-
-
-// Hàm xử lý thay đổi số lượng (dùng chung cho cả +/- và nhập tay)
-const capNhatSoLuongSanPham = async (sp, soLuongMoi) => {
-    const sl = parseInt(soLuongMoi);
-    if (isNaN(sl) || sl < 1) return;
-
-    try {
-        const response = await capNhatSoLuong(sp.id, sl);
-
-        dangCapNhatSanPham = true;
-        chiTietHoaDonHienTai.value = [...(response.sanPham || [])];
-
-        const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
-        if (index !== -1) {
-            hoaDonCho.value[index].chiTietHoaDon = [...(response.sanPham || [])];
-            hoaDonCho.value[index].tongTienHang = response.tongTienHang;
-        }
-
-        await nextTick();
-        dangCapNhatSanPham = false;
-
-        await loadData();
-    } catch (error) {
-        dangCapNhatSanPham = false;
-        showThongBao(error.response?.data || "Lỗi cập nhật số lượng", 'error');
-    }
-}
-
-const tangSoLuong = (sp) => capNhatSoLuongSanPham(sp, sp.soLuong + 1)
-const giamSoLuong = (sp) => { if (sp.soLuong > 1) capNhatSoLuongSanPham(sp, sp.soLuong - 1) }
-const xoaChiTiet = async (idChiTiet) => {
-    const confirmed = confirm("Xóa sản phẩm này khỏi hóa đơn?");
-    if (!confirmed) return;
-
-    try {
-        await xoaChiTietHoaDon(idChiTiet);
-
-        // ✅ Cập nhật trực tiếp TRƯỚC
-        chiTietHoaDonHienTai.value = chiTietHoaDonHienTai.value.filter(sp => sp.id !== idChiTiet);
-
-        // ✅ Cập nhật hoaDonCho bằng index
-        const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
-        if (index !== -1) {
-            hoaDonCho.value[index].chiTietHoaDon =
-                hoaDonCho.value[index].chiTietHoaDon.filter(sp => sp.id !== idChiTiet);
-        }
-
-        // Xóa khỏi map giá thay đổi
-        const mapMoi = { ...sanPhamGiaThayDoi.value };
-        delete mapMoi[idChiTiet];
-        sanPhamGiaThayDoi.value = mapMoi;
-
-        await loadData();
-        await kiemTraGia();
-    } catch (error) {
-        showThongBao(error.message || "Lỗi xóa sản phẩm!", 'error');
-    }
-}
-// Thêm vào script setup
-const soTienKhachDua = ref(0)
-
-const tienThua = computed(() => {
-    const thua = soTienKhachDua.value - tongThanhToan.value;
-    return thua > 0 ? thua : 0;
-})
-// Thêm vào script
-const soTienKhachDuaFormatted = computed({
-    get() {
-        if (!soTienKhachDua.value) return '';
-        return Number(soTienKhachDua.value).toLocaleString('vi-VN');
-    },
-    set(val) {
-        // Xóa dấu chấm/phẩy rồi parse thành số
-        const raw = val.replace(/\./g, '').replace(/,/g, '');
-        const num = parseInt(raw);
-        soTienKhachDua.value = isNaN(num) ? 0 : num;
-    }
-})
-const xuLyThanhToan = async (idHinhThuc) => {
-    if (!activeHoaDon.value) { alert("Vui lòng chọn hóa đơn!"); return; }
-    if (danhSachSanPhamHienTai.value.length === 0) { alert("Hóa đơn chưa có sản phẩm!"); return; }
-
-    // ✅ Kiểm tra giá thay đổi
-    const spGiaThayDoi = Object.values(sanPhamGiaThayDoi.value);
-    if (spGiaThayDoi.length > 0) {
-        const dsMa = spGiaThayDoi.map(sp => sp.maCtsp).join(", ");
-        alert(`Sản phẩm (${dsMa}) đã bị thay đổi giá, vui lòng xóa sản phẩm giá cũ và chọn lại sản phẩm giá mới!`);
-        return;
-    }
-
-    if (loaiHoaDonHienTai.value === 1 && (!khachHangDuocChon.value || khachHangDuocChon.value.id === 999)) {
-        alert("Vui lòng chọn khách hàng để giao hàng!"); return;
-    }
-    if (idHinhThuc === 1 && soTienKhachDua.value < tongThanhToan.value) {
-        alert("Số tiền khách đưa không đủ!"); return;
-    }
-
-    if (idHinhThuc === 2) {
-        const hd = hoaDonCho.value.find(h => h.id === activeHoaDon.value);
-        qrThongTin.value = { maHoaDon: hd?.maHoaDon || '', soTien: tongThanhToan.value };
-        showQRModal.value = true;
-        return;
-    }
-
-    const confirmed = confirm(
-        `Xác nhận thanh toán ${Number(tongThanhToan.value).toLocaleString('vi-VN')} đ bằng tiền mặt?`
-    );
-    if (!confirmed) return;
-    await thucHienThanhToan(1);
-}
-
-const loaiHoaDonHienTai = computed(() => {
-    if (!activeHoaDon.value) return 0;
-    const hd = hoaDonCho.value.find(h => h.id === activeHoaDon.value);
-    return hd?.loaiHoaDon ?? 0;
-})
-const thucHienThanhToan = async (idHinhThuc) => {
-    try {
-        await thanhToanHoaDon({
-            idHoaDon: activeHoaDon.value,
-            idHinhThucThanhToan: idHinhThuc,
-            soTienKhachDua: idHinhThuc === 1 ? soTienKhachDua.value : tongThanhToan.value,
-            ghiChu: ghiChu.value
-        });
-
-        const thongBaoMsg = loaiHoaDonHienTai.value === 1
-            ? "Đã xác nhận đơn hàng giao hàng!"
-            : "Thanh toán thành công!";
-        showThongBao(thongBaoMsg, 'success');
-
-        const id = activeHoaDon.value;
-        hoaDonCho.value = hoaDonCho.value.filter(hd => hd.id !== id);
-        activeHoaDon.value = hoaDonCho.value[0]?.id || null;
-        soTienKhachDua.value = 0;
-        ghiChu.value = '';
-        showQRModal.value = false;
-        loadData();
-
-    } catch (error) {
-        showThongBao(error.message || "Lỗi thanh toán!", 'error');
-    }
-}
-// Computed phí vận chuyển dựa vào địa chỉ khách hàng
 const PHI_HN = 20000;
 const PHI_TINH_KHAC = 45000;
 
-const phiVanChuyen = computed(() => {
-    if (loaiHoaDonHienTai.value !== 1) return 0;
-    if (!khachHangDuocChon.value || khachHangDuocChon.value.id === 999) return 0;
+// --- STATE MANAGEMENT ---
+const hoaDonCho = ref([])
+const activeHoaDon = ref(null)
+const chiTietHoaDonHienTai = ref([])
+const dsMauSac = ref([])
+const dsTrongLuong = ref([])
+const danhSach = ref([])
 
-    const tinhThanh = (khachHangDuocChon.value.tinhThanh || "").toLowerCase();
-    const laHaNoi = tinhThanh.includes("hà nội") || tinhThanh.includes("ha noi");
-    return laHaNoi ? 20000 : 45000;
-})
-// Tổng thanh toán = tiền hàng + phí vận chuyển
-const tongThanhToan = computed(() => {
-    return tongTienHienTai.value - tienGiamHienTai.value + phiVanChuyen.value;
-})
+// Product Filter States
+const idMauSac = ref(null)
+const idTrongLuong = ref(null)
+const trangThai = ref(null)
+const keyword = ref("")
+const giaMin = ref(0)
+const giaMax = ref(0)
+const minPrice = ref(0)
+const maxPrice = ref(0)
 
-const toggleLoaiHoaDon = async () => {
-    if (!activeHoaDon.value) return;
-    const loaiMoi = loaiHoaDonHienTai.value === 0 ? 1 : 0;
-
-    // ✅ Nếu chuyển sang giao hàng mà là khách vãng lai → chặn
-    if (loaiMoi === 1 && (!khachHangDuocChon.value || khachHangDuocChon.value.id === 999)) {
-        showThongBao("Vui lòng chọn khách hàng trước khi chuyển sang giao hàng!", 'error');
-        return;
-    }
-
-    try {
-        const response = await capNhatLoaiHoaDon(activeHoaDon.value, loaiMoi);
-        const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
-        if (index !== -1) {
-            hoaDonCho.value[index] = {
-                ...hoaDonCho.value[index],
-                loaiHoaDon: loaiMoi,
-                tienVanChuyen: response.tienVanChuyen
-            };
-        }
-
-        if (loaiMoi === 1 && khachHangDuocChon.value?.id !== 999) {
-            await capNhatPhiVanChuyenHoaDon();
-        }
-    } catch (error) {
-        showThongBao(error.message || "Lỗi cập nhật hình thức!", 'error');
-    }
-}
-
-// Khi chọn khách hàng mới và đang ở chế độ giao hàng → tự cập nhật phí
-watch(khachHangDuocChon, async (newKh) => {
-    if (loaiHoaDonHienTai.value === 1 && newKh && newKh.id !== 999) {
-        await capNhatPhiVanChuyenHoaDon();
-    }
-})
-
-const capNhatPhiVanChuyenHoaDon = async () => {
-    if (!activeHoaDon.value) return;
-    try {
-        const response = await capNhatPhiVanChuyen(
-            activeHoaDon.value,
-            phiVanChuyen.value
-        );
-        const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
-        if (index !== -1) {
-            hoaDonCho.value[index] = {
-                ...hoaDonCho.value[index],
-                tienVanChuyen: response.tienVanChuyen,
-                tongTienThanhToan: response.tongTienThanhToan
-            };
-        }
-    } catch (error) {
-        console.log("Lỗi cập nhật phí vận chuyển:", error);
-    }
-}
-
+// Modal & UI States
+const showProductModal = ref(false)
+const showCustomerModal = ref(false)
 const showDiaChiModal = ref(false)
+const showQRModal = ref(false)
+const showQrScanModal = ref(false)
+
+const sanPhamGiaThayDoi = ref({})
+const ghiChu = ref('')
+const phieuGiamGiaHienTai = ref(null)
+const thongBao = ref({ show: false, message: '', type: 'success' })
+const soTienKhachDua = ref(0)
+
+// Pagination States
+const page = ref(0)
+const size = ref(5)
+const totalPages = ref(0)
+const totalElements = ref(0)
+
+const dsKhachHang = ref([])
+const searchKhachHang = ref('')
+const pageKh = ref(0)
+const sizeKh = ref(5)
+const totalPagesKh = ref(0)
+const totalElementsKh = ref(0)
 const dsDiaChi = ref([])
 
-const moModalDiaChi = async () => {
-    if (!khachHangDuocChon.value || khachHangDuocChon.value.id === 999) return;
-    try {
-        dsDiaChi.value = await getDiaChiKhachHang(khachHangDuocChon.value.id);
-        showDiaChiModal.value = true;
-    } catch (error) {
-        alert("Lỗi tải danh sách địa chỉ!");
-    }
-}
+const qrThongTin = ref({ maHoaDon: '', soTien: 0 })
+const qrScanKetQua = ref('')
+const qrScanLoi = ref('')
 
-const chonDiaChi = async (dc) => {
-    const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
-    if (index !== -1) {
-        hoaDonCho.value[index].khachHang = {
-            ...hoaDonCho.value[index].khachHang,
-            diaChi: dc.diaChiDayDu || dc.diaChiChiTiet || "",  // ✅ fallback
-            tinhThanh: dc.tinhThanh || ""
-        };
-    }
-    showDiaChiModal.value = false;
+let html5QrCode = null
+let thongBaoTimeout = null
+let filterTimeout = null
+let searchKhTimeout = null
+let isSyncing = false // Cờ chặn loop vô hạn khi đổi tab
 
-    if (loaiHoaDonHienTai.value === 1) {
-        await capNhatPhiVanChuyenHoaDon();
-    }
-}
+// --- COMPUTED PROPERTIES ---
+const danhSachSanPhamHienTai = computed(() => chiTietHoaDonHienTai.value)
+
+const khachHangDuocChon = computed(() => {
+  if (!activeHoaDon.value) return null;
+  const hdHienTai = hoaDonCho.value.find(hd => hd.id === activeHoaDon.value);
+  return hdHienTai ? hdHienTai.khachHang : null;
+});
+
+const tongTienHienTai = computed(() => {
+  return chiTietHoaDonHienTai.value.reduce((sum, sp) => sum + (sp.donGia * sp.soLuong), 0);
+});
+
 const tienGiamHienTai = computed(() => {
-    if (!activeHoaDon.value) return 0;
-    const hd = hoaDonCho.value.find(h => h.id === activeHoaDon.value);
-    return Number(hd?.tienGiam) || 0;
-})
-// Tự động tìm phiếu tốt nhất khi tổng tiền thay đổi
-watch(tongTienHienTai, async (newVal) => {
-    if (!activeHoaDon.value || newVal <= 0) {
-        phieuGiamGiaHienTai.value = null;
-        return;
-    }
-    await lamMoiPhieuGiamGia();
-})
-watch(activeHoaDon, async (newId, oldId) => {
-    soTienKhachDua.value = 0;
-    ghiChu.value = '';
-    sanPhamGiaThayDoi.value = {};
+  if (!activeHoaDon.value) return 0;
+  const hd = hoaDonCho.value.find(h => h.id === activeHoaDon.value);
+  return Number(hd?.tienGiam) || 0;
+});
 
-    if (newId) {
-        // ✅ Chỉ đồng bộ nếu KHÔNG đang cập nhật sản phẩm
-        if (!dangCapNhatSanPham) {
-            dongBoChiTietHienTai();
-        }
-        await lamMoiPhieuGiamGia();
-        await kiemTraGia();
-    } else {
-        phieuGiamGiaHienTai.value = null;
-        chiTietHoaDonHienTai.value = [];
-    }
-})
-const danhSachMaCtspGiaThayDoi = computed(() => {
-    return Object.values(sanPhamGiaThayDoi.value).map(v => v.maCtsp);
-})
+const loaiHoaDonHienTai = computed(() => {
+  if (!activeHoaDon.value) return 0;
+  const hd = hoaDonCho.value.find(h => h.id === activeHoaDon.value);
+  return hd?.loaiHoaDon ?? 0;
+});
+
+const phiVanChuyen = computed(() => {
+  if (loaiHoaDonHienTai.value !== 1) return 0;
+  if (!khachHangDuocChon.value || khachHangDuocChon.value.id === 999) return 0;
+  const tinhThanh = (khachHangDuocChon.value.tinhThanh || "").toLowerCase();
+  return (tinhThanh.includes("hà nội") || tinhThanh.includes("ha noi")) ? PHI_HN : PHI_TINH_KHAC;
+});
+
+const tongThanhToan = computed(() => {
+  return Math.max(0, tongTienHienTai.value - tienGiamHienTai.value + phiVanChuyen.value);
+});
+
+const tienThua = computed(() => {
+  const thua = soTienKhachDua.value - tongThanhToan.value;
+  return thua > 0 ? thua : 0;
+});
+
+const soTienKhachDuaFormatted = computed({
+  get() {
+    return soTienKhachDua.value ? Number(soTienKhachDua.value).toLocaleString('vi-VN') : '';
+  },
+  set(val) {
+    const raw = val.replace(/\./g, '').replace(/,/g, '');
+    const num = parseInt(raw);
+    soTienKhachDua.value = isNaN(num) ? 0 : num;
+  }
+});
+
+// --- HELPER FUNCTIONS ---
+const showThongBao = (message, type = 'success') => {
+  if (thongBaoTimeout) clearTimeout(thongBaoTimeout);
+  thongBao.value = { show: true, message, type };
+  thongBaoTimeout = setTimeout(() => { thongBao.value.show = false; }, 3000);
+};
+
+const dongBoChiTietHienTai = () => {
+  if (!activeHoaDon.value) {
+    chiTietHoaDonHienTai.value = [];
+    return;
+  }
+  const hd = hoaDonCho.value.find(h => h.id === activeHoaDon.value);
+  chiTietHoaDonHienTai.value = hd ? [...(hd.chiTietHoaDon || [])] : [];
+};
+
+// --- API LOADERS ---
+const loadData = async () => {
+  try {
+    const response = await getSanPham(
+      keyword.value, idMauSac.value, idTrongLuong.value,
+      giaMin.value, giaMax.value, trangThai.value, page.value, size.value
+    );
+    danhSach.value = response.content;
+    totalPages.value = response.totalPages;
+    totalElements.value = response.totalElements;
+  } catch (error) {
+    console.error("Lỗi tải sản phẩm:", error);
+  }
+};
+
+const loadKhachHang = async () => {
+  try {
+    const response = await getKhachHangPos(searchKhachHang.value, pageKh.value, sizeKh.value);
+    dsKhachHang.value = response.content;
+    totalPagesKh.value = response.totalPages;
+    totalElementsKh.value = response.totalElements;
+  } catch (error) {
+    console.error("Lỗi tải khách hàng:", error);
+  }
+};
+
+const loadFilterData = async () => {
+  try {
+    const [mauSacData, trongLuongData, giaData] = await Promise.all([
+      getMauSac(), getTrongLuong(), getKhoangGia()
+    ]);
+    dsMauSac.value = mauSacData;
+    dsTrongLuong.value = trongLuongData;
+    minPrice.value = giaData.giaMin;
+    maxPrice.value = giaData.giaMax;
+    giaMax.value = giaData.giaMax;
+  } catch (error) {
+    console.error("Lỗi tải bộ lọc:", error);
+  }
+};
+
+// --- LOGIC XỬ LÝ HÓA ĐƠN & SẢN PHẨM ---
+const kiemTraGia = async () => {
+  if (!activeHoaDon.value) return;
+  try {
+    const ketQua = await kiemTraGiaSanPham(activeHoaDon.value);
+    const map = {};
+    ketQua.forEach(item => {
+      if (item.daThayDoi) {
+        map[item.idChiTiet] = { giaCu: item.giaCu, giaMoi: item.giaMoi, maCtsp: item.maCtsp };
+      }
+    });
+    sanPhamGiaThayDoi.value = map;
+  } catch (e) {
+    console.error("Lỗi kiểm tra giá:", e);
+  }
+};
+
 const lamMoiPhieuGiamGia = async () => {
-    if (!activeHoaDon.value) return;
-    try {
-        phieuGiamGiaHienTai.value = await getPhieuGiamGiaTotNhat(activeHoaDon.value);
-
-        if (phieuGiamGiaHienTai.value?.coTheApDung) {
-            await xuLyApDungPhieu(phieuGiamGiaHienTai.value.id);
-        } else {
-            await xuLyBoPhieu();
-        }
-    } catch (e) {
-        console.log("Lỗi load phiếu giảm giá:", e);
+  if (!activeHoaDon.value || tongTienHienTai.value <= 0) {
+    phieuGiamGiaHienTai.value = null;
+    return;
+  }
+  try {
+    const phieu = await getPhieuGiamGiaTotNhat(activeHoaDon.value);
+    phieuGiamGiaHienTai.value = phieu;
+    if (phieu?.coTheApDung) {
+      const response = await apDungPhieuGiamGia(activeHoaDon.value, phieu.id);
+      capNhatHoaDonTuResponse(response);
+    } else {
+      await xuLyBoPhieu();
     }
-}
-
-const xuLyApDungPhieu = async (idPhieu) => {
-    try {
-        const response = await apDungPhieuGiamGia(activeHoaDon.value, idPhieu);
-        capNhatHoaDonTuResponse(response);
-    } catch (e) {
-        console.log("Lỗi áp dụng phiếu:", e);
-    }
-}
+  } catch (e) {
+    console.error("Lỗi làm mới phiếu giảm giá:", e);
+  }
+};
 
 const xuLyBoPhieu = async () => {
-    try {
-        const hd = hoaDonCho.value.find(h => h.id === activeHoaDon.value);
-        if (!hd?.tienGiam || Number(hd.tienGiam) <= 0) return;
-        const response = await boPhieuGiamGia(activeHoaDon.value);
-        capNhatHoaDonTuResponse(response);
-    } catch (e) {
-        console.log("Lỗi bỏ phiếu:", e);
-    }
-}
+  const hd = hoaDonCho.value.find(h => h.id === activeHoaDon.value);
+  if (!hd?.tienGiam || Number(hd.tienGiam) <= 0) return;
+  try {
+    const response = await boPhieuGiamGia(activeHoaDon.value);
+    capNhatHoaDonTuResponse(response);
+  } catch (e) {
+    console.error("Lỗi hủy phiếu:", e);
+  }
+};
+
 const capNhatHoaDonTuResponse = (response) => {
+  const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
+  if (index !== -1) {
+    hoaDonCho.value[index].tienGiam = response.tienGiam;
+    hoaDonCho.value[index].maPhieuGiamGia = response.maPhieuGiamGia;
+    hoaDonCho.value[index].tenPhieuGiamGia = response.tenPhieuGiamGia;
+    hoaDonCho.value[index].tongTienThanhToan = response.tongTienThanhToan;
+  }
+};
+
+const khongDungMa = async () => {
+  phieuGiamGiaHienTai.value = null;
+  await xuLyBoPhieu();
+};
+
+const taoHoaDon = async () => {
+  if (hoaDonCho.value.length >= 5) {
+    showThongBao("Đã đạt tối đa 5 hóa đơn chờ!", 'error');
+    return;
+  }
+  try {
+    const hoaDonMoi = await taoHoaDonCho();
+    hoaDonCho.value.unshift({
+      ...hoaDonMoi,
+      chiTietHoaDon: hoaDonMoi.sanPham || [],
+      khachHang: KHACH_HANG_VANG_LAI
+    });
+    activeHoaDon.value = hoaDonMoi.id;
+    showThongBao(`Đã tạo hóa đơn ${hoaDonMoi.maHoaDon}`, 'success');
+  } catch (error) {
+    showThongBao(error.message || "Tạo hóa đơn thất bại", 'error');
+  }
+};
+
+const dongHoaDon = async (id) => {
+  const hd = hoaDonCho.value.find(h => h.id === id);
+  if (!hd) return;
+  const message = hd.chiTietHoaDon?.length > 0 ? "Hủy hóa đơn sẽ hoàn lại tồn kho. Xác nhận hủy?" : "Xóa hóa đơn trống này?";
+  if (!confirm(message)) return;
+
+  try {
+    await huyHoaDon(id);
+    hoaDonCho.value = hoaDonCho.value.filter(h => h.id !== id);
+    if (activeHoaDon.value === id) {
+      activeHoaDon.value = hoaDonCho.value[0]?.id || null;
+    }
+    await loadData();
+  } catch (error) {
+    showThongBao(error.message || "Không thể hủy hóa đơn!", 'error');
+  }
+};
+
+const themSanPhamVaoHoaDon = async (sanPham) => {
+  if (!activeHoaDon.value) return showThongBao("Vui lòng chọn hóa đơn!", 'error');
+  if (sanPham.soLuongTon <= 0) return showThongBao("Sản phẩm đã hết hàng!", 'error');
+
+  try {
+    isSyncing = true;
+    
+    // 1. Gọi API thêm sản phẩm vào Database (Không dùng dữ liệu trả về của nó nữa)
+    await themChiTietHoaDon({
+      idHoaDon: activeHoaDon.value,
+      idSanPhamChiTiet: sanPham.id,
+      soLuong: 1,
+      donGia: sanPham.gia
+    });
+
+    // 2. GIẢI PHÁP THAY THẾ F5: Kéo giỏ hàng chính xác 100% từ DB về giống hệt như lúc onMounted
+    const dsHoaDonMoi = await getHoaDonCho();
+    
+    // 3. Khớp lại cấu trúc dữ liệu chuẩn cho hoaDonCho
+    hoaDonCho.value = dsHoaDonMoi.map(hd => ({
+      ...hd,
+      chiTietHoaDon: hd.sanPham || [],
+      khachHang: hd.idKhachHang ? { 
+        id: hd.idKhachHang, 
+        hoTen: hd.tenKhachHang, 
+        sdt: hd.sdt, 
+        diaChi: hd.diaChiKhachHang || "", 
+        tinhThanh: hd.tinhThanhKhachHang || "" 
+      } : KHACH_HANG_VANG_LAI
+    }));
+
+    // 4. Ép Tab hiện tại nạp lại dữ liệu vừa cập nhật từ mảng gốc
+    dongBoChiTietHienTai();
+
+    // 5. Cập nhật song song các trạng thái khuyến mãi và giá cả
+    await Promise.all([loadData(), kiemTraGia(), lamMoiPhieuGiamGia()]);
+    
+    showThongBao("Đã thêm sản phẩm thành công!", 'success');
+  } catch (error) {
+    console.error("Lỗi khi thêm sản phẩm qua QR:", error);
+    showThongBao("Không thể thêm sản phẩm", 'error');
+  } finally {
+    isSyncing = false;
+  }
+};
+
+const capNhatSoLuongSanPham = async (sp, soLuongMoi) => {
+  const sl = parseInt(soLuongMoi);
+  if (isNaN(sl) || sl < 1) return;
+  try {
+    isSyncing = true;
+    const response = await capNhatSoLuong(sp.id, sl);
+    chiTietHoaDonHienTai.value = [...(response.sanPham || [])];
     const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
     if (index !== -1) {
-        hoaDonCho.value[index] = {
-            ...hoaDonCho.value[index],
-            tienGiam: response.tienGiam,
-            maPhieuGiamGia: response.maPhieuGiamGia,
-            tenPhieuGiamGia: response.tenPhieuGiamGia,
-            tongTienThanhToan: response.tongTienThanhToan
-        };
+      hoaDonCho.value[index].chiTietHoaDon = [...(response.sanPham || [])];
     }
-}
-const khongDungMa = async () => {
+    await Promise.all([loadData(), lamMoiPhieuGiamGia()]);
+  } catch (error) {
+    showThongBao(error.response?.data || "Lỗi số lượng", 'error');
+  } finally {
+    isSyncing = false;
+  }
+};
+
+const tangSoLuong = (sp) => capNhatSoLuongSanPham(sp, sp.soLuong + 1);
+const giamSoLuong = (sp) => { if (sp.soLuong > 1) capNhatSoLuongSanPham(sp, sp.soLuong - 1); };
+
+const xoaChiTiet = async (idChiTiet) => {
+  if (!confirm("Xóa sản phẩm này khỏi hóa đơn?")) return;
+  try {
+    isSyncing = true;
+    await xoaChiTietHoaDon(idChiTiet);
+    chiTietHoaDonHienTai.value = chiTietHoaDonHienTai.value.filter(sp => sp.id !== idChiTiet);
+    const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
+    if (index !== -1) {
+      hoaDonCho.value[index].chiTietHoaDon = hoaDonCho.value[index].chiTietHoaDon.filter(sp => sp.id !== idChiTiet);
+    }
+    delete sanPhamGiaThayDoi.value[idChiTiet];
+    await Promise.all([loadData(), kiemTraGia(), lamMoiPhieuGiamGia()]);
+  } catch (error) {
+    showThongBao("Lỗi xóa sản phẩm!", 'error');
+  } finally {
+    isSyncing = false;
+  }
+};
+
+// --- THÀNH VIÊN & GIAO HÀNG ---
+const chonKhachHang = async (kh) => {
+  if (!activeHoaDon.value) return;
+  try {
+    await updateKhachHangHoaDon(activeHoaDon.value, kh.id);
+    const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
+    if (index !== -1) {
+      hoaDonCho.value[index].khachHang = { id: kh.id, hoTen: kh.hoTen, sdt: kh.sdt, email: kh.email, diaChi: kh.diaChi, tinhThanh: kh.tinhThanh };
+    }
+    showCustomerModal.value = false;
+    if (loaiHoaDonHienTai.value === 1) await capNhatPhiVanChuyenHoaDon();
+  } catch (error) {
+    showThongBao("Không thể gán khách hàng!", 'error');
+  }
+};
+
+const chonKhachVangLai = async () => {
+  if (!activeHoaDon.value) return;
+  try {
+    await updateKhachHangHoaDon(activeHoaDon.value, 999);
+    const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
+    if (index !== -1) {
+      hoaDonCho.value[index].khachHang = KHACH_HANG_VANG_LAI;
+      if (hoaDonCho.value[index].loaiHoaDon === 1) {
+        await capNhatLoaiHoaDon(activeHoaDon.value, 0);
+        hoaDonCho.value[index].loaiHoaDon = 0;
+        showThongBao("Đã chuyển về bán tại quầy cho khách vãng lai!", 'info');
+      }
+    }
+    showCustomerModal.value = false;
+  } catch (error) {
+    showThongBao("Lỗi gán khách vãng lai!", 'error');
+  }
+};
+
+const toggleLoaiHoaDon = async () => {
+  if (!activeHoaDon.value) return;
+  const loaiMoi = loaiHoaDonHienTai.value === 0 ? 1 : 0;
+  if (loaiMoi === 1 && (!khachHangDuocChon.value || khachHangDuocChon.value.id === 999)) {
+    return showThongBao("Vui lòng chọn khách cụ thể để giao hàng!", 'error');
+  }
+  try {
+    const response = await capNhatLoaiHoaDon(activeHoaDon.value, loaiMoi);
+    const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
+    if (index !== -1) {
+      hoaDonCho.value[index].loaiHoaDon = loaiMoi;
+      hoaDonCho.value[index].tienVanChuyen = response.tienVanChuyen;
+    }
+    if (loaiMoi === 1) await capNhatPhiVanChuyenHoaDon();
+  } catch (error) {
+    showThongBao("Lỗi cập nhật hình thức đơn!", 'error');
+  }
+};
+
+const capNhatPhiVanChuyenHoaDon = async () => {
+  try {
+    const response = await capNhatPhiVanChuyen(activeHoaDon.value, phiVanChuyen.value);
+    const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
+    if (index !== -1) {
+      hoaDonCho.value[index].tienVanChuyen = response.tienVanChuyen;
+    }
+  } catch (e) {
+    console.error("Lỗi cập nhật phí ship:", e);
+  }
+};
+
+const moModalDiaChi = async () => {
+  if (!khachHangDuocChon.value || khachHangDuocChon.value.id === 999) return;
+  try {
+    dsDiaChi.value = await getDiaChiKhachHang(khachHangDuocChon.value.id);
+    showDiaChiModal.value = true;
+  } catch (error) {
+    showThongBao("Lỗi tải địa chỉ!", 'error');
+  }
+};
+
+const chonDiaChi = async (dc) => {
+  const index = hoaDonCho.value.findIndex(hd => hd.id === activeHoaDon.value);
+  if (index !== -1) {
+    hoaDonCho.value[index].khachHang.diaChi = dc.diaChiDayDu || dc.diaChiChiTiet || "";
+    hoaDonCho.value[index].khachHang.tinhThanh = dc.tinhThanh || "";
+  }
+  showDiaChiModal.value = false;
+  if (loaiHoaDonHienTai.value === 1) await capNhatPhiVanChuyenHoaDon();
+};
+
+// --- QUÉT MÃ QR SẢN PHẨM ---
+const moModalQuetQR = async () => {
+  if (!activeHoaDon.value) return showThongBao("Vui lòng chọn hóa đơn!", 'error');
+  qrScanKetQua.value = '';
+  qrScanLoi.value = '';
+  showQrScanModal.value = true;
+
+  await nextTick();
+  if (!html5QrCode) html5QrCode = new Html5Qrcode("qr-reader");
+
+  try {
+    await html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 15, qrbox: { width: 250, height: 250 } }, // Tăng fps lên 15 để camera mượt hơn
+      async (decodedText) => {
+        // Quét trúng mã -> Dừng camera ngay lập tức để giải phóng tài nguyên CPU
+        await html5QrCode.stop();
+        qrScanKetQua.value = decodedText;
+        await xuLyQrQuetDuoc(decodedText);
+      },
+      () => {}
+    );
+  } catch (err) {
+    qrScanLoi.value = "Không thể truy cập Camera!";
+  }
+};
+
+const dongModalQuetQR = async () => {
+  if (html5QrCode && html5QrCode.getState() === 2) {
+    try { await html5QrCode.stop(); } catch (e) { console.error(e); }
+  }
+  showQrScanModal.value = false;
+};
+
+const xuLyQrQuetDuoc = async (maCtsp) => {
+  try {
+    const sanPham = await timSanPhamTheoMa(maCtsp);
+    if (!sanPham) {
+      qrScanLoi.value = `Không tìm thấy sản phẩm với mã: ${maCtsp}`;
+      return;
+    }
+    if (sanPham.soLuongTon <= 0) {
+      qrScanLoi.value = `Sản phẩm ${maCtsp} đã hết hàng!`;
+      return;
+    }
+
+    // 1. Thêm sản phẩm vào DB và cập nhật Ref mảng
+    await themSanPhamVaoHoaDon(sanPham);
+
+    // 2. BẮT BUỘC: Đợi Vue cập nhật mảng sản phẩm hiện tại lên giao diện trước
+    await nextTick();
+
+    // 3. Sau khi bảng sản phẩm đã hiện hàng mới -> Mới đóng Modal camera ẩn đi
+    showQrScanModal.value = false;
+    qrScanKetQua.value = '';
+    qrScanLoi.value = '';
+    
+  } catch (error) {
+    qrScanLoi.value = "Lỗi xử lý mã QR hoặc kết nối API.";
+    console.error(error);
+  }
+};
+
+// --- THANH TOÁN ---
+const xuLyThanhToan = async (idHinhThuc) => {
+  if (!activeHoaDon.value || chiTietHoaDonHienTai.value.length === 0) return showThongBao("Đơn hàng trống!", 'error');
+  if (Object.keys(sanPhamGiaThayDoi.value).length > 0) return showThongBao("Vui lòng cập nhật sản phẩm có giá thay đổi!", 'error');
+  if (loaiHoaDonHienTai.value === 1 && (!khachHangDuocChon.value || khachHangDuocChon.value.id === 999)) return showThongBao("Thiếu thông tin người nhận!", 'error');
+  if (idHinhThuc === 1 && soTienKhachDua.value < tongThanhToan.value) return showThongBao("Tiền khách đưa không đủ!", 'error');
+
+  if (idHinhThuc === 2) {
+    const hd = hoaDonCho.value.find(h => h.id === activeHoaDon.value);
+    qrThongTin.value = { maHoaDon: hd?.maHoaDon || '', soTien: tongThanhToan.value };
+    showQRModal.value = true;
+    return;
+  }
+
+  if (!confirm(`Xác nhận thanh toán bằng tiền mặt: ${Number(tongThanhToan.value).toLocaleString('vi-VN')} đ?`)) return;
+  await thucHienThanhToan(1);
+};
+
+const thucHienThanhToan = async (idHinhThuc) => {
+  try {
+    await thanhToanHoaDon({
+      idHoaDon: activeHoaDon.value,
+      idHinhThucThanhToan: idHinhThuc,
+      soTienKhachDua: idHinhThuc === 1 ? soTienKhachDua.value : tongThanhToan.value,
+      ghiChu: ghiChu.value
+    });
+
+    showThongBao(loaiHoaDonHienTai.value === 1 ? "Đã tạo đơn giao hàng!" : "Thanh toán thành công!", 'success');
+    const id = activeHoaDon.value;
+    hoaDonCho.value = hoaDonCho.value.filter(hd => hd.id !== id);
+    activeHoaDon.value = hoaDonCho.value[0]?.id || null;
+    soTienKhachDua.value = 0;
+    ghiChu.value = '';
+    showQRModal.value = false;
+    await loadData();
+  } catch (error) {
+    showThongBao("Thanh toán thất bại!", 'error');
+  }
+};
+
+const kiemTraSanPhamNgungHoatDong = async () => {
+  if (!activeHoaDon.value || chiTietHoaDonHienTai.value.length === 0) return;
+  try {
+    const ketQua = await kiemTraGiaSanPham(activeHoaDon.value);
+    const dsNgung = ketQua.filter(item => item.trangThai === 0 || item.trangThai === false);
+    if (dsNgung.length > 0) {
+      for (const sp of dsNgung) {
+        await xoaChiTietHoaDon(sp.idChiTiet);
+      }
+      showThongBao("Hệ thống đã loại bỏ sản phẩm ngừng kinh doanh khỏi đơn hàng.", "error");
+      dongBoChiTietHienTai();
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+// --- WATCHERS (DEBOUNCED & OPTIMIZED) ---
+watch(activeHoaDon, async (newId) => {
+  if (isSyncing) return;
+  soTienKhachDua.value = 0;
+  ghiChu.value = '';
+  sanPhamGiaThayDoi.value = {};
+
+  if (newId) {
+    dongBoChiTietHienTai();
+    // Chạy song song các API kiểm tra của Tab mới để tránh nghẽn luồng UI
+    await Promise.all([kiemTraGia(), lamMoiPhieuGiamGia()]);
+  } else {
     phieuGiamGiaHienTai.value = null;
-    await xuLyBoPhieu();
-}
-// Thêm vào script
-const thongBao = ref({ show: false, message: '', type: 'success' })
-let thongBaoTimeout = null
+    chiTietHoaDonHienTai.value = [];
+  }
+});
 
-const showThongBao = (message, type = 'success') => {
-    if (thongBaoTimeout) clearTimeout(thongBaoTimeout);
-    thongBao.value = { show: true, message, type };
-    thongBaoTimeout = setTimeout(() => {
-        thongBao.value.show = false;
-    }, 3000);
-}
-const kiemTraGia = async () => {
-    if (!activeHoaDon.value) return;
-    try {
-        const ketQua = await kiemTraGiaSanPham(activeHoaDon.value);
-        const map = {};
-        ketQua.forEach(item => {
-            if (item.daThayDoi) {
-                map[item.idChiTiet] = {
-                    giaCu: item.giaCu,
-                    giaMoi: item.giaMoi,
-                    maCtsp: item.maCtsp
-                };
-            }
-        });
-        sanPhamGiaThayDoi.value = map;
-    } catch (e) {
-        console.log("Lỗi kiểm tra giá:", e);
+// Gộp các bộ lọc sản phẩm vào một watch duy nhất bằng Debouncer (Tránh gọi API liên tục khi nhập)
+watch([keyword, idMauSac, idTrongLuong, giaMin, giaMax, trangThai], () => {
+  page.value = 0;
+  clearTimeout(filterTimeout);
+  filterTimeout = setTimeout(() => { loadData(); }, 300);
+});
+
+watch(searchKhachHang, () => {
+  pageKh.value = 0;
+  clearTimeout(searchKhTimeout);
+  searchKhTimeout = setTimeout(() => { loadKhachHang(); }, 300);
+});
+
+watch(showCustomerModal, (isOpen) => {
+  if (isOpen && dsKhachHang.value.length === 0) loadKhachHang();
+});
+
+// --- LIFECYCLE HOOKS ---
+const handleVisibilityChange = async () => {
+  if (document.visibilityState === 'visible' && activeHoaDon.value) {
+    await Promise.all([loadData(), kiemTraSanPhamNgungHoatDong(), kiemTraGia(), lamMoiPhieuGiamGia()]);
+  }
+};
+
+onMounted(async () => {
+  await Promise.all([loadData(), loadFilterData()]);
+  try {
+    const dsHoaDon = await getHoaDonCho();
+    hoaDonCho.value = dsHoaDon.map(hd => ({
+      ...hd,
+      chiTietHoaDon: hd.sanPham || [],
+      khachHang: hd.idKhachHang ? { id: hd.idKhachHang, hoTen: hd.tenKhachHang, sdt: hd.sdt, diaChi: hd.diaChiKhachHang || "", tinhThanh: hd.tinhThanhKhachHang || "" } : KHACH_HANG_VANG_LAI
+    }));
+    if (hoaDonCho.value.length > 0) {
+      activeHoaDon.value = hoaDonCho.value[0].id;
+      dongBoChiTietHienTai();
     }
-}
+  } catch (error) {
+    console.error("Lỗi khởi tạo danh sách chờ:", error);
+  }
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+});
 
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
+  if (thongBaoTimeout) clearTimeout(thongBaoTimeout);
+  if (filterTimeout) clearTimeout(filterTimeout);
+  if (searchKhTimeout) clearTimeout(searchKhTimeout);
+});
+
+// Pagination Helpers
+const nextPage = () => { if (page.value + 1 < totalPages.value) { page.value++; loadData(); } };
+const prevPage = () => { if (page.value > 0) { page.value--; loadData(); } };
+const nextPageKh = () => { if (pageKh.value + 1 < totalPagesKh.value) { pageKh.value++; loadKhachHang(); } };
+const prevPageKh = () => { if (pageKh.value > 0) { pageKh.value--; loadKhachHang(); } };
+const resetFilter = () => {
+  keyword.value = ""; idMauSac.value = null; idTrongLuong.value = null; trangThai.value = null;
+  giaMin.value = 0; giaMax.value = maxPrice.value; page.value = 0;
+  loadData();
+};
 </script>
 
 <style scoped>
