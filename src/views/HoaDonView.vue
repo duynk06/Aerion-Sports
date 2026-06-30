@@ -193,8 +193,8 @@
       <td>{{ (page * size) + index + 1 }}</td>
     <td>{{ hoaDon.maHoaDon }}</td>
     <td>{{ hoaDon.tenNv }}</td>
-    <td>{{ hoaDon.tenNguoiNhan }}</td>
-    <td>{{ hoaDon.sdtNguoiNhan }}</td>
+    <td>{{ hoaDon.tenKhachHang }}</td>
+    <td>{{ hoaDon.sdtKhachHang }}</td>
     <td>
   <span
     class="invoice-badge"

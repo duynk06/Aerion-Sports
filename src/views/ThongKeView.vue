@@ -461,20 +461,25 @@ const renderWaveLineChartGraphic = () => {
   });
 };
 
+const isLoadingChart = ref(false); // Biến chặn loop
+
 const loadBieuDoDataFromServer = async () => {
+  if (isLoadingChart.value) return; // Nếu đang tải thì không chạy tiếp
+  isLoadingChart.value = true;
+
   try {
     if (!isCompareMode.value) {
-      // 🌟 LUỒNG 1: Gọi API lấy dữ liệu biểu đồ đơn bình thường
       const [nam, thang] = selectedMonthYear.value.split('-');
       const res = await axios.get('http://localhost:8080/api/thong-ke/bieu-do-line', {
-        params: { loai: 'ngay', thang: parseInt(thang, 10), nam: parseInt(nam, 10) }
+        params: { loai: 'ngay', thang: parseInt(thang, 10), nam: parseInt(nam, 10), isCompare: false }
       });
       mapDoanhThuBieuDoFromServer.value = res.data;
     } else {
-      // 🌟 LUỒNG 2: Gọi API lấy dữ liệu so sánh đối chiếu đa mốc
+      // Bắt buộc thêm isCompare: true để backend trả dữ liệu so sánh
       const res = await axios.get('http://localhost:8080/api/thong-ke/bieu-do-line', {
-        params: { 
+        params: {
           loai: compareType.value,
+          isCompare: true,
           thangGoc: filterCompare.value.thangGoc,
           thangSoSanh: filterCompare.value.thangSoSanh,
           namGoc: filterCompare.value.namGoc,
@@ -484,7 +489,14 @@ const loadBieuDoDataFromServer = async () => {
       bieuDoCompositeData.value = res.data;
     }
     renderWaveLineChartGraphic();
-  } catch (e) { console.error(e); }
+  } catch (e) {
+    console.error(e);
+  } finally {
+    // Trì hoãn mở khóa một chút để DOM ổn định hẳn
+    setTimeout(() => {
+      isLoadingChart.value = false;
+    }, 200);
+  }
 };
 
 const handleXuatExcelTaiCho = () => {
