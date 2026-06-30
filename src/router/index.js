@@ -44,12 +44,13 @@ const routes = [
       { path: 'products/:id', name: 'ShopProductDetail', component: () => import('../../client/src/pages/ProductDetail/ProductDetailPage.vue') },
       { path: 'cart', name: 'ShopCart', component: () => import('../../client/src/pages/Cart/CartPage.vue') },
       { path: 'checkout', name: 'ShopCheckout', component: () => import('../../client/src/pages/Checkout/CheckoutPage.vue') },
+      { path: 'login', name: 'ShopLogin', component: () => import('../../client/src/pages/Auth/LoginPage.vue') },
       { path: 'register', name: 'Register', component: () => import('../../client/src/pages/Auth/RegisterPage.vue') },
       { path: 'profile', name: 'Profile', component: () => import('../../client/src/pages/Profile/ProfilePage.vue') },
     ],
   },
 
-  { path: '/login', name: 'Login', component: Login },
+  { path: '/admin/login', name: 'AdminLogin', component: Login },
   { path: '/admin', redirect: '/trang-chu' },
   { path: '/trang-chu', component: TrangChuView, meta: { requiresAuth: true, roles: ['ADMIN', 'QL', 'NV'] } },
   { path: '/thong-ke', component: ThongKeView, meta: { requiresAuth: true, roles: ['ADMIN', 'QL'] } },
@@ -105,7 +106,7 @@ router.beforeEach((to, from, next) => {
 
   if (to.meta.requiresAuth && !token) {
     alert('Hệ thống yêu cầu quyền truy cập! Vui lòng đăng nhập.')
-    return next({ name: 'Login' })
+    return next({ name: 'AdminLogin' })
   }
 
   if (to.meta.roles && !to.meta.roles.includes(userInfo.vai_tro)) {

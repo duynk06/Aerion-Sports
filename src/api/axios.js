@@ -32,7 +32,7 @@ myAxios.interceptors.response.use(
             localStorage.removeItem('user_info');
             
             // Đá người dùng về trang login của Vue
-            window.location.href = '/login'; 
+            window.location.href = '/admin/login'; 
         }
         return Promise.reject(error);
     }

@@ -21,7 +21,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      '@ant-design/icons-vue': fileURLToPath(new URL('./client/node_modules/@ant-design/icons-vue', import.meta.url)),
     },
   },
 })
