@@ -10,7 +10,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +59,6 @@ public class ThongKeService {
     }
 
     public ThongKeChiTietResponse getThongKeChiTietDuLieuDong(LocalDate tuNgay, LocalDate denNgay) {
-        // Nếu Frontend không truyền ngày, hệ thống tự động thiết lập mặc định trong 30 ngày gần nhất
         if (tuNgay == null) tuNgay = LocalDate.now().minusDays(30);
         if (denNgay == null) denNgay = LocalDate.now();
 
@@ -101,29 +99,44 @@ public class ThongKeService {
         return dto;
     }
 
+    // 🌟 ĐÃ SỬA: Bảo vệ ép kiểu an toàn cho biểu đồ Theo Ngày
     public Map<Integer, BigDecimal> getDoanhThuDoThiBieuDo(int thang, int nam) {
         List<Object[]> rawList = hoaDonRepo.queryDoanhThuTheoTungNgayTrongThang(thang, nam);
         Map<Integer, BigDecimal> mapData = new HashMap<>();
         for (Object[] obj : rawList) {
-            mapData.put((Integer) obj[0], BigDecimal.valueOf(((Number) obj[1]).doubleValue()));
+            if (obj[0] != null && obj[1] != null) {
+                Integer ngayKey = ((Number) obj[0]).intValue();
+                BigDecimal doanhThuVal = BigDecimal.valueOf(((Number) obj[1]).doubleValue());
+                mapData.put(ngayKey, doanhThuVal);
+            }
         }
         return mapData;
     }
 
+    // 🌟 ĐÃ SỬA: Bảo vệ ép kiểu an toàn cho biểu đồ Theo Tháng
     public Map<Integer, BigDecimal> getDoanhThuTheoNam(int nam) {
         List<Object[]> rawList = hoaDonRepo.queryDoanhThu12ThangTheoNam(nam);
         Map<Integer, BigDecimal> mapData = new HashMap<>();
         for (Object[] obj : rawList) {
-            mapData.put((Integer) obj[0], BigDecimal.valueOf(((Number) obj[1]).doubleValue()));
+            if (obj[0] != null && obj[1] != null) {
+                Integer thangKey = ((Number) obj[0]).intValue();
+                BigDecimal doanhThuVal = BigDecimal.valueOf(((Number) obj[1]).doubleValue());
+                mapData.put(thangKey, doanhThuVal);
+            }
         }
         return mapData;
     }
 
+    // 🌟 ĐÃ SỬA: Bảo vệ ép kiểu an toàn cho biểu đồ Theo Quý
     public Map<Integer, BigDecimal> getDoanhThuTheoQuy(int nam) {
         List<Object[]> rawList = hoaDonRepo.queryDoanhThu4QuyTheoNam(nam);
         Map<Integer, BigDecimal> mapData = new HashMap<>();
         for (Object[] obj : rawList) {
-            mapData.put((Integer) obj[0], BigDecimal.valueOf(((Number) obj[1]).doubleValue()));
+            if (obj[0] != null && obj[1] != null) {
+                Integer quyKey = ((Number) obj[0]).intValue();
+                BigDecimal doanhThuVal = BigDecimal.valueOf(((Number) obj[1]).doubleValue());
+                mapData.put(quyKey, doanhThuVal);
+            }
         }
         return mapData;
     }

@@ -49,4 +49,16 @@ public class HoaDonController {
     public ResponseEntity<HoaDonResponse> detail(@PathVariable Integer id) {
         return ResponseEntity.ok(hoaDonService.detail(id));
     }
+    @PutMapping("/{id}/chuyen-trang-thai")
+    public ResponseEntity<?> chuyenTrangThai(
+            @PathVariable Integer id,
+            @RequestParam Integer trangThaiMoi,
+            @RequestParam(required = false) String ghiChu
+    ) {
+        try {
+            return ResponseEntity.ok(hoaDonService.chuyenTrangThai(id, trangThaiMoi, ghiChu));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

@@ -1,5 +1,6 @@
 package com.example.AerionSports_BE.service;
 
+import com.example.AerionSports_BE.dto.ChiTietEmailDTO;
 import com.example.AerionSports_BE.dto.response.ThongKeCardResponse;
 import com.example.AerionSports_BE.dto.response.ThongKeChiTietResponse;
 import jakarta.mail.internet.MimeMessage;
@@ -15,10 +16,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 public class EmailService {
@@ -56,10 +59,10 @@ public class EmailService {
                     + "  <h2 style='color: #f79b66; margin: 0; font-size: 22px; letter-spacing: 1px;'>CHÀO MỪNG THÀNH VIÊN MỚI</h2>"
                     + "  <p style='color: #475569; font-size: 14px;'>Tài khoản quản trị nội bộ hệ thống Aerion Sports của bạn đã được khởi tạo!</p>"
                     + "</div>"
-                    + "<p>Xin chào <strong>" + tenNhanVien + "</strong>,</p>"
+                    + "<p>Xin chào <strong>" + "</strong>,</p>"
                     + "<p>Dưới đây là thông tin đăng nhập cá nhân của bạn trên hệ thống, vui lòng bảo mật thông tin này:</p>"
                     + "<div style='background-color: #f8fafc; padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 15px 0; line-height: 1.6;'>"
-                    + "  <p style='margin: 5px 0; font-size: 14px;'>🌐 <strong>Trang quản trị:</strong> <a href='http://localhost:5173/login' style='color: #ea712b; text-decoration: none; font-weight: bold;'>Click để đến trang Đăng nhập</a></p>"
+                    + "  <p style='margin: 5px 0; font-size:  tenNhanVien +14px;'>🌐 <strong>Trang quản trị:</strong> <a href='http://localhost:5173/login' style='color: #ea712b; text-decoration: none; font-weight: bold;'>Click để đến trang Đăng nhập</a></p>"
                     + "  <p style='margin: 5px 0; font-size: 14px;'>📧 <strong>Tài khoản (Username):</strong> <span style='font-weight: 600; color: #1e293b;'>" + toEmail + "</span></p>"
                     + "  <p style='margin: 5px 0; font-size: 14px;'>🔑 <strong>Mật khẩu tạm thời:</strong> <span style='font-weight: 700; color: #dc2626; font-family: monospace; background: #fee2e2; padding: 2px 6px; border-radius: 4px;'>" + matKhauTamThoi + "</span></p>"
                     + "</div>"
@@ -247,6 +250,149 @@ public class EmailService {
         } catch (Exception e) {
             System.err.println(">>> [MAIL ERROR] Thất bại khi xuất Excel gửi mail báo cáo: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    @Async
+    public void sendOrderStatusEmail(
+            String toEmail,
+            String tenKhachHang,
+            String maHoaDon,
+            String trangThaiMoi,
+            String diaChiNhan,
+            String sdtNhan,
+            BigDecimal tongTienHang,
+            BigDecimal tienGiam,
+            BigDecimal phiVanChuyen,
+            BigDecimal tongThanhToan,
+            List<ChiTietEmailDTO> sanPhamList,
+            String phuongThucThanhToan
+    ) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setTo(toEmail);
+            helper.setSubject("📦 Aerion Sports - Cập nhật trạng thái đơn hàng #" + maHoaDon);
+
+            // Build danh sách sản phẩm HTML
+            StringBuilder spHtml = new StringBuilder();
+            if (sanPhamList != null) {
+                for (ChiTietEmailDTO sp : sanPhamList) {
+                    spHtml.append("<tr>")
+                            .append("<td style='padding:10px; border-bottom:1px solid #f1f5f9;'>")
+                            .append("<strong>").append(sp.getTenSanPham()).append("</strong><br/>")
+                            .append("<span style='color:#888;font-size:12px;'>")
+                            .append(sp.getMauSac()).append(" / ").append(sp.getTrongLuong())
+                            .append("</span><br/>")
+                            .append("<span style='color:#888;font-size:12px;'>")
+                            .append(String.format("%,.0f", sp.getDonGia())).append(" VND")
+                            .append(" × ").append(sp.getSoLuong())
+                            .append("</span>")
+                            .append("</td>")
+                            .append("<td style='padding:10px; border-bottom:1px solid #f1f5f9; text-align:right; font-weight:600;'>")
+                            .append(String.format("%,.0f", sp.getThanhTien())).append(" VND")
+                            .append("</td>")
+                            .append("</tr>");
+                }
+            }
+
+            String htmlContent = "<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;'>"
+
+                    // Header với logo
+                    + "<div style='background:#f79b66;padding:24px;text-align:center;'>"
+                    + "  <img src='"  + "' alt='Aerion Sports' style='height:55px;'/>"
+                    + "  <h1 style='color:#fff;margin:8px 0 0;font-size:24px;letter-spacing:2px;font-weight:800;'>AERION SPORTS</h1>"
+                    + "</div>"
+
+                    // Tiêu đề trạng thái
+                    + "<div style='background:#fff;padding:16px;text-align:center;border-bottom:3px solid #f79b66;'>"
+                    + "  <p style='color:#475569;margin:0 0 6px;font-size:14px;'>Đơn hàng của quý khách vừa được cập nhật sang trạng thái:</p>"
+                    + "  <strong style='color:#f79b66;font-size:20px;'>" + trangThaiMoi + "</strong>"
+                    + "</div>"
+
+                    + "<div style='padding:24px;'>"
+
+                    // 2 cột: Thông tin mua hàng + Địa chỉ nhận hàng
+                    + "<table style='width:100%;margin-bottom:20px;'><tr>"
+                    + "<td style='width:50%;vertical-align:top;padding-right:12px;'>"
+                    + "  <div style='font-weight:700;color:#1e293b;margin-bottom:8px;'>Thông tin mua hàng</div>"
+                    + "  <div>" + tenKhachHang + "</div>"
+                    + "    <div>" + (sdtNhan != null ? sdtNhan : "") + "</div>"
+                    + "  <div style='color:#3b82f6;font-size:13px;'>" + toEmail + "</div>"
+                    + "</td>"
+                    + "<td style='width:50%;vertical-align:top;padding-left:12px;'>"
+                    + "  <div style='font-weight:700;color:#1e293b;margin-bottom:8px;'>Địa chỉ nhận hàng</div>"
+                    + "  <div style='font-size:13px;color:#475569;line-height:1.6;'>"
+                    + "    <div>" + (diaChiNhan != null && !diaChiNhan.isBlank() ? diaChiNhan : "Chưa có địa chỉ") + "</div>"
+
+                    + "  </div>"
+                    + "</td>"
+                    + "</tr></table>"
+
+                    // Phương thức thanh toán + vận chuyển
+                    + "<table style='width:100%;margin-bottom:20px;'><tr>"
+                    + "<td style='width:50%;vertical-align:top;'>"
+                    + "  <div style='font-weight:700;color:#1e293b;margin-bottom:6px;'>Phương thức thanh toán</div>"
+                    + "  <div style='font-size:13px;color:#475569;'>" + (phuongThucThanhToan != null ? phuongThucThanhToan : "tiền mặt") + "</div>"
+                    + "</td>"
+                    + "<td style='width:50%;vertical-align:top;'>"
+                    + "  <div style='font-weight:700;color:#1e293b;margin-bottom:6px;'>Phương thức vận chuyển</div>"
+                    + "  <div style='font-size:13px;color:#475569;'>Giao hàng tiết kiệm</div>"
+                    + "</td>"
+                    + "</tr></table>"
+
+                    // Thông tin đơn hàng
+                    + "<div style='font-weight:700;color:#1e293b;margin-bottom:12px;'>Thông tin đơn hàng</div>"
+                    + "<div style='display:flex;justify-content:space-between;margin-bottom:8px;'>"
+                    + "  <span style='font-size:13px;color:#475569;'>Mã đơn hàng: <strong style='color:#f79b66;'>#" + maHoaDon + "</strong></span>"
+                    + "  <span style='font-size:13px;color:#475569;'>Ngày đặt hàng: " + java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "</span>"
+                    + "</div>"
+
+                    // Bảng sản phẩm
+                    + "<table style='width:100%;border-collapse:collapse;margin-bottom:16px;'>"
+                    + "<thead><tr style='background:#f8fafc;'>"
+                    + "<th style='padding:10px;text-align:left;font-size:13px;color:#475569;'>Sản phẩm</th>"
+                    + "<th style='padding:10px;text-align:right;font-size:13px;color:#475569;'>Thành tiền</th>"
+                    + "</tr></thead>"
+                    + "<tbody>" + spHtml + "</tbody>"
+                    + "</table>"
+
+                    // Tổng tiền
+                    + "<div style='background:#f8fafc;border-radius:8px;padding:16px;'>"
+                    + "  <div style='display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;'>"
+                    + "    <span style='color:#475569;'>Tạm tính</span>"
+                    + "    <span>" + String.format("%,.0f", tongTienHang) + " VND</span>"
+                    + "  </div>"
+                    + "  <div style='display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;'>"
+                    + "    <span style='color:#475569;'>Giảm giá</span>"
+                    + "    <span style='color:#ef4444;'>-" + String.format("%,.0f", tienGiam != null ? tienGiam : java.math.BigDecimal.ZERO) + " VND</span>"
+                    + "  </div>"
+                    + "  <div style='display:flex;justify-content:space-between;margin-bottom:10px;font-size:13px;'>"
+                    + "    <span style='color:#475569;'>Phí vận chuyển</span>"
+                    + "    <span>" + String.format("%,.0f", phiVanChuyen != null ? phiVanChuyen : java.math.BigDecimal.ZERO) + " VND</span>"
+                    + "  </div>"
+                    + "  <hr style='border:none;border-top:1px solid #e2e8f0;margin:8px 0;'/>"
+                    + "  <div style='display:flex;justify-content:space-between;font-weight:700;font-size:15px;'>"
+                    + "    <span>Thành tiền</span>"
+                    + "    <span style='color:#f79b66;'>" + String.format("%,.0f", tongThanhToan) + " VND</span>"
+                    + "  </div>"
+                    + "</div>"
+
+                    + "</div>"
+
+                    // Footer
+                    + "<div style='background:#fff;padding:16px;text-align:center;border-top:2px solid #f79b66;'>"
+                    + "  <p style='font-size:12px;color:#475569;margin:0 0 4px;font-weight:600;'>Aerion Sports</p>"
+                    + "  <p style='font-size:11px;color:#94a3b8;margin:0;'>Email được gửi tự động từ hệ thống. Vui lòng không trả lời email này.</p>"
+                    + "</div>"
+                    + "</div>";
+
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+            System.out.println(">>> [MAIL SUCCESS] Gửi mail đơn hàng #" + maHoaDon + " tới " + toEmail);
+        } catch (Exception e) {
+            System.err.println(">>> [MAIL ERROR] Lỗi gửi mail đơn hàng: " + e.getMessage());
         }
     }
 }

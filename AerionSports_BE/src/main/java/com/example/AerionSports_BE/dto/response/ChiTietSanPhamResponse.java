@@ -36,4 +36,6 @@ public class ChiTietSanPhamResponse {
     // Các trường phục vụ quét chương trình khuyến mại
     private BigDecimal giaDaGiam;
     private BigDecimal phanTramGiam;
+
+
 }

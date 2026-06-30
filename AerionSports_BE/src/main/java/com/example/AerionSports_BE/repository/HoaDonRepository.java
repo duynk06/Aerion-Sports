@@ -9,60 +9,88 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
 public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
 
     @Query("""
-        SELECT hd FROM HoaDon hd LEFT JOIN hd.nhanVien nv
-        WHERE LOWER(hd.maHoaDon) LIKE LOWER(CONCAT('%', :keyword, '%'))
-           OR LOWER(nv.tenNv) LIKE LOWER(CONCAT('%', :keyword, '%'))
-           OR LOWER(hd.tenNguoiNhan) LIKE LOWER(CONCAT('%', :keyword, '%'))
-           OR hd.sdtNguoiNhan LIKE CONCAT('%', :keyword, '%')
+        SELECT hd
+        FROM HoaDon hd
+        LEFT JOIN hd.nhanVien nv
+        WHERE
+            LOWER(hd.maHoaDon) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(nv.tenNv) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(hd.tenNguoiNhan) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR hd.sdtNguoiNhan LIKE CONCAT('%', :keyword, '%')
     """)
     List<HoaDon> search(@Param("keyword") String keyword);
 
     @Query(value = """
-        SELECT hd FROM HoaDon hd
-        LEFT JOIN FETCH hd.khachHang kh LEFT JOIN FETCH hd.nhanVien nv
-        WHERE (:keyword IS NULL OR :keyword = '' OR
-                LOWER(hd.maHoaDon) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(nv.tenNv) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(hd.tenNguoiNhan) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR hd.sdtNguoiNhan LIKE CONCAT('%', :keyword, '%')
-            )
-            AND (:loaiHoaDon IS NULL OR hd.loaiHoaDon = :loaiHoaDon)
-            AND (:trangThai IS NULL OR hd.trangThai = :trangThai)
-            AND (:tuNgay IS NULL OR CAST(hd.ngayTao AS date) >= :tuNgay)
-            AND (:denNgay IS NULL OR CAST(hd.ngayTao AS date) <= :denNgay)
-        ORDER BY hd.id DESC
-    """,
-            countQuery = """
-        SELECT COUNT(hd) FROM HoaDon hd LEFT JOIN hd.nhanVien nv
-        WHERE (:keyword IS NULL OR :keyword = '' OR
-                LOWER(hd.maHoaDon) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(nv.tenNv) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(hd.tenNguoiNhan) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR hd.sdtNguoiNhan LIKE CONCAT('%', :keyword, '%')
-            )
-            AND (:loaiHoaDon IS NULL OR hd.loaiHoaDon = :loaiHoaDon)
-            AND (:trangThai IS NULL OR hd.trangThai = :trangThai)
-            AND (:tuNgay IS NULL OR CAST(hd.ngayTao AS date) >= :tuNgay)
-            AND (:denNgay IS NULL OR CAST(hd.ngayTao AS date) <= :denNgay)
-    """)
+    SELECT hd
+    FROM HoaDon hd
+    LEFT JOIN hd.khachHang kh
+    LEFT JOIN hd.nhanVien nv
+    WHERE
+        (:keyword IS NULL OR :keyword = '' OR
+            LOWER(hd.maHoaDon) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(nv.tenNv) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(hd.tenNguoiNhan) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR hd.sdtNguoiNhan LIKE CONCAT('%', :keyword, '%')
+        )
+        AND (:loaiHoaDon IS NULL OR hd.loaiHoaDon = :loaiHoaDon)
+        AND (:trangThai IS NULL OR hd.trangThai = :trangThai)
+        AND (:tuNgay IS NULL OR CAST(hd.ngayTao AS date) >= :tuNgay)
+        AND (:denNgay IS NULL OR CAST(hd.ngayTao AS date) <= :denNgay)
+    ORDER BY hd.id DESC
+""", countQuery = """
+    SELECT COUNT(hd)
+    FROM HoaDon hd
+    LEFT JOIN hd.nhanVien nv
+    WHERE
+        (:keyword IS NULL OR :keyword = '' OR
+            LOWER(hd.maHoaDon) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(nv.tenNv) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(hd.tenNguoiNhan) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR hd.sdtNguoiNhan LIKE CONCAT('%', :keyword, '%')
+        )
+        AND (:loaiHoaDon IS NULL OR hd.loaiHoaDon = :loaiHoaDon)
+        AND (:trangThai IS NULL OR hd.trangThai = :trangThai)
+        AND (:tuNgay IS NULL OR CAST(hd.ngayTao AS date) >= :tuNgay)
+        AND (:denNgay IS NULL OR CAST(hd.ngayTao AS date) <= :denNgay)
+""")
     Page<HoaDon> filterHoaDon(
             @Param("keyword") String keyword,
-            @Param("loaiHoaDon") Integer loaiHoaDon,
+            @Param("loaiHoaDon") Integer loaiHoaDon, // Sửa thành Integer
             @Param("trangThai") Integer trangThai,
             @Param("tuNgay") LocalDate tuNgay,
             @Param("denNgay") LocalDate denNgay,
             Pageable pageable
     );
 
-    // ================= TRUY VẤN JPQL PHỤC VỤ 4 Ô THẺ THỐNG KÊ TỔNG QUAN HÀNG TRÊN =================
+    // HoaDonRepository.java
+
+    @Query("""
+    SELECT hd FROM HoaDon hd
+    LEFT JOIN FETCH hd.chiTietHoaDons cthd
+    LEFT JOIN FETCH cthd.chiTietSanPham ctsp
+    LEFT JOIN FETCH ctsp.idSanPham sp
+    LEFT JOIN FETCH ctsp.idMauSac
+    LEFT JOIN FETCH ctsp.idTrongLuong
+    LEFT JOIN FETCH hd.khachHang
+    WHERE hd.id = :id
+""")
+    HoaDon findByIdWithChiTiet(@Param("id") Integer id);
+
+
+    // HoaDonRepository.java — thêm method
+    List<HoaDon> findByTrangThaiAndLoaiHoaDon(Integer trangThai, Integer loaiHoaDon);
+    // HoaDonRepository.java — thêm method đếm
+    long countByTrangThaiAndLoaiHoaDon(Integer trangThai, Integer loaiHoaDon);
+
+    // ================= TRUY VẤN JPQL PHỤC VỤ 4 Ô THÈ THỐNG KÊ TỔNG QUAN HÀNG TRÊN =================
     @Query("SELECT COALESCE(SUM(h.tongTienThanhToan), 0) FROM HoaDon h WHERE h.trangThai = 5 AND h.ngayTao BETWEEN :start AND :end")
     BigDecimal sumDoanhThuThucTe(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
@@ -114,25 +142,31 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             "GROUP BY sp.ten_san_pham ORDER BY da_ban ASC, ton DESC", nativeQuery = true)
     List<Object[]> querySanPhamBanChamTonKho(@Param("denNgay") LocalDate denNgay);
 
-    // 5. Truy vấn doanh thu theo từng ngày của tháng phục vụ vẽ trục hoành biểu đồ sóng cong
-    @Query(value = "SELECT DAY(hd.ngay_tao) as ngay, SUM(hd.tong_tien_thanh_toan) " +
+
+    // ================= TRUY VẤN NATIVE SQL ĐỘNG CHO BIỂU ĐỒ (ĐÃ SỬA CONVERT DATE CHUẨN XÁC) =================
+
+    // 5. 🌟 ĐÃ SỬA: Truy vấn doanh thu theo từng ngày của tháng (Ép kiểu DATE phẳng tránh lệch múi giờ)
+    @Query(value = "SELECT DAY(CONVERT(DATE, hd.ngay_tao)) as ngay, SUM(hd.tong_tien_thanh_toan) " +
             "FROM hoa_don hd " +
-            "WHERE hd.trang_thai = 5 AND MONTH(hd.ngay_tao) = :thang AND YEAR(hd.ngay_tao) = :nam " +
-            "GROUP BY DAY(hd.ngay_tao)", nativeQuery = true)
+            "WHERE hd.trang_thai = 5 " +
+            "  AND MONTH(CONVERT(DATE, hd.ngay_tao)) = :thang " +
+            "  AND YEAR(CONVERT(DATE, hd.ngay_tao)) = :nam " +
+            "GROUP BY DAY(CONVERT(DATE, hd.ngay_tao))", nativeQuery = true)
     List<Object[]> queryDoanhThuTheoTungNgayTrongThang(@Param("thang") Integer thang, @Param("nam") Integer nam);
 
-    // 2. 🌟 MỚI: Truy vấn doanh thu theo 12 tháng của Năm chọn
-    @Query(value = "SELECT MONTH(hd.ngay_tao) as thang, SUM(hd.tong_tien_thanh_toan) " +
+    // 6. 🌟 ĐÃ SỬA: Truy vấn doanh thu theo 12 tháng của Năm chọn
+    @Query(value = "SELECT MONTH(CONVERT(DATE, hd.ngay_tao)) as thang, SUM(hd.tong_tien_thanh_toan) " +
             "FROM hoa_don hd " +
-            "WHERE hd.trang_thai = 5 AND YEAR(hd.ngay_tao) = :nam " +
-            "GROUP BY MONTH(hd.ngay_tao)", nativeQuery = true)
+            "WHERE hd.trang_thai = 5 " +
+            "  AND YEAR(CONVERT(DATE, hd.ngay_tao)) = :nam " +
+            "GROUP BY MONTH(CONVERT(DATE, hd.ngay_tao))", nativeQuery = true)
     List<Object[]> queryDoanhThu12ThangTheoNam(@Param("nam") Integer nam);
 
-    // 3. 🌟 MỚI: Truy vấn doanh thu theo 4 Quý của Năm chọn
-    @Query(value = "SELECT DATEPART(QUARTER, hd.ngay_tao) as quy, SUM(hd.tong_tien_thanh_toan) " +
+    // 7. 🌟 ĐÃ SỬA: Truy vấn doanh thu theo 4 Quý của Năm chọn
+    @Query(value = "SELECT DATEPART(QUARTER, CONVERT(DATE, hd.ngay_tao)) as quy, SUM(hd.tong_tien_thanh_toan) " +
             "FROM hoa_don hd " +
-            "WHERE hd.trang_thai = 5 AND YEAR(hd.ngay_tao) = :nam " +
-            "GROUP BY DATEPART(QUARTER, hd.ngay_tao)", nativeQuery = true)
+            "WHERE hd.trang_thai = 5 " +
+            "  AND YEAR(CONVERT(DATE, hd.ngay_tao)) = :nam " +
+            "GROUP BY DATEPART(QUARTER, CONVERT(DATE, hd.ngay_tao))", nativeQuery = true)
     List<Object[]> queryDoanhThu4QuyTheoNam(@Param("nam") Integer nam);
-
 }

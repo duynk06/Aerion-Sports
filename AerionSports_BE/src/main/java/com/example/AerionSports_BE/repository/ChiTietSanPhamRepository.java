@@ -11,13 +11,14 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, Integer> {
 
     List<ChiTietSanPham> findByTrangThai(Integer trangThai);
     boolean existsByMaCtsp(String maCtsp);
-    java.util.Optional<ChiTietSanPham> findByMaCtsp(String maCtsp);
+
 
     // 🌟 ĐÃ SỬA: EntityGraph rút gọn, chỉ nạp mối quan hệ thực tế còn lại ở bảng CTSP con
     @EntityGraph(attributePaths = {"idSanPham", "idMauSac", "idTrongLuong"})
@@ -69,4 +70,50 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "(:keyword IS NULL OR LOWER(c.maCtsp) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(sp.maSanPham) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(sp.tenSanPham) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
             "ORDER BY c.id DESC")
     List<ChiTietSanPham> searchActiveProducts(@Param("keyword") String keyword);
+
+    @EntityGraph(attributePaths = {
+            "idSanPham",
+            "idMauSac",
+            "idTrongLuong",
+            "hinhAnhs"
+    })
+    // ChiTietSanPhamRepository.java — sửa query locSanPhamPos
+    @Query("""
+    SELECT ct FROM ChiTietSanPham ct
+    JOIN ct.idSanPham sp
+    WHERE ct.trangThai = :trangThaiCtsp
+    AND sp.trangThai = 1
+    AND (:keyword IS NULL OR ct.maCtsp LIKE %:keyword%
+         OR sp.tenSanPham LIKE %:keyword%)
+    AND (:idMauSac IS NULL OR ct.idMauSac.id = :idMauSac)
+    AND (:idTrongLuong IS NULL OR ct.idTrongLuong.id = :idTrongLuong)
+    AND (:giaMin IS NULL OR ct.giaBan >= :giaMin)
+    AND (:giaMax IS NULL OR ct.giaBan <= :giaMax)
+    AND (:trangThai IS NULL
+         OR (:trangThai = 1 AND ct.soLuong > 0)
+         OR (:trangThai = 0 AND ct.soLuong = 0))
+    ORDER BY ct.id DESC
+    """)
+    Page<ChiTietSanPham> locSanPhamPos(
+            @Param("keyword") String keyword,
+            @Param("idMauSac") Integer idMauSac,
+            @Param("idTrongLuong") Integer idTrongLuong,
+            @Param("giaMin") BigDecimal giaMin,
+            @Param("giaMax") BigDecimal giaMax,
+            @Param("trangThai") Integer trangThai,
+            @Param("trangThaiCtsp") Integer trangThaiCtsp,
+            Pageable pageable
+    );
+    @Query("""
+SELECT MIN(ct.giaBan)
+FROM ChiTietSanPham ct
+""")
+    BigDecimal getGiaMin();
+
+    @Query("""
+SELECT MAX(ct.giaBan)
+FROM ChiTietSanPham ct
+""")
+    BigDecimal getGiaMax();
+    Optional<ChiTietSanPham> findByMaCtsp(String maCtsp);
 }

@@ -34,7 +34,10 @@ public class HoaDonResponse {
 
     // --- THÔNG TIN TÀI KHOẢN KHÁCH HÀNG (Nếu có) ---
     private Integer idKhachHang;
+    private String tenKhachHang;
+    private String sdtKhachHang;
     private String email;
+    private String diaChiMacDinhKhachHang;
 
     // --- THÔNG TIN NHÂN VIÊN ---
     private Integer idNhanVien;
@@ -64,7 +67,20 @@ public class HoaDonResponse {
         // Chỉ lấy ID và Email từ bảng Khách Hàng (nếu đơn này do user có tài khoản đặt)
         if (hoaDon.getKhachHang() != null) {
             this.idKhachHang = hoaDon.getKhachHang().getId();
+            this.tenKhachHang = hoaDon.getKhachHang().getHoTen();
+            this.sdtKhachHang = hoaDon.getKhachHang().getSdt();
             this.email = hoaDon.getKhachHang().getEmail();
+            if (hoaDon.getKhachHang().getAddresses() != null && !hoaDon.getKhachHang().getAddresses().isEmpty()) {
+                this.diaChiMacDinhKhachHang = hoaDon.getKhachHang().getAddresses().stream()
+                        // Dùng Boolean.TRUE.equals() để tránh lỗi NullPointerException nếu macDinh bị null
+                        .filter(dc -> Boolean.TRUE.equals(dc.getMacDinh()))
+                        // Nối chuỗi tạo thành địa chỉ hoàn chỉnh
+                        .map(dc -> dc.getDiaChiChiTiet() + ", " + dc.getPhuongXa() + ", " + dc.getTinhThanh())
+                        .findFirst() // Lấy cái đầu tiên tìm được
+                        .orElse("Khách hàng chưa thiết lập địa chỉ mặc định"); // Nếu có địa chỉ nhưng không có cái nào mặc định
+            } else {
+                this.diaChiMacDinhKhachHang = "";
+            }
         }
 
         if (hoaDon.getNhanVien() != null) {

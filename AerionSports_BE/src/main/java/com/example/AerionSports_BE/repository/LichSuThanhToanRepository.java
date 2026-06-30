@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface LichSuThanhToanRepository extends JpaRepository<LichSuThanhToan, Integer> {
     List<LichSuThanhToan> findByHoaDon_Id(Integer idHoaDon);
+    List<LichSuThanhToan> findByHoaDon_IdOrderByNgayThanhToanDesc(Integer idHoaDon);
 }

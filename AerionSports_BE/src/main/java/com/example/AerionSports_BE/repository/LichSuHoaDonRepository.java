@@ -2,6 +2,7 @@ package com.example.AerionSports_BE.repository;
 
 import com.example.AerionSports_BE.entity.LichSuHoaDon;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -16,4 +17,8 @@ public interface LichSuHoaDonRepository
     findByHoaDon_IdOrderByThoiGianHanhDongDesc(
             Integer idHoaDon
     );
+    // LichSuHoaDonRepository.java
+    @Modifying
+    @Query("DELETE FROM LichSuHoaDon l WHERE l.hoaDon.id = :idHoaDon")
+    void deleteByHoaDonId(@Param("idHoaDon") Integer idHoaDon);
 }

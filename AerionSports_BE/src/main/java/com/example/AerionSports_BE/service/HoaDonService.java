@@ -24,4 +24,5 @@ public interface HoaDonService {
     );
 
     HoaDonResponse detail(Integer id);
+    HoaDonResponse chuyenTrangThai(Integer id, Integer trangThaiMoi, String ghiChu);
 }
