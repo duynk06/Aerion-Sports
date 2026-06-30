@@ -20,8 +20,12 @@
               <input
                 v-model="guestCustomer.phone"
                 type="text"
+                inputmode="numeric"
+                autocomplete="tel"
+                pattern="[0-9]*"
                 placeholder="Nhập số điện thoại"
                 class="w-full px-4 py-3 border border-gray-300 rounded focus:border-secondary-color focus:ring-1 focus:ring-secondary-color outline-none transition-all"
+                @input="handlePhoneInput"
               />
             </div>
           </div>
@@ -279,14 +283,16 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { UserOutlined, CreditCardOutlined, ShoppingCartOutlined, CheckCircleOutlined } from '@ant-design/icons-vue'
-import { getProductDetail, resolveMediaUrl, getProvinces, getDistrictsByProvinceCode, getWardsByDistrictCode, getVoucherList, createGuestCustomer } from '../../services/api'
+import { getProductDetail, resolveMediaUrl, getProvinces, getDistrictsByProvinceCode, getWardsByDistrictCode, getVoucherList, createOnlineOrder, getOnlineCustomerProfile } from '../../services/api'
 import fallbackImage from '../../assets/mock_racket.png'
 import logoShip from '../../assets/logo/image.png'
 import { useCart } from '../../composables/useCart'
 import { useCatalogRealtime } from '../../composables/useCatalogRealtime'
 
-const { cartItems } = useCart()
+const router = useRouter()
+const { cartItems, clearCart } = useCart()
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -313,8 +319,48 @@ const guestCustomer = ref({
   ward: '',
   note: '',
 })
+const PHONE_REGEX = /^0\d{9}$/
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const splitSavedDetail = (value) => {
+  const raw = String(value || '').trim()
+  if (!raw.includes(' | ')) {
+    return { districtName: '', detail: raw }
+  }
+
+  const [districtName, ...rest] = raw.split(' | ')
+  return {
+    districtName: districtName.trim(),
+    detail: rest.join(' | ').trim(),
+  }
+}
+
+const normalizeText = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+const findBestMatch = (items, label) => {
+  const needle = normalizeText(label)
+  if (!needle) return null
+
+  return items.find((item) => {
+    const haystack = normalizeText(item?.name || '')
+    return haystack === needle || haystack.includes(needle) || needle.includes(haystack)
+  }) || null
+}
 
 const formatPrice = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value || 0))} đ`
+
+const handlePhoneInput = (event) => {
+  const rawValue = String(event?.target?.value || '')
+  const digitsOnly = rawValue.replace(/\D/g, '').slice(0, 10)
+  guestCustomer.value.phone = digitsOnly
+}
 
 const normalizeProduct = (payload, cartItem) => {
   const variants = Array.isArray(payload?.chiTietSanPhams) ? payload.chiTietSanPhams : Array.from(payload?.chiTietSanPhams || [])
@@ -322,6 +368,7 @@ const normalizeProduct = (payload, cartItem) => {
     .filter(Boolean)
     .map((variant) => ({
       key: variant?.id ?? `${variant?.maCtsp ?? 'variant'}-${variant?.tenMauSac ?? ''}-${variant?.tenTrongLuong ?? ''}`,
+      variantId: variant?.id ?? null,
       image: resolveMediaUrl(variant?.hinhAnh) || fallbackImage,
       price: Number(variant?.giaDaGiam ?? variant?.giaBan ?? 0),
       oldPrice: Number(variant?.giaBan ?? 0),
@@ -340,6 +387,7 @@ const normalizeProduct = (payload, cartItem) => {
   return {
     id: cartItem.id,
     productId: payload?.id,
+    variantId: matchedVariant.variantId,
     name: payload?.tenSanPham || `Sản phẩm ${payload?.id ?? ''}`,
     variantLabel: [matchedVariant.color, matchedVariant.weight].filter(Boolean).join(' · ') || matchedVariant.key,
     image: matchedVariant.image,
@@ -391,6 +439,48 @@ const loadCities = async () => {
   } catch (error) {
     console.error('Không tải được danh sách tỉnh/thành:', error)
     cities.value = []
+  }
+}
+
+const prefillLoggedInCustomer = async () => {
+  const token = window.localStorage.getItem('aerion_client_token')
+  if (!token) return
+
+  try {
+    const { data } = await getOnlineCustomerProfile()
+    const user = data?.user || {}
+    const address = data?.diaChiMacDinh || {}
+    const savedDetail = splitSavedDetail(address.diaChiChiTiet || '')
+
+    guestCustomer.value.fullName = user.ten || user.hoTen || guestCustomer.value.fullName
+    guestCustomer.value.phone = user.sdt || guestCustomer.value.phone
+    guestCustomer.value.email = user.email || guestCustomer.value.email
+    guestCustomer.value.note = guestCustomer.value.note || ''
+
+    const provinceMatch = findBestMatch(cities.value, address.tinhThanh)
+    if (provinceMatch) {
+      guestCustomer.value.city = provinceMatch.name
+      await loadDistrictsByCityName(provinceMatch.name)
+    }
+
+    const districtMatch = findBestMatch(districts.value, savedDetail.districtName)
+    if (districtMatch) {
+      guestCustomer.value.district = districtMatch.name
+      await loadWardsByDistrictName(districtMatch.name)
+    }
+
+    const wardMatch = findBestMatch(wards.value, address.phuongXa)
+    if (wardMatch) {
+      guestCustomer.value.ward = wardMatch.name
+    }
+
+    if (savedDetail.detail) {
+      guestCustomer.value.address = savedDetail.detail
+    } else if (address.diaChiDayDu) {
+      guestCustomer.value.address = address.diaChiDayDu
+    }
+  } catch (error) {
+    console.error('Khong tai duoc ho so khach hang da dang nhap:', error)
   }
 }
 
@@ -616,8 +706,13 @@ const validateGuestCustomer = () => {
     return false
   }
 
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    alert('Email không đúng định dạng.')
+  if (!PHONE_REGEX.test(phone)) {
+    alert('Số điện thoại phải bắt đầu bằng số 0 và gồm đúng 10 chữ số.')
+    return false
+  }
+
+  if (!email || !EMAIL_REGEX.test(email)) {
+    alert('Email phải đúng định dạng.')
     return false
   }
 
@@ -639,40 +734,45 @@ const handlePlaceOrder = async () => {
       if (voucherInput.value.trim() && !appliedVoucher.value) return
     }
 
-    const fullDeliveryAddress = [
-      guestCustomer.value.address.trim(),
-      guestCustomer.value.ward.trim(),
-      guestCustomer.value.district.trim(),
-      guestCustomer.value.city.trim(),
-    ].filter(Boolean).join(', ')
-
     const payload = {
       hoTen: guestCustomer.value.fullName.trim(),
       sdt: guestCustomer.value.phone.trim(),
       email: guestCustomer.value.email.trim() || null,
-      ngaySinh: null,
-      gioiTinh: null,
-      trangThai: 1,
-      addresses: [
-        {
-          nguoiNhan: guestCustomer.value.fullName.trim(),
-          sdt: guestCustomer.value.phone.trim(),
-          tinhThanh: guestCustomer.value.city,
-          phuongXa: guestCustomer.value.ward,
-          diaChiChiTiet: fullDeliveryAddress,
-          macDinh: true,
-        },
-      ],
+      diaChiChiTiet: guestCustomer.value.address.trim(),
+      phuongXa: guestCustomer.value.ward.trim(),
+      quanHuyen: guestCustomer.value.district.trim(),
+      tinhThanh: guestCustomer.value.city.trim(),
+      ghiChu: guestCustomer.value.note.trim() || null,
+      phuongThucThanhToan: paymentMethod.value,
+      maPhieuGiamGia: appliedVoucher.value?.maPhieuGiamGia || null,
+      phiVanChuyen: summary.value.shipping,
+      items: hydratedItems.value.map((item) => {
+        if (!item.variantId) {
+          throw new Error(`San pham ${item.name} chua co variantId hop le.`)
+        }
+        return {
+          chiTietSanPhamId: Number(item.variantId),
+          soLuong: Number(item.quantity || 1),
+          donGia: Number(item.price || 0),
+        }
+      }),
     }
 
-    const response = await createGuestCustomer(payload)
-    const customerId = response?.data?.id ?? response?.data?.data?.id ?? null
+    const response = await createOnlineOrder(payload)
+    const order = response?.data || null
+    clearCart()
 
-    alert(customerId
-      ? `Đã tạo khách hàng mới thành công (ID: ${customerId}).`
-      : 'Đã tạo khách hàng mới thành công.')
+    if (order?.maHoaDon) {
+      await router.push({
+        path: '/order-tracking',
+        query: { code: order.maHoaDon },
+      })
+      alert(`Da tao don hang thanh cong. Ma hoa don: ${order.maHoaDon}`)
+    } else {
+      alert('Da tao don hang thanh cong.')
+    }
   } catch (error) {
-    const message = error?.response?.data || error?.message || 'Không thể tạo khách hàng mới.'
+    const message = error?.response?.data || error?.message || 'Khong the tao don hang moi.'
     alert(`Thất bại: ${message}`)
   } finally {
     submitting.value = false
@@ -693,6 +793,7 @@ watch(
 onMounted(async () => {
   await hydrateCart()
   await loadCities()
+  await prefillLoggedInCustomer()
 })
 
 useCatalogRealtime(hydrateCart)

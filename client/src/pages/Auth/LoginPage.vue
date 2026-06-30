@@ -1,7 +1,6 @@
 <template>
   <div class="bg-gray-50 min-h-screen py-10">
     <div class="container mx-auto px-5">
-      <!-- Breadcrumbs -->
       <div class="mb-10 text-sm text-gray-500 flex items-center gap-2">
         <router-link to="/" class="hover:text-primary-color transition-colors">Trang chủ</router-link>
         <span class="text-xs">&gt;</span>
@@ -10,35 +9,42 @@
         <span class="text-gray-800 font-medium">Đăng nhập</span>
       </div>
 
-      <!-- Login Form Container -->
       <div class="max-w-md mx-auto bg-white rounded-lg shadow-sm p-8 md:p-10 border border-gray-100">
         <h1 class="text-3xl font-bold text-gray-900 mb-8">Đăng nhập</h1>
-        
+
         <form @submit.prevent="handleLogin" class="space-y-5">
           <div>
-            <input 
-              type="email" 
-              placeholder="Email" 
+            <input
               v-model="email"
+              type="email"
+              inputmode="email"
+              autocomplete="email"
+              placeholder="Email"
               class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded focus:ring-secondary-color focus:border-secondary-color block p-3.5 outline-none transition-colors"
               required
             />
           </div>
+
           <div>
-            <input 
-              type="password" 
-              placeholder="Mật khẩu" 
+            <input
               v-model="password"
+              type="password"
+              placeholder="Mật khẩu"
               class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded focus:ring-secondary-color focus:border-secondary-color block p-3.5 outline-none transition-colors"
               required
             />
           </div>
-          
-          <button 
-            type="submit" 
-            class="w-full text-white bg-black hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded text-sm px-5 py-4 text-center uppercase tracking-widest transition-colors mt-2"
+
+          <p v-if="errorMessage" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded p-3">
+            {{ errorMessage }}
+          </p>
+
+          <button
+            type="submit"
+            :disabled="isLoading"
+            class="w-full text-white bg-black hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded text-sm px-5 py-4 text-center uppercase tracking-widest transition-colors mt-2"
           >
-            Đăng nhập
+            {{ isLoading ? 'Đang xử lý...' : 'Đăng nhập' }}
           </button>
         </form>
 
@@ -55,18 +61,41 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { loginOnlineCustomer } from '../../services/api'
 
 const router = useRouter()
 const email = ref('')
 const password = ref('')
+const errorMessage = ref('')
+const isLoading = ref(false)
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-const handleLogin = () => {
-  // Mock login logic
-  console.log('Logging in with:', email.value, password.value)
-  // Redirect to home after 'login'
-  router.push('/')
+const handleLogin = async () => {
+  if (isLoading.value) return
+
+  errorMessage.value = ''
+
+  const normalizedEmail = email.value.trim().toLowerCase()
+  if (!EMAIL_REGEX.test(normalizedEmail)) {
+    errorMessage.value = 'Email không đúng định dạng.'
+    return
+  }
+
+  isLoading.value = true
+
+  try {
+    const { data } = await loginOnlineCustomer({
+      tenDangNhap: normalizedEmail,
+      matKhau: password.value,
+    })
+
+    window.localStorage.setItem('aerion_client_token', data.token)
+    window.localStorage.setItem('aerion_client_user', JSON.stringify(data.user))
+    router.push('/')
+  } catch (error) {
+    errorMessage.value = error?.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.'
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
-
-<style scoped>
-</style>

@@ -5,35 +5,35 @@
         <img src="../../assets/logo/logo.jpg" alt="Aerion Sports" class="h-12 w-auto object-contain" />
       </router-link>
 
-      <nav class="hidden lg:flex items-center gap-10 absolute left-1/2 -translate-x-1/2">
-        <router-link to="/" class="relative font-bold text-primary-color uppercase text-[14px] tracking-wide hover:text-secondary-color transition group py-2" exact-active-class="text-secondary-color active-nav">
-          Trang Chu
+      <nav class="hidden lg:flex flex-1 justify-center items-center gap-5 xl:gap-8 mx-4">
+        <router-link to="/" class="relative font-bold text-primary-color uppercase text-[14px] xl:text-[14px] tracking-wide hover:text-secondary-color transition group py-2" exact-active-class="text-secondary-color active-nav">
+          Trang chủ
           <span class="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[2px] bg-secondary-color transition-all duration-300 group-hover:w-full"></span>
         </router-link>
         <router-link to="/products" class="relative font-bold text-primary-color uppercase text-[14px] tracking-wide hover:text-secondary-color transition group py-2" active-class="text-secondary-color active-nav">
-          San Pham
+          Sản phẩm
           <span class="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[2px] bg-secondary-color transition-all duration-300 group-hover:w-full"></span>
         </router-link>
         <a href="#" class="relative font-bold text-primary-color uppercase text-[14px] tracking-wide hover:text-secondary-color transition group py-2">
-          Gioi Thieu
+          Giới thiệu
           <span class="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[2px] bg-secondary-color transition-all duration-300 group-hover:w-full"></span>
         </a>
         <a href="#" class="relative font-bold text-primary-color uppercase text-[14px] tracking-wide hover:text-secondary-color transition group py-2">
-          Tin Tuc
+          Liên hệ
           <span class="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[2px] bg-secondary-color transition-all duration-300 group-hover:w-full"></span>
         </a>
-        <a href="#" class="relative font-bold text-primary-color uppercase text-[14px] tracking-wide hover:text-secondary-color transition group py-2">
-          Lien He
+        <router-link to="/order-tracking" class="relative font-bold text-primary-color uppercase text-[14px] tracking-wide hover:text-secondary-color transition group py-2" active-class="text-secondary-color active-nav">
+          Theo dõi đơn hàng
           <span class="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[2px] bg-secondary-color transition-all duration-300 group-hover:w-full"></span>
-        </a>
+        </router-link>
       </nav>
 
-      <div class="flex items-center gap-4 ml-auto z-10">
+      <div class="flex items-center gap-4 flex-shrink-0 z-10">
         <div class="relative hidden xl:block mr-2">
           <input
             v-model="searchKeyword"
             type="text"
-            placeholder="Tim vot Yonex, Victor..."
+            placeholder="Tìm vợt Yonex, Victor..."
             class="w-72 pl-5 pr-12 py-2.5 bg-gray-100 border border-transparent rounded-full text-sm outline-none focus:bg-white focus:border-secondary-color focus:ring-4 focus:ring-secondary-color/10 transition-all duration-300"
             @input="handleSearchInput"
             @keydown.enter.prevent="submitSearch"
@@ -57,19 +57,42 @@
         </router-link>
 
         <div class="relative group mt-1">
-          <router-link to="/profile" class="block p-2.5 bg-gray-50 rounded-full group-hover:bg-secondary-color transition-all duration-300">
+          <router-link
+            :to="isLoggedIn ? '/profile' : '/login'"
+            :class="[
+              'flex items-center bg-gray-50 group-hover:bg-secondary-color transition-all duration-300',
+              isLoggedIn ? 'gap-2 rounded-full px-3 py-2.5' : 'rounded-full p-2.5'
+            ]"
+          >
             <UserOutlined class="text-xl text-primary-color group-hover:text-white transition-colors" />
+            <span
+              v-if="isLoggedIn"
+              class="hidden md:block max-w-[130px] truncate text-sm font-semibold text-primary-color group-hover:text-white transition-colors leading-none pt-0.5"
+            >
+              {{ displayName }}
+            </span>
           </router-link>
 
           <div class="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 border border-gray-100 z-50">
-            <router-link to="/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-secondary-color transition-colors">
-              Ho so
+            <router-link v-if="isLoggedIn" to="/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-secondary-color transition-colors">
+              Hồ sơ
             </router-link>
-            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-secondary-color transition-colors">
-              Don hang cua toi
-            </a>
-            <router-link to="/login" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-50 transition-colors border-t border-gray-100">
-              Dang xuat
+            <router-link v-if="isLoggedIn" to="/my-orders" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-secondary-color transition-colors">
+              Đơn hàng của tôi
+            </router-link>
+            <button
+              v-if="isLoggedIn"
+              type="button"
+              class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 transition-colors border-t border-gray-100"
+              @click="handleLogout"
+            >
+              Đăng xuất
+            </button>
+            <router-link v-if="!isLoggedIn" to="/login" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-secondary-color transition-colors">
+              Đăng nhập
+            </router-link>
+            <router-link v-if="!isLoggedIn" to="/register" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-secondary-color transition-colors">
+              Đăng ký
             </router-link>
           </div>
         </div>
@@ -79,7 +102,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { SearchOutlined, ShoppingCartOutlined, UserOutlined } from '@ant-design/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCart } from '../../composables/useCart'
@@ -87,6 +110,41 @@ import { useCart } from '../../composables/useCart'
 const { cartCount } = useCart()
 const router = useRouter()
 const route = useRoute()
+const currentUser = ref(null)
+const searchKeyword = ref('')
+
+const isLoggedIn = computed(() => Boolean(currentUser.value))
+const displayName = computed(() => {
+  const user = currentUser.value || {}
+  return user.ten || user.hoTen || user.email || 'Tài khoản'
+})
+
+const syncCurrentUser = () => {
+  if (typeof window === 'undefined') return
+
+  const token = window.localStorage.getItem('aerion_client_token')
+  const rawUser = window.localStorage.getItem('aerion_client_user')
+
+  if (!token || !rawUser) {
+    currentUser.value = null
+    return
+  }
+
+  try {
+    currentUser.value = JSON.parse(rawUser)
+  } catch (error) {
+    window.localStorage.removeItem('aerion_client_user')
+    currentUser.value = null
+  }
+}
+
+const handleLogout = () => {
+  window.localStorage.removeItem('aerion_client_token')
+  window.localStorage.removeItem('aerion_client_user')
+  currentUser.value = null
+  router.push('/login')
+}
+
 const sanitizeSearchKeyword = (value) =>
   String(value || '')
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
@@ -98,8 +156,6 @@ const sanitizeSearchKeywordForTyping = (value) =>
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .replace(/^\s+/g, '')
     .replace(/\s{2,}/g, ' ')
-
-const searchKeyword = ref(sanitizeSearchKeyword(typeof route.query.keyword === 'string' ? route.query.keyword : ''))
 
 const handleSearchInput = () => {
   const sanitized = sanitizeSearchKeywordForTyping(searchKeyword.value)
@@ -117,11 +173,22 @@ const submitSearch = () => {
   })
 }
 
+onMounted(() => {
+  syncCurrentUser()
+  window.addEventListener('storage', syncCurrentUser)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('storage', syncCurrentUser)
+})
+
 watch(
-  () => route.query.keyword,
-  (keyword) => {
-    searchKeyword.value = sanitizeSearchKeyword(typeof keyword === 'string' ? keyword : '')
-  }
+  () => route.fullPath,
+  () => {
+    syncCurrentUser()
+    searchKeyword.value = sanitizeSearchKeyword(typeof route.query.keyword === 'string' ? route.query.keyword : '')
+  },
+  { immediate: true }
 )
 
 watch(searchKeyword, (keyword) => {

@@ -9,6 +9,8 @@ const routes = [
   { path: '/login', name: 'Login', component: () => import('../pages/Auth/LoginPage.vue') },
   { path: '/register', name: 'Register', component: () => import('../pages/Auth/RegisterPage.vue') },
   { path: '/profile', name: 'Profile', component: () => import('../pages/Profile/ProfilePage.vue') },
+  { path: '/my-orders', name: 'MyOrders', component: () => import('../pages/MyOrders/MyOrdersPage.vue') },
+  { path: '/order-tracking', name: 'OrderTracking', component: () => import('../pages/OrderTracking/OrderTrackingPage.vue') },
 ]
 const router = createRouter({
   history: createWebHistory(),
