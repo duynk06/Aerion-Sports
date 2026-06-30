@@ -2,6 +2,7 @@
     <MainLayout title="Lịch làm việc">
         <div class="calendar-dashboard">
 
+            <!-- 1. THANH BỘ LỌC & ACTION TOP BAR -->
             <div class="filter-card">
                 <div class="filter-left">
                     <div class="filter-item">
@@ -27,6 +28,7 @@
                 </div>
             </div>
 
+            <!-- 2. KHU VỰC HIỂN THỊ LỊCH CHI TIẾT -->
             <div class="calendar-container">
                 <div class="calendar-header">
                     <div class="calendar-navigation">
@@ -42,12 +44,14 @@
                     </div>
                 </div>
 
+                <!-- CHẾ ĐỘ XEM THEO NGÀY -->
                 <div v-if="currentView === 'day'" class="day-view-grid">
                     <div class="grid-header-col">CA LÀM VIỆC</div>
                     <div class="grid-header-col text-center">
                         {{ formatDayOfWeek(selectedDate) }} <br> <span class="date-sub">{{ formatShortDate(selectedDate) }}</span>
                     </div>
 
+                    <!-- Hàng Ca Sáng -->
                     <div class="ca-info-cell ca-sang-text">
                         <strong>Ca sáng</strong>
                         <span>08:00 - 12:00</span>
@@ -62,6 +66,7 @@
                         <div v-else class="no-shift-text">Chưa xếp lịch ca sáng</div>
                     </div>
 
+                    <!-- Hàng Ca Chiều -->
                     <div class="ca-info-cell ca-chieu-text">
                         <strong>Ca chiều</strong>
                         <span>12:00 - 17:00</span>
@@ -77,6 +82,7 @@
                     </div>
                 </div>
 
+                <!-- CHẾ ĐỘ XEM THEO THÁNG -->
                 <div v-if="currentView === 'month'" class="month-view-grid">
                     <div v-for="dayName in ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']" :key="dayName" class="month-grid-header">
                         {{ dayName }}
@@ -97,6 +103,7 @@
                 </div>
             </div>
 
+            <!-- 3. MODAL POPUP CHI TIẾT NHÂN VIÊN XEM LỊCH -->
             <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
                 <div class="modal-box">
                     <div class="modal-header">
@@ -147,6 +154,7 @@
                 </div>
             </div>
 
+            <!-- 4. POPUP THÊM MỚI LỊCH LÀM VIỆC -->
             <div v-if="showAddModal" class="modal-overlay" @click.self="showAddModal = false">
                 <div class="modal-box" style="max-width: 500px;">
                     <div class="modal-header">
@@ -202,20 +210,18 @@ import axios from 'axios'
 
 const currentView = ref('day') 
 const showModal = ref(false)
-const showAddModal = ref(false) // Biến đóng mở form thêm mới lịch
+const showAddModal = ref(false) 
 const selectedDate = ref(new Date())
 
-// Bộ lọc mặc định lấy ngày hôm nay
+// Bộ lọc ngày mặc định lấy hôm nay
 const filter = ref({ 
     tenNhanVien: '', 
     maCa: 'ALL', 
     ngay: new Date().toISOString().split('T')[0] 
 })
 
-const totalLichData = ref([]) // Lưu danh sách thô từ API trả về
+const totalLichData = ref([]) 
 const modalData = ref({ dateDisplay: '', caSangList: [], caChieuList: [] })
-
-// Form chứa dữ liệu phục vụ xếp lịch mới gửi lên Backend
 const formXepLich = ref({
     idNhanVien: null,
     caLamViec: { id: null },
@@ -238,7 +244,6 @@ const viewTitle = computed(() => {
     return `${months[selectedDate.value.getMonth()]} Năm ${year}`
 })
 
-// Lọc dữ liệu thô từ API theo chữ cái tìm kiếm nhân viên và loại ca
 const processedLichList = computed(() => {
     return totalLichData.value.filter(item => {
         const matchName = !filter.value.tenNhanVien || item.tenNhanVien.toLowerCase().includes(filter.value.tenNhanVien.toLowerCase());
@@ -247,7 +252,6 @@ const processedLichList = computed(() => {
     })
 })
 
-// Bóc tách danh sách ca sáng/chiều của ngày đang chọn
 const lichCaSangHienTai = computed(() => {
     return processedLichList.value.filter(item => item.caLamViec?.maCa === 'CA_SANG')
 })
@@ -255,8 +259,7 @@ const lichCaSangHienTai = computed(() => {
 const lichCaChieuHienTai = computed(() => {
     return processedLichList.value.filter(item => item.caLamViec?.maCa === 'CA_CHIEU')
 })
-
-// Tính toán ô vuông lịch tháng dựa theo API
+// 🌟 SỬA LẠI ĐOẠN ĐANG BỊ LỆCH MÚI GIỜ:
 const daysInMonthCells = computed(() => {
     const cells = []
     const year = selectedDate.value.getFullYear()
@@ -275,9 +278,12 @@ const daysInMonthCells = computed(() => {
 
     const todayStr = new Date().toISOString().split('T')[0]
     for (let day = 1; day <= lastDayOfMonth.getDate(); day++) {
-        const date = new Date(year, month, day + 1)
-        const dateStr = date.toISOString().split('T')[0]
+        // 🌟 ĐÃ SỬA: Tạo chuỗi ngày yyyy-MM-dd thủ công bằng cách cộng chuỗi để không bị dính múi giờ UTC/ISO
+        const txtMonth = (month + 1) < 10 ? '0' + (month + 1) : (month + 1);
+        const txtDay = day < 10 ? '0' + day : day;
+        const dateStr = `${year}-${txtMonth}-${txtDay}`;
         
+        // So khớp chuẩn xác với trường ngayLamViec (chuỗi yyyy-MM-dd) từ API Backend
         const dayShifts = processedLichList.value.filter(item => item.ngayLamViec === dateStr)
 
         cells.push({
@@ -291,7 +297,6 @@ const daysInMonthCells = computed(() => {
     return cells
 })
 
-// API gọi nạp dữ liệu lịch trực tiếp từ Backend
 const loadLichFromApi = async () => {
     let tuNgay = filter.value.ngay
     let denNgay = filter.value.ngay
@@ -313,10 +318,10 @@ const loadLichFromApi = async () => {
         console.error("Lỗi đồng bộ dữ liệu lịch:", e)
     }
 }
-
-// Bật form thêm lịch mới và nạp danh sách nhân viên về Combobox
 const openAddModal = async () => {
     showAddModal.value = true
+    formXepLich.value.ngayLamViec = filter.value.ngay;
+
     try {
         const res = await axios.get('http://localhost:8080/nhan-vien/hien-thi')
         danhSachNhanVienAll.value = res.data || []
@@ -324,24 +329,74 @@ const openAddModal = async () => {
         console.error("Lỗi tải danh sách nhân viên:", e)
     }
 }
-
-// Gửi dữ liệu xếp lịch mới lên Backend
 const handleSaveNewLich = async () => {
-    if (!formXepLich.value.idNhanVien || !formXepLich.value.caLamViec.id || !formXepLich.value.ngayLamViec) {
-        return alert("Vui lòng nhập đầy đủ thông tin xếp lịch!")
+    if (
+        !formXepLich.value.idNhanVien ||
+        !formXepLich.value.caLamViec.id ||
+        !formXepLich.value.ngayLamViec
+    ) {
+        return alert("Vui lòng nhập đầy đủ thông tin xếp lịch!");
+    }
+    const ngayChon = new Date(formXepLich.value.ngayLamViec);
+    const homNay = new Date();
+    ngayChon.setHours(0, 0, 0, 0);
+    homNay.setHours(0, 0, 0, 0);
+
+    if (ngayChon < homNay) {
+        return alert("Không được xếp lịch làm việc trong quá khứ!");
     }
     try {
-        await axios.post('http://localhost:8080/api/lich-lam-viec/xep-lich', formXepLich.value)
-        alert("Xếp lịch làm việc mới thành công!")
-        showAddModal.value = false
-        // Reset form
-        formXepLich.value = { idNhanVien: null, caLamViec: { id: null }, ngayLamViec: new Date().toISOString().split('T')[0] }
-        await loadLichFromApi()
-    } catch (error) {
-        alert(error.response?.data?.message || "Nhân viên đã có lịch trực ca này trong ngày rồi!");
-    }
-}
+        const ngayChuan = new Date(formXepLich.value.ngayLamViec)
+            .toISOString()
+            .split("T")[0];
 
+        const idNv = Number(formXepLich.value.idNhanVien);
+        const idCa = Number(formXepLich.value.caLamViec.id);
+        const dataPost = {
+            idNhanVien: idNv,
+            caLamViec: {
+                id: idCa
+            },
+            ngayLamViec: ngayChuan
+        };
+
+        console.log("Data gửi lên:", dataPost);
+
+        const res = await axios.post(
+            "http://localhost:8080/api/lich-lam-viec/xep-lich",
+            dataPost
+        );
+
+        alert("Xếp lịch làm việc thành công!");
+
+        showAddModal.value = false;
+
+        formXepLich.value = {
+            idNhanVien: null,
+            caLamViec: {
+                id: null
+            },
+            ngayLamViec: new Date().toISOString().split("T")[0]
+        };
+
+        await loadLichFromApi();
+
+    } catch (error) {
+        console.error("Lỗi:", error);
+
+        if (error.response) {
+            console.log(error.response.data);
+
+            alert(
+                error.response.data.detail ||
+                error.response.data.message ||
+                "Có lỗi xảy ra!"
+            );
+        } else {
+            alert("Không kết nối được Backend!");
+        }
+    }
+};
 const switchView = (view) => {
     currentView.value = view
     loadLichFromApi()
@@ -353,22 +408,25 @@ const onDateFilterChange = () => {
 }
 
 const filterLich = () => {}
-
 const prevPeriod = () => {
+    const newDate = new Date(selectedDate.value)
     if (currentView.value === 'day') {
-        selectedDate.value.setDate(selectedDate.value.getDate() - 1)
+        newDate.setDate(newDate.getDate() - 1)
     } else {
-        selectedDate.value.setMonth(selectedDate.value.getMonth() - 1)
+        newDate.setMonth(newDate.getMonth() - 1)
     }
+    selectedDate.value = newDate
     syncFilterDate()
 }
 
 const nextPeriod = () => {
+    const newDate = new Date(selectedDate.value)
     if (currentView.value === 'day') {
-        selectedDate.value.setDate(selectedDate.value.getDate() + 1)
+        newDate.setDate(newDate.getDate() + 1)
     } else {
-        selectedDate.value.setMonth(selectedDate.value.getMonth() + 1)
+        newDate.setMonth(newDate.getMonth() + 1)
     }
+    selectedDate.value = newDate
     syncFilterDate()
 }
 
@@ -425,8 +483,6 @@ onMounted(() => {
 
 <style scoped>
 .calendar-dashboard { padding: 20px; background: #f8fafc; min-height: 100vh; font-family: sans-serif; }
-
-/* TOP BAR FILTER */
 .filter-card { background: white; padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; gap: 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02); margin-bottom: 20px; }
 .filter-left { display: flex; gap: 16px; flex-grow: 1; }
 .filter-item { display: flex; flex-direction: column; gap: 6px; text-align: left; }
@@ -434,14 +490,12 @@ onMounted(() => {
 .filter-item input, .filter-item select { height: 36px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none; min-width: 150px; font-size: 13px; }
 .filter-right { display: flex; gap: 8px; align-items: flex-end; }
 
-/* BUTTONS STYLE */
 .btn { height: 38px; padding: 0 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; display: flex; align-items: center; gap: 6px; }
 .btn-outline { background: #f1f5f9; color: #475569; }
-.btn-download { background: #fff0f3; color: #da123a; }
+.btn-download { background: #fff0f3; color: #e45d31; }
 .btn-dark { background: #1e293b; color: white; }
-.btn-primary { background: #da123a; color: white; }
+.btn-primary { background: #e2780d; color: white; }
 
-/* CALENDAR WORKSPACE */
 .calendar-container { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02); }
 .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .calendar-navigation { display: flex; align-items: center; gap: 12px; }
@@ -452,8 +506,6 @@ onMounted(() => {
 .view-switcher { display: flex; background: #f1f5f9; padding: 4px; border-radius: 8px; }
 .view-switcher button { border: none; background: none; padding: 6px 16px; font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer; border-radius: 6px; }
 .view-switcher button.active { background: #1e293b; color: white; }
-
-/* DAY VIEW GRID STYLE */
 .day-view-grid { display: grid; grid-template-columns: 180px 1fr; border-top: 1px solid #e2e8f0; border-left: 1px solid #e2e8f0; }
 .grid-header-col { background: #f8fafc; padding: 12px; font-weight: 700; font-size: 13px; color: #475569; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; text-align: left; }
 .date-sub { font-weight: 500; color: #64748b; font-size: 12px; }
@@ -464,8 +516,6 @@ onMounted(() => {
 .ca-info-cell span { font-size: 12px; color: #64748b; }
 .ca-content-cell { padding: 12px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; display: flex; align-items: center; min-height: 80px; }
 .no-shift-text { font-size: 13px; color: #94a3b8; font-style: italic; }
-
-/* SHIFT CARDS COLOR MAP */
 .ca-sang-text { color: #10b981; } .ca-sang-bg { background: #f0fdf4; }
 .ca-chieu-text { color: #f59e0b; } .ca-chieu-bg { background: #fffbeb; }
 
@@ -475,8 +525,6 @@ onMounted(() => {
 .shift-count { background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #475569; }
 .btn-view-more { margin-left: auto; background: none; border: 1px solid #da123a; color: #da123a; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; }
 .btn-view-more:hover { background: #da123a; color: white; }
-
-/* MONTH VIEW GRID STYLE */
 .month-view-grid { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid #e2e8f0; border-left: 1px solid #e2e8f0; }
 .month-grid-header { background: #f8fafc; padding: 10px; font-weight: 700; font-size: 13px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; color: #475569; }
 .month-day-cell { height: 110px; padding: 8px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; position: relative; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; }
@@ -484,8 +532,6 @@ onMounted(() => {
 .day-number { font-size: 13px; font-weight: 600; color: #64748b; }
 .is-today { background: #f0fdfa; }
 .is-today .day-number { background: #0ea5e9; color: white; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
-
-/* DOT AVATARS IN MONTH VIEW */
 .avatar-dots-row { display: flex; align-items: center; gap: 2px; width: 100%; justify-content: flex-start; cursor: pointer; margin-bottom: 4px; }
 .dot-avatar { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white; }
 .bg-green { background: #10b981; } .bg-orange { background: #f59e0b; }
@@ -515,4 +561,4 @@ onMounted(() => {
 .modal-footer { padding: 16px 24px; border-top: 1px solid #f1f5f9; display: flex; justify-content: center; }
 .btn-close-modal { width: 100%; height: 40px; background: #f1f5f9; color: #475569; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
 .btn-close-modal:hover { background: #e2e8f0; }
-</style>
+</style>    

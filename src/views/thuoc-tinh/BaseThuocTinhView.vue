@@ -152,7 +152,6 @@ const statusFilter = ref('');
 const currentPage = ref(0);
 const pageSize = ref(5);
 
-// 🌟 ĐÃ SỬA: Chuyển đổi gọi sang API /search kèm size lớn bốc data phẳng từ .content về an toàn
 const loadData = async () => {
   try {
     const res = await axios.get(`http://localhost:8080/api/${props.apiPath}/search`, {
@@ -164,9 +163,20 @@ const loadData = async () => {
   }
 };
 
+// 🌟 ĐÃ CẬP NHẬT: Thêm mapping trường mã cho Thương hiệu và Xuất xứ
 const layMaThuocTinhAnToan = (item) => {
   if (!item) return '';
-  return item.ma || item.maMauSac || item.maTrongLuong || item.maDoCung || item.maDiemCanBang || item.maChuViCanVot || item.maChatLieuThanVot || item.maChatLieuKhungVot || ('TT-' + item.id);
+  return item.ma || 
+         item.maMauSac || 
+         item.maTrongLuong || 
+         item.maDoCung || 
+         item.maDiemCanBang || 
+         item.maChuViCanVot || 
+         item.maChatLieuThanVot || 
+         item.maChatLieuKhungVot || 
+         item.maThuongHieu || 
+         item.maXuatXu || 
+         ('TT-' + item.id);
 };
 
 const filteredDataList = computed(() => {
@@ -222,8 +232,8 @@ const exportToExcel = () => {
 
   const worksheet = XLSX.utils.json_to_sheet(dataExport);
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Danh sách thuộc tính");
-  XLSX.writeFile(workbook, `ThuocTinh_${props.apiPath.replace(/-/g, '_')}.xlsx`);
+  XXLSX.utils.book_append_sheet(workbook, worksheet, "Danh sách thuộc tính");
+  XXLSX.writeFile(workbook, `ThuocTinh_${props.apiPath.replace(/-/g, '_')}.xlsx`);
 };
 
 const moModalThemMoi = () => {
@@ -253,7 +263,6 @@ const moModalThemMoi = () => {
 };
 
 const moModalChinhSua = (item) => {
-  isEditMode.value = false; 
   isEditMode.value = true;
   editingItemId.value = item.id;
   editingItemTrangThai.value = item.trangThai ?? 1;
@@ -331,7 +340,6 @@ const handleHanhDongLuu = () => {
   if (!checkValidThuocTinhText(formValue.value)) {
     return;
   }
-
   if (isEditMode.value) {
     submitCapNhatTen();
   } else {
@@ -339,7 +347,7 @@ const handleHanhDongLuu = () => {
   }
 };
 
-// 🌟 ĐÃ SỬA: Thêm đuôi `/add` khớp 100% endpoint `@PostMapping("/add")` của Backend
+// 🌟 ĐÃ SỬA: Đồng bộ PostMapping gốc (Bỏ đuôi /add)
 const submitThemMoi = async () => {
   try {
     const payload = {};
@@ -354,8 +362,10 @@ const submitThemMoi = async () => {
     payload.maChuViCanVot = generatedCode.value;
     payload.maChatLieuThanVot = generatedCode.value;
     payload.maChatLieuKhungVot = generatedCode.value;
+    payload.maThuongHieu = generatedCode.value;
+    payload.maXuatXu = generatedCode.value;
 
-    await axios.post(`http://localhost:8080/api/${props.apiPath}/add`, payload);
+    await axios.post(`http://localhost:8080/api/${props.apiPath}`, payload);
     alert(`Thêm mới ${props.title.toLowerCase()} thành công! 🎉`);
     isModalOpen.value = false;
     loadData();
@@ -364,7 +374,7 @@ const submitThemMoi = async () => {
   }
 };
 
-// 🌟 ĐÃ SỬA: Thêm đuôi `/update/{id}` khớp 100% endpoint `@PutMapping("/update/{id}")` của Backend
+// 🌟 ĐÃ SỬA: Đồng bộ PutMapping gốc chuẩn RESTful (Đổi /update/{id} thành /{id})
 const submitCapNhatTen = async () => {
   try {
     const payload = {
@@ -381,8 +391,10 @@ const submitCapNhatTen = async () => {
     payload.maChuViCanVot = generatedCode.value;
     payload.maChatLieuThanVot = generatedCode.value;
     payload.maChatLieuKhungVot = generatedCode.value;
+    payload.maThuongHieu = generatedCode.value;
+    payload.maXuatXu = generatedCode.value;
 
-    await axios.put(`http://localhost:8080/api/${props.apiPath}/update/${editingItemId.value}`, payload);
+    await axios.put(`http://localhost:8080/api/${props.apiPath}/${editingItemId.value}`, payload);
     
     alert(`Cập nhật tên ${props.title.toLowerCase()} thành công! 🚀`);
     isModalOpen.value = false;
@@ -415,7 +427,6 @@ onMounted(loadData);
 </script>
 
 <style scoped>
-/* Giữ nguyên 100% CSS màu cam thương hiệu của bạn */
 .breadcrumb-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .breadcrumb-text { font-size: 14px; color: #333; }
 .filter-container { background-color: #fff; border: 1px solid #fed7aa; border-radius: 6px; padding: 15px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }

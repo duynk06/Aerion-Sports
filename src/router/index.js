@@ -30,6 +30,8 @@ import SuaKhachHangView from '../views/SuaKhachHangView.vue'
 import SuaNhanVienView from '../views/SuaNhanVienView.vue'
 import GiaoCaView from '../views/GiaoCaView.vue'
 import LichLamViec from '../views/LichLamViec.vue'
+import ThuongHieuView from '../views/thuoc-tinh/ThuongHieuView.vue'
+import XuatXuView from '../views/thuoc-tinh/XuatXuView.vue'
 
 
 import Login from '../views/Login.vue'
@@ -70,6 +72,8 @@ const routes = [
   { path: '/thuoc-tinh/chu-vi-can', component: ChuViCanView, meta: { requiresAuth: true, roles: ['ADMIN', 'QL'] } },
   { path: '/thuoc-tinh/chat-lieu-than', component: ChatLieuThanView, meta: { requiresAuth: true, roles: ['ADMIN', 'QL'] } },
   { path: '/thuoc-tinh/chat-lieu-khung', component: ChatLieuKhungView, meta: { requiresAuth: true, roles: ['ADMIN', 'QL'] } },
+  { path: '/thuoc-tinh/thuong-hieu', component: ThuongHieuView, meta: { requiresAuth: true, roles: ['ADMIN', 'QL'] } },
+  { path: '/thuoc-tinh/xuat-xu', component: XuatXuView, meta: { requiresAuth: true, roles: ['ADMIN', 'QL'] } },
 
   // 👥 Module Quản Lý Đối Tượng Con Người
   { path: '/nhan-vien', name: 'nhan-vien', component: NhanVienView, meta: { requiresAuth: true, roles: ['ADMIN'] } }, // Khóa chặt duy nhất ADMIN
