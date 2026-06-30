@@ -47,6 +47,8 @@ const routes = [
       { path: 'login', name: 'ShopLogin', component: () => import('../../client/src/pages/Auth/LoginPage.vue') },
       { path: 'register', name: 'Register', component: () => import('../../client/src/pages/Auth/RegisterPage.vue') },
       { path: 'profile', name: 'Profile', component: () => import('../../client/src/pages/Profile/ProfilePage.vue') },
+      { path: 'my-orders', name: 'MyOrders', component: () => import('../../client/src/pages/MyOrders/MyOrdersPage.vue') },
+      { path: 'order-tracking', name: 'ShopOrderTracking', component: () => import('../../client/src/pages/OrderTracking/OrderTrackingPage.vue') },
     ],
   },
 

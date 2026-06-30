@@ -221,6 +221,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import mockImage from '../../assets/mock_racket.png'
 import { getMyOnlineOrders } from '../../services/api'
 import { useOrderRealtime } from '../../composables/useOrderRealtime'
+import { normalizeOnlineOrder } from '../../utils/order'
 
 const fallbackImage = mockImage
 const loading = ref(false)
@@ -300,7 +301,7 @@ const loadOrders = async () => {
   try {
     const response = await getMyOnlineOrders()
     const data = normalizeOrders(response?.data)
-    orders.value = data
+    orders.value = data.map(normalizeOnlineOrder)
     selectedOrderId.value = data[0]?.id ?? ''
   } catch (err) {
     const message = err?.response?.data?.message || err?.response?.data || err?.message || 'Không thể tải đơn hàng.'

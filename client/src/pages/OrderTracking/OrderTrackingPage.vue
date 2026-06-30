@@ -183,6 +183,7 @@ import { LoadingOutlined, HourglassOutlined, CheckCircleOutlined, InboxOutlined,
 import mockImage from '../../assets/mock_racket.png'
 import { getOnlineOrderByCode, resolveMediaUrl } from '../../services/api'
 import { useOrderRealtime } from '../../composables/useOrderRealtime'
+import { normalizeOnlineOrder } from '../../utils/order'
 
 const route = useRoute()
 const searchForm = ref({
@@ -244,7 +245,7 @@ const refreshCurrentOrder = async () => {
 
   try {
     const response = await getOnlineOrderByCode(code)
-    orderData.value = response.data
+    orderData.value = normalizeOnlineOrder(response.data)
   } catch {
     // Giữ dữ liệu hiện tại nếu refresh realtime tạm thời lỗi.
   }
@@ -259,7 +260,7 @@ const handleSearch = async () => {
 
   try {
     const response = await getOnlineOrderByCode(code)
-    orderData.value = response.data
+    orderData.value = normalizeOnlineOrder(response.data)
   } catch {
     orderData.value = null
   } finally {

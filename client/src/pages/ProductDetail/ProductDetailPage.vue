@@ -100,7 +100,7 @@
             <!-- Kích cỡ / Trọng lượng -->
             <div v-if="availableWeights.length > 0 && availableWeights[0] !== ''" class="mb-5">
               <div class="text-sm font-semibold text-gray-800 mb-3">
-                Kích cỡ: <span class="font-normal text-gray-500">{{ selectedWeight }}</span>
+                Độ cứng: <span class="font-normal text-gray-500">{{ selectedWeight }}</span>
               </div>
               <div class="flex flex-wrap gap-3">
                 <button
@@ -235,12 +235,12 @@ const quantity = ref('1')
 const formatPrice = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value || 0))} đ`
 
 const getColorStyle = (colorName) => {
-  const c = String(colorName).toLowerCase();
+  const c = String(colorName).toLowerCase().trim();
   if (c.includes('đen') || c.includes('black')) return { backgroundColor: '#000000' }
   if (c.includes('trắng') || c.includes('white')) return { backgroundColor: '#ffffff', border: '1px solid #e5e7eb' }
   if (c.includes('đỏ') || c.includes('red')) return { backgroundColor: '#ef4444' }
   if (c.includes('xanh dương') || c.includes('blue')) return { backgroundColor: '#3b82f6' }
-  if (c.includes('xanh lá') || c.includes('green')) return { backgroundColor: '#22c55e' }
+  if (c.includes('xanh lá') || c.includes('green') || c === 'xanh') return { backgroundColor: '#22c55e' }
   if (c.includes('vàng') || c.includes('yellow')) return { backgroundColor: '#eab308' }
   if (c.includes('hồng') || c.includes('pink')) return { backgroundColor: '#ec4899' }
   if (c.includes('tím') || c.includes('purple')) return { backgroundColor: '#a855f7' }
