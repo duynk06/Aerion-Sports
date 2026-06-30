@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
@@ -84,9 +85,21 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
 """)
     HoaDon findByIdWithChiTiet(@Param("id") Integer id);
 
+    @Query("""
+    SELECT hd
+    FROM HoaDon hd
+    LEFT JOIN FETCH hd.khachHang kh
+    LEFT JOIN FETCH hd.phieuGiamGia pg
+    WHERE kh.id = :customerId
+    ORDER BY hd.ngayTao DESC, hd.id DESC
+""")
+    List<HoaDon> findAllByKhachHangIdOrderByNgayTaoDesc(@Param("customerId") Integer customerId);
+
 
     // HoaDonRepository.java — thêm method
     List<HoaDon> findByTrangThaiAndLoaiHoaDon(Integer trangThai, Integer loaiHoaDon);
+    Optional<HoaDon> findByMaHoaDon(String maHoaDon);
+    boolean existsByMaHoaDon(String maHoaDon);
     // HoaDonRepository.java — thêm method đếm
     long countByTrangThaiAndLoaiHoaDon(Integer trangThai, Integer loaiHoaDon);
 

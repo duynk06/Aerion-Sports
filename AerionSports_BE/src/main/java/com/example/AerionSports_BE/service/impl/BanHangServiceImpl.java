@@ -9,6 +9,7 @@ import com.example.AerionSports_BE.entity.*;
 import com.example.AerionSports_BE.repository.*;
 import com.example.AerionSports_BE.service.BanHangService;
 import com.example.AerionSports_BE.service.EmailService;
+import com.example.AerionSports_BE.realtime.OrderRealtimeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,7 @@ public class BanHangServiceImpl implements BanHangService {
     private final NhanVienRepository nhanVienRepository;
     private final LichSuHoaDonRepository lichSuHoaDonRepository;
     private final EmailService emailService;
+    private final OrderRealtimeService orderRealtimeService;
     // BanHangServiceImpl.java — sửa hàm taoHoaDonCho
     @Override
     public BanHangResponse taoHoaDonCho() {
@@ -325,6 +327,13 @@ public class BanHangServiceImpl implements BanHangService {
         }
 
         hoaDonRepository.save(hoaDon);
+        orderRealtimeService.publishOrderChange(
+                hoaDon.getId(),
+                hoaDon.getMaHoaDon(),
+                hoaDon.getTrangThai(),
+                hoaDon.getTrangThai() == 5 ? "Đã hoàn thành" : "Đã xác nhận",
+                "status-updated"
+        );
 
         // Lưu thanh toán
         ThanhToan thanhToan = new ThanhToan();
@@ -402,6 +411,13 @@ public class BanHangServiceImpl implements BanHangService {
             }
             hoaDon.setTrangThai(6);
             hoaDonRepository.save(hoaDon);
+            orderRealtimeService.publishOrderChange(
+                    hoaDon.getId(),
+                    hoaDon.getMaHoaDon(),
+                    hoaDon.getTrangThai(),
+                    "Đã hủy",
+                    "status-updated"
+            );
         } else {
             // Không có sản phẩm → xóa hẳn, nhưng phải xóa lich_su_hoa_don trước
             lichSuHoaDonRepository.deleteByHoaDonId(id);  // ✅ xóa FK trước

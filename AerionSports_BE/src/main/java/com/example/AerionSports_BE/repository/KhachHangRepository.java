@@ -16,6 +16,8 @@ public interface KhachHangRepository extends JpaRepository<KhachHang, Integer> {
     boolean existsByMaKhachHang(String maKhachHang);
     boolean existsBySdt(String sdt);
     boolean existsByEmail(String email);
+    Optional<KhachHang> findFirstBySdt(String sdt);
+    Optional<KhachHang> findFirstByEmail(String email);
     Optional<KhachHang> findFirstByOrderByIdDesc();
 
     @EntityGraph(attributePaths = {"addresses"})

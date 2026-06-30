@@ -25,7 +25,7 @@ public class LichSuHoaDon {
     private HoaDon hoaDon;
 
     @ManyToOne
-    @JoinColumn(name = "id_nhan_vien")
+    @JoinColumn(name = "id_nhan_vien", nullable = true)
     private NhanVien nhanVien;
 
     @Column(name = "trang_thai_cu")

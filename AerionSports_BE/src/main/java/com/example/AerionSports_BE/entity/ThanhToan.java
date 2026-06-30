@@ -61,9 +61,4 @@ public class ThanhToan {
     @Column(name = "trang_thai")
     private Integer trangThai = 1;
 
-    @Column(name = "tien_khach_dua", precision = 18, scale = 2)
-    private BigDecimal tienKhachDua;
-
-    @Column(name = "tien_thua", precision = 18, scale = 2)
-    private BigDecimal tienThua;
 }

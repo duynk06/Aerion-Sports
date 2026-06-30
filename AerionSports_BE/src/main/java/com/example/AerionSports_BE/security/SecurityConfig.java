@@ -70,6 +70,7 @@ public class SecurityConfig {
 
                         // 🔓 PHÂN HỆ CÔNG KHAI (Không cần đăng nhập - Khách vãng lai xem Online & Auth gốc)
                         .requestMatchers("/api/auth/**", "/auth/**").permitAll()
+                        .requestMatchers("/public/client-auth/**", "/api/public/client-auth/**").permitAll()
                         .requestMatchers("/ban-hang/**").permitAll()
                         .requestMatchers("/hoa-don/**").permitAll()
                         .requestMatchers("/chi-tiet-hoa-don/**").permitAll()
@@ -77,6 +78,8 @@ public class SecurityConfig {
                         .requestMatchers("/lich-su-thanh-toan/**").permitAll()
                         .requestMatchers("/phieu-giam-gia/**").permitAll()
                         .requestMatchers("/public/khach-hang/**").permitAll()
+                        .requestMatchers("/public/online-orders/**").permitAll()
+                        .requestMatchers("/api/public/online-orders/**").permitAll()
 
                         // Mở khóa các luồng xem danh sách sản phẩm và toàn bộ danh mục thuộc tính vợt
                         .requestMatchers("/api/san-pham/search").permitAll()
@@ -91,6 +94,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/thuong-hieu/all", "/api/thuong-hieu/search", "/api/thuong-hieu/detail/*").permitAll()
                         .requestMatchers("/api/trong-luong/all", "/api/trong-luong/search").permitAll()
                         .requestMatchers("/api/xuat-xu/all", "/api/xuat-xu/search").permitAll()
+                        .requestMatchers("/api/realtime/**").permitAll()
 
 
                         // 🔐 CẤU HÌNH BẢO MẬT THẬT (Sẽ có hiệu lực ngay khi bạn xóa hoặc comment VÙNG TEST ở trên)
