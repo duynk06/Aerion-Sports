@@ -7,7 +7,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -28,7 +28,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // Cổng chạy Vue của bạn
+        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // Cổng chạy dự án Vue của bạn
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
@@ -57,8 +57,11 @@ public class SecurityConfig {
                 // 4. BẢO MẬT ĐƯỜNG DẪN CHI TIẾT TOÀN HỆ THỐNG
                 .authorizeHttpRequests(auth -> auth
 
+                        // 🔓 Cho phép thông quan tự do toàn bộ các lệnh OPTIONS Preflight kiểm tra cổng từ Vue sang
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         // =========================================================================
-                        // 🌟 VÙNG ĐỂ TEST TẠM THỜI (Khi nào xong dự án, bạn chỉ cần XOÁ nhóm này đi)
+                        // VÙNG ĐỂ TEST TẠM THỜI (Khi nào xong dự án, bạn chỉ cần XOÁ nhóm này đi)
                         // =========================================================================
                         .requestMatchers("/api/giao-ca/**").permitAll()
                         .requestMatchers("/api/lich-lam-viec/**").permitAll()
@@ -67,6 +70,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/san-pham/**").permitAll()
                         // =========================================================================
 
+                        // 🌟 ĐÃ CẬP NHẬT: Trỏ đúng endpoint trong AuthController và bắt buộc chứng thực khi mang Token hợp lệ
+                        // Đặt dòng này TRƯỚC dòng permitAll của /api/auth/** để tránh bị bypass qua bộ quét danh tính
+                        .requestMatchers("/api/auth/doi-mat-khau").authenticated()
 
                         // 🔓 PHÂN HỆ CÔNG KHAI (Không cần đăng nhập - Khách vãng lai xem Online & Auth gốc)
                         .requestMatchers("/api/auth/**", "/auth/**").permitAll()
@@ -93,7 +99,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/xuat-xu/all", "/api/xuat-xu/search").permitAll()
 
 
-                        // 🔐 CẤU HÌNH BẢO MẬT THẬT (Sẽ có hiệu lực ngay khi bạn xóa hoặc comment VÙNG TEST ở trên)
+                        // 🔐 CẤU HÌNH BẢO MẬT THẬT (Sẽ hoạt động khi tắt vùng test tạm thời)
+
                         // Nhóm quyền nội bộ quầy POS & Xử lý nghiệp vụ quản lý sản phẩm
                         .requestMatchers("/api/giao-ca/**", "/api/lich-lam-viec/**").hasAnyRole("ADMIN", "QL", "NV")
                         .requestMatchers("/api/dot-giam-gia/**").hasAnyRole("ADMIN", "QL")

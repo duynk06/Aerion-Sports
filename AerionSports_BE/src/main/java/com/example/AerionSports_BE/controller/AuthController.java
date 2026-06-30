@@ -1,12 +1,15 @@
 package com.example.AerionSports_BE.controller;
 
+import com.example.AerionSports_BE.dto.request.DoiMatKhauRequest;
 import com.example.AerionSports_BE.entity.TaiKhoan;
 import com.example.AerionSports_BE.repository.TaiKhoanRepository;
 import com.example.AerionSports_BE.security.JwtTokenProvider;
+import jakarta.validation.Valid;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -89,6 +92,31 @@ public class AuthController {
                         "idChuTaiKhoan", tk.getIdChuTaiKhoan()
                 )
         ));
+    }
+
+    @PutMapping("/doi-mat-khau")
+    public ResponseEntity<?> doiMatKhau(@Valid @RequestBody DoiMatKhauRequest request) {
+        // 1. Lấy username (email) của tài khoản hiện tại từ Context Security
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        TaiKhoan taiKhoan = taiKhoanRepository.findByTenDangNhapAndTrangThai(currentUsername, 1)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản hợp lệ!"));
+
+        // 2. Kiểm tra mật khẩu cũ nhập vào có khớp trong DB không
+        if (!passwordEncoder.matches(request.getMatKhauCu(), taiKhoan.getMatKhauHash())) {
+            return ResponseEntity.badRequest().body("Mật khẩu cũ không chính xác!");
+        }
+
+        // 3. Kiểm tra mật khẩu mới và mật khẩu xác nhận có khớp nhau không
+        if (!request.getMatKhauMoi().equals(request.getXacNhanMatKhau())) {
+            return ResponseEntity.badRequest().body("Mật khẩu mới và xác nhận mật khẩu không trùng khớp!");
+        }
+
+        // 4. Tiến hành băm mật khẩu mới và lưu lại
+        taiKhoan.setMatKhauHash(passwordEncoder.encode(request.getMatKhauMoi()));
+        taiKhoanRepository.save(taiKhoan);
+
+        return ResponseEntity.ok("Đổi mật khẩu thành công! 🎉");
     }
 }
 

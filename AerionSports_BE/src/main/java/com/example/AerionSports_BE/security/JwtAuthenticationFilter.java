@@ -1,4 +1,5 @@
 package com.example.AerionSports_BE.security;
+
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -25,16 +26,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 🌟 BƯỚC CẬP NHẬT QUAN TRỌNG: Cho phép các request OPTIONS (Preflight) đi qua luôn không chặn cửa
+        // 1. Cho phép các request OPTIONS (Preflight) phản hồi OK 200 và kết thúc sớm tại đây
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_OK);
-            filterChain.doFilter(request, response);
             return;
         }
 
-        // 🌟 BƯỚC CẬP NHẬT 2: Nếu request gọi vào luồng login/auth, cho qua luôn không quét token
         String requestURI = request.getRequestURI();
-        if (requestURI.contains("/api/auth/")) {
+
+        // 🌟 GIẢI PHÁP SỬA DỨT ĐIỂM:
+        // Cho qua cửa tự do nếu gọi luồng auth chung (như /login),
+        // NHƯNG nếu là luồng đổi mật khẩu (/api/auth/doi-mat-khau) thì KHÔNG return mà giữ lại để quét Token ở dưới.
+        if (requestURI.contains("/api/auth/") && !requestURI.contains("/api/auth/doi-mat-khau")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -53,7 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(username, null, Collections.singletonList(authority));
 
-                // Đóng dấu xác thực thành công vào Context
+                // Đóng dấu xác thực thành công vào hệ thống Context
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception ex) {

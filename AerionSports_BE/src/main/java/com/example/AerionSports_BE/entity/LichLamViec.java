@@ -26,7 +26,4 @@ public class LichLamViec {
 
     @Column(name = "trang_thai")
     private Integer trangThai; // 0: Chờ duyệt, 1: Đi làm
-
-    @Column(name = "ghi_chu")
-    private String ghiChu;
 }
