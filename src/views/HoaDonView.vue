@@ -337,6 +337,14 @@ const printHoaDon = async (id) => {
 const totalInvoices = computed(() => {
   return listHoaDon.value.length
 })
+const getTodayLocal = () => {
+  // Trả về YYYY-MM-DD theo giờ local, tránh lệch ngày khi dùng toISOString() (UTC)
+  const now = new Date()
+  const offsetMs = now.getTimezoneOffset() * 60 * 1000
+  return new Date(now.getTime() - offsetMs)
+    .toISOString()
+    .split('T')[0]
+}
 const loadData = async () => {
   try {
     const response = await filterHoaDon(
@@ -535,9 +543,7 @@ const resetFilter = async () => {
   loaiHoaDonFilter.value = null
   trangThaiFilter.value = ''
 
-  const today = new Date()
-    .toISOString()
-    .split('T')[0]
+  const today = getTodayLocal()
 
   tuNgay.value = today
   denNgay.value = today
@@ -550,10 +556,7 @@ const resetFilter = async () => {
 
 
 onMounted(async () => {
-  const today =
-    new Date()
-      .toISOString()
-      .split('T')[0]
+  const today = getTodayLocal()
 
   tuNgay.value = today
   denNgay.value = today
