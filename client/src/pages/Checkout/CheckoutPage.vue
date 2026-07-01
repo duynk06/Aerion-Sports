@@ -285,14 +285,16 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { UserOutlined, CreditCardOutlined, ShoppingCartOutlined, CheckCircleOutlined } from '@ant-design/icons-vue'
-import { getProductDetail, resolveMediaUrl, getProvinces, getDistrictsByProvinceCode, getWardsByDistrictCode, getVoucherList, createOnlineOrder, getOnlineCustomerProfile } from '../../services/api'
+import { getProductDetail, resolveMediaUrl, getProvinces, getDistrictsByProvinceCode, getWardsByDistrictCode, getVoucherList, createOnlineOrder, getOnlineCustomerProfile, getMyOnlineOrders } from '../../services/api'
 import fallbackImage from '../../assets/mock_racket.png'
 import logoShip from '../../assets/logo/image.png'
 import { useCart } from '../../composables/useCart'
+import { useToast } from '../../composables/useToast'
 import { useCatalogRealtime } from '../../composables/useCatalogRealtime'
 
 const router = useRouter()
 const { cartItems, clearCart } = useCart()
+const toast = useToast()
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -309,6 +311,8 @@ const appliedVoucher = ref(null)
 const voucherMessage = ref('')
 const voucherMessageType = ref('success')
 const paymentMethod = ref('cod')
+const ORDER_SUBMIT_LOCK_KEY = 'aerion_online_checkout_submit_lock'
+const ORDER_SUBMIT_LOCK_TTL = 2 * 60 * 1000
 const guestCustomer = ref({
   fullName: '',
   phone: '',
@@ -609,6 +613,106 @@ const resetVoucherState = (message = '', type = 'success') => {
   voucherMessageType.value = type
 }
 
+const buildCheckoutFingerprint = (payload) => {
+  const normalized = {
+    hoTen: String(payload?.hoTen || '').trim().toLowerCase(),
+    sdt: String(payload?.sdt || '').trim(),
+    email: String(payload?.email || '').trim().toLowerCase(),
+    diaChiChiTiet: String(payload?.diaChiChiTiet || '').trim().toLowerCase(),
+    phuongXa: String(payload?.phuongXa || '').trim().toLowerCase(),
+    quanHuyen: String(payload?.quanHuyen || '').trim().toLowerCase(),
+    tinhThanh: String(payload?.tinhThanh || '').trim().toLowerCase(),
+    ghiChu: String(payload?.ghiChu || '').trim().toLowerCase(),
+    phuongThucThanhToan: String(payload?.phuongThucThanhToan || '').trim().toLowerCase(),
+    maPhieuGiamGia: String(payload?.maPhieuGiamGia || '').trim().toUpperCase(),
+    phiVanChuyen: Number(payload?.phiVanChuyen || 0),
+    items: Array.isArray(payload?.items)
+      ? payload.items
+          .map((item) => ({
+            chiTietSanPhamId: Number(item?.chiTietSanPhamId || 0),
+            soLuong: Number(item?.soLuong || 0),
+            donGia: Number(item?.donGia || 0),
+          }))
+          .sort((a, b) => a.chiTietSanPhamId - b.chiTietSanPhamId)
+      : [],
+  }
+
+  return JSON.stringify(normalized)
+}
+
+const readCheckoutLock = () => {
+  try {
+    const raw = window.sessionStorage.getItem(ORDER_SUBMIT_LOCK_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed?.fingerprint || !parsed?.timestamp) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+const writeCheckoutLock = (fingerprint) => {
+  try {
+    window.sessionStorage.setItem(
+      ORDER_SUBMIT_LOCK_KEY,
+      JSON.stringify({
+        fingerprint,
+        timestamp: Date.now(),
+      })
+    )
+  } catch {
+    // Ignore storage failures and still proceed with the in-memory guard.
+  }
+}
+
+const clearCheckoutLock = () => {
+  try {
+    window.sessionStorage.removeItem(ORDER_SUBMIT_LOCK_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+const isRecentSameCheckout = (fingerprint) => {
+  const lock = readCheckoutLock()
+  if (!lock) return false
+  if (lock.fingerprint !== fingerprint) return false
+  return Date.now() - Number(lock.timestamp || 0) < ORDER_SUBMIT_LOCK_TTL
+}
+
+const extractCheckoutErrorText = (error) => {
+  const payload = error?.response?.data?.message ?? error?.response?.data ?? error?.message ?? ''
+  return String(payload)
+}
+
+const isAsyncContextMailWarning = (message) => {
+  const text = String(message || '')
+  return (
+    text.includes('AsyncContext') ||
+    text.includes('AsyncListener.onError') ||
+    text.toLowerCase().includes('non-container (application) thread')
+  )
+}
+
+const loadLatestLoggedInOrder = async () => {
+  try {
+    const response = await getMyOnlineOrders()
+    const rawOrders = Array.isArray(response?.data) ? response.data : Array.isArray(response?.data?.data) ? response.data.data : []
+    if (!rawOrders.length) return null
+
+    return rawOrders
+      .slice()
+      .sort((a, b) => {
+        const aTime = new Date(a?.createdAt || a?.ngayTao || 0).getTime()
+        const bTime = new Date(b?.createdAt || b?.ngayTao || 0).getTime()
+        return bTime - aTime
+      })[0] || null
+  } catch {
+    return null
+  }
+}
+
 const openVoucherPanel = async () => {
   voucherPanelOpen.value = true
   voucherLoading.value = true
@@ -702,17 +806,17 @@ const validateGuestCustomer = () => {
   const ward = guestCustomer.value.ward.trim()
 
   if (!fullName || !phone || !address || !city || !district || !ward) {
-    alert('Vui lòng nhập đầy đủ họ tên, số điện thoại và địa chỉ nhận hàng.')
+    toast.error('Thiếu thông tin', 'Vui lòng nhập đầy đủ họ tên, số điện thoại và địa chỉ nhận hàng.')
     return false
   }
 
   if (!PHONE_REGEX.test(phone)) {
-    alert('Số điện thoại phải bắt đầu bằng số 0 và gồm đúng 10 chữ số.')
+    toast.error('Số điện thoại không hợp lệ', 'Số điện thoại phải bắt đầu bằng số 0 và gồm đúng 10 chữ số.')
     return false
   }
 
   if (!email || !EMAIL_REGEX.test(email)) {
-    alert('Email phải đúng định dạng.')
+    toast.error('Email không hợp lệ', 'Email phải đúng định dạng.')
     return false
   }
 
@@ -722,7 +826,7 @@ const validateGuestCustomer = () => {
 const handlePlaceOrder = async () => {
   if (!validateGuestCustomer()) return
   if (hydratedItems.value.length === 0) {
-    alert('Giỏ hàng đang trống.')
+    toast.error('Giỏ hàng trống', 'Giỏ hàng đang trống.')
     return
   }
 
@@ -758,8 +862,20 @@ const handlePlaceOrder = async () => {
       }),
     }
 
+    const fingerprint = buildCheckoutFingerprint(payload)
+    if (isRecentSameCheckout(fingerprint)) {
+      toast.info(
+        'Đã gửi rồi',
+        'Bộ thông tin này vừa được gửi gần đây. Vui lòng chờ xác nhận hoặc kiểm tra mã đơn để tránh tạo trùng.'
+      )
+      return
+    }
+
+    writeCheckoutLock(fingerprint)
+
     const response = await createOnlineOrder(payload)
     const order = response?.data || null
+    clearCheckoutLock()
     clearCart()
 
     if (order?.maHoaDon) {
@@ -767,13 +883,31 @@ const handlePlaceOrder = async () => {
         path: '/order-tracking',
         query: { code: order.maHoaDon },
       })
-      alert(`Da tao don hang thanh cong. Ma hoa don: ${order.maHoaDon}`)
+      toast.success('Đặt hàng thành công', `Mã hóa đơn: ${order.maHoaDon}`)
     } else {
-      alert('Da tao don hang thanh cong.')
+      toast.success('Đặt hàng thành công', 'Đơn hàng của bạn đã được tạo.')
     }
   } catch (error) {
-    const message = error?.response?.data || error?.message || 'Khong the tao don hang moi.'
-    alert(`Thất bại: ${message}`)
+    const message = extractCheckoutErrorText(error)
+    if (isAsyncContextMailWarning(message)) {
+      const latestOrder = await loadLatestLoggedInOrder()
+      clearCheckoutLock()
+      clearCart()
+
+      if (latestOrder?.maHoaDon) {
+        await router.push({
+          path: '/order-tracking',
+          query: { code: latestOrder.maHoaDon },
+        })
+        toast.success('Đặt hàng thành công', `Đơn hàng đã được tạo. Mã hóa đơn: ${latestOrder.maHoaDon}`)
+      } else {
+        toast.success('Đặt hàng thành công', 'Đơn hàng đã được tạo. Vui lòng kiểm tra mục đơn hàng của tôi.')
+      }
+      return
+    }
+
+    clearCheckoutLock()
+    toast.error('Đặt hàng thất bại', message || 'Không thể tạo đơn hàng mới.')
   } finally {
     submitting.value = false
   }

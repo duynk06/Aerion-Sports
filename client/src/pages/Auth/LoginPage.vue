@@ -35,10 +35,6 @@
             />
           </div>
 
-          <p v-if="errorMessage" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded p-3">
-            {{ errorMessage }}
-          </p>
-
           <button
             type="submit"
             :disabled="isLoading"
@@ -61,23 +57,22 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from '../../composables/useToast'
 import { loginOnlineCustomer } from '../../services/api'
 
 const router = useRouter()
+const toast = useToast()
 const email = ref('')
 const password = ref('')
-const errorMessage = ref('')
 const isLoading = ref(false)
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const handleLogin = async () => {
   if (isLoading.value) return
 
-  errorMessage.value = ''
-
   const normalizedEmail = email.value.trim().toLowerCase()
   if (!EMAIL_REGEX.test(normalizedEmail)) {
-    errorMessage.value = 'Email không đúng định dạng.'
+    toast.error('Lỗi', 'Email không đúng định dạng.')
     return
   }
 
@@ -91,9 +86,10 @@ const handleLogin = async () => {
 
     window.localStorage.setItem('aerion_client_token', data.token)
     window.localStorage.setItem('aerion_client_user', JSON.stringify(data.user))
+    toast.success('Thành công', 'Đăng nhập thành công.')
     router.push('/')
   } catch (error) {
-    errorMessage.value = error?.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.'
+    toast.error('Đăng nhập thất bại', error?.response?.data?.message || 'Vui lòng thử lại.')
   } finally {
     isLoading.value = false
   }

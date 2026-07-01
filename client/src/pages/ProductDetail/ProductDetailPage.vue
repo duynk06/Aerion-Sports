@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="bg-[#f7f8fb] min-h-screen">
     <div class="container mx-auto px-5 py-8 lg:py-10">
       <div class="mb-6 text-sm text-gray-500 flex items-center gap-2">
@@ -464,7 +464,8 @@ const addToCart = () => {
     selectedColor: selectedColor.value,
     selectedWeight: selectedWeight.value,
   })
-  
+
+  toast.success('Đã thêm vào giỏ', 'Sản phẩm đã được thêm vào giỏ hàng.')
 }
 
 const buyNow = () => {
@@ -485,7 +486,8 @@ const buyNow = () => {
     selectedColor: selectedColor.value,
     selectedWeight: selectedWeight.value,
   })
-  
+
+  toast.success('Đã thêm vào giỏ', 'Sản phẩm đã được thêm vào giỏ hàng.')
   // Ở đây bạn có thể thêm logic router.push('/checkout') để qua trang thanh toán
 }
 
@@ -530,3 +532,4 @@ useCatalogRealtime(() => {
   }
 })
 </script>
+

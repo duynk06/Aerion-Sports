@@ -31,7 +31,7 @@
             <div class="min-w-0">
               <h3 class="text-lg font-bold mb-1 truncate">{{ item.name }}</h3>
               <p class="text-gray-500 text-sm mb-3 truncate">{{ item.variantLabel }}</p>
-              <button class="text-red-500 underline text-sm hover:text-red-700 flex items-center gap-1" @click="removeItem(item.id)">
+              <button class="text-red-500 underline text-sm hover:text-red-700 flex items-center gap-1" @click="handleRemoveItem(item)">
                 <DeleteOutlined /> Xóa
               </button>
             </div>
@@ -87,9 +87,11 @@ import { DeleteOutlined, ArrowLeftOutlined } from '@ant-design/icons-vue'
 import { getProductDetail, resolveMediaUrl } from '../../services/api'
 import fallbackImage from '../../assets/mock_racket.png'
 import { useCart } from '../../composables/useCart'
+import { useToast } from '../../composables/useToast'
 import { useCatalogRealtime } from '../../composables/useCatalogRealtime'
 
-const { cartItems, updateQuantity, removeItem } = useCart()
+const { cartItems, updateQuantity, removeItem: removeCartItem } = useCart()
+const toast = useToast()
 
 const loading = ref(false)
 const hydratedItems = ref([])
@@ -208,6 +210,12 @@ const decreaseQty = (item) => {
 const updateQtyFromInput = (item, value) => {
   const next = clampQty(value, item.stock)
   updateQuantity(item.id, next)
+  hydrateCart()
+}
+
+const handleRemoveItem = (item) => {
+  removeCartItem(item.id)
+  toast.success('Đã xóa', 'Sản phẩm đã được xóa khỏi giỏ hàng.')
   hydrateCart()
 }
 

@@ -56,14 +56,6 @@
             />
           </div>
 
-          <p v-if="errorMessage" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded p-3">
-            {{ errorMessage }}
-          </p>
-
-          <p v-if="successMessage" class="text-sm text-green-700 bg-green-50 border border-green-100 rounded p-3">
-            {{ successMessage }}
-          </p>
-
           <button
             type="submit"
             :disabled="isLoading"
@@ -86,27 +78,24 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from '../../composables/useToast'
 import { registerOnlineCustomer } from '../../services/api'
 
 const router = useRouter()
+const toast = useToast()
 const firstName = ref('')
 const lastName = ref('')
 const email = ref('')
 const password = ref('')
-const errorMessage = ref('')
-const successMessage = ref('')
 const isLoading = ref(false)
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const handleRegister = async () => {
   if (isLoading.value) return
 
-  errorMessage.value = ''
-  successMessage.value = ''
-
   const normalizedEmail = email.value.trim().toLowerCase()
   if (!EMAIL_REGEX.test(normalizedEmail)) {
-    errorMessage.value = 'Email không đúng định dạng.'
+    toast.error('Lỗi', 'Email không đúng định dạng.')
     return
   }
 
@@ -121,12 +110,12 @@ const handleRegister = async () => {
       matKhau: password.value,
     })
 
-    successMessage.value = data?.message || 'Đăng ký thành công.'
+    toast.success('Thành công', data?.message || 'Đăng ký thành công.')
     setTimeout(() => {
       router.push('/login')
     }, 700)
   } catch (error) {
-    errorMessage.value = error?.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.'
+    toast.error('Đăng ký thất bại', error?.response?.data?.message || 'Vui lòng thử lại.')
   } finally {
     isLoading.value = false
   }
