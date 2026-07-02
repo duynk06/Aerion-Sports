@@ -16,6 +16,7 @@ public class LichLamViecImpl implements LichLamViecService {
 
     @Autowired
     private LichLamViecRepository repository;
+
     @Override
     @Transactional(readOnly = true)
     public List<Map<String, Object>> layLichTrongKhoangNgay(LocalDate tuNgay, LocalDate denNgay) {
@@ -25,6 +26,17 @@ public class LichLamViecImpl implements LichLamViecService {
     @Override
     @Transactional
     public LichLamViec xepLichMoi(LichLamViec lich) {
+        Integer idNhanVien = lich.getIdNhanVien();
+        Integer idCaLamViec = lich.getCaLamViec() != null ? lich.getCaLamViec().getId() : null;
+        LocalDate ngayLamViec = lich.getNgayLamViec();
+
+        if (idNhanVien != null && idCaLamViec != null && ngayLamViec != null) {
+            boolean isTrung = repository.existsByIdNhanVienAndCaLamViecIdAndNgayLamViec(idNhanVien, idCaLamViec, ngayLamViec);
+
+            if (isTrung) {
+                throw new RuntimeException("Nhân viên đã được xếp ca này trong ngày rồi!");
+            }
+        }
         lich.setTrangThai(1);
         return repository.save(lich);
     }

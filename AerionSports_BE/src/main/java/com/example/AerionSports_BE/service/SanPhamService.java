@@ -12,6 +12,7 @@ import com.example.AerionSports_BE.repository.*;
 import com.example.AerionSports_BE.service.impl.ISanPhamService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -46,7 +47,9 @@ public class SanPhamService implements ISanPhamService {
     @Autowired private DanhMucRepository danhMucRepo;
     @Autowired private DiemCanBangRepository diemCanBangRepo;
     @Autowired private ChuViCanVotRepository chuViCanVotRepo;
-//    @Autowired private ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
+    @Autowired private ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
+    @Value("${app.upload.dir}")
+    private String uploadDir;
 
     @Transactional
     public SanPhamResponse createProductWithVariants(String dataJson, List<MultipartFile> files) throws Exception {
@@ -118,17 +121,17 @@ public class SanPhamService implements ISanPhamService {
         java.math.BigDecimal phanTramGiam = java.math.BigDecimal.ZERO;
         java.math.BigDecimal giaDaGiam = ct.getGiaBan();
         java.time.LocalDateTime gioHienTaiVietNam = java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
-//        List<com.example.AerionSports_BE.entity.ChiTietDotGiamGia> discountLinks =
-//                chiTietDotGiamGiaRepository.findBestActiveByChiTietSanPhamId(ct.getId(), gioHienTaiVietNam);
+        List<com.example.AerionSports_BE.entity.ChiTietDotGiamGia> discountLinks =
+                chiTietDotGiamGiaRepository.findBestActiveByChiTietSanPhamId(ct.getId(), gioHienTaiVietNam);
 
-//        if (discountLinks != null && !discountLinks.isEmpty()) {
-//            com.example.AerionSports_BE.entity.DotGiamGia dgg = discountLinks.get(0).getDotGiamGia();
-//            if (dgg != null && dgg.getGiaTriGiam() != null) {
-//                phanTramGiam = dgg.getGiaTriGiam();
-//                java.math.BigDecimal heSo = java.math.BigDecimal.valueOf(100).subtract(phanTramGiam);
-//                giaDaGiam = ct.getGiaBan().multiply(heSo).divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
-//            }
-//        }
+        if (discountLinks != null && !discountLinks.isEmpty()) {
+            com.example.AerionSports_BE.entity.DotGiamGia dgg = discountLinks.get(0).getDotGiamGia();
+            if (dgg != null && dgg.getGiaTriGiam() != null) {
+                phanTramGiam = dgg.getGiaTriGiam();
+                java.math.BigDecimal heSo = java.math.BigDecimal.valueOf(100).subtract(phanTramGiam);
+                giaDaGiam = ct.getGiaBan().multiply(heSo).divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+            }
+        }
 
         ChiTietSanPhamResponse res = new ChiTietSanPhamResponse();
         res.setId(ct.getId());
@@ -307,12 +310,23 @@ public class SanPhamService implements ISanPhamService {
     }
 
     private String saveFileToDisk(MultipartFile file) throws IOException {
-        String uploadDir = "C:/Users/ADMIN/OneDrive/Desktop/Tong-hop-fe/Aerion-Sports/public/uploads/";
         Path uploadPath = Paths.get(uploadDir);
-        if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
-        String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath); // ⚡ Tự động tạo thư mục nếu chưa có, kể cả tạo mới toàn bộ cây thư mục
+        }
+
+        String tenGoc = file.getOriginalFilename() != null ? file.getOriginalFilename() : "anh.jpg";
+        String tenSachSe = boDauTiengViet(tenGoc).replaceAll("[^a-zA-Z0-9._-]", "_");
+        String fileName = UUID.randomUUID().toString() + "_" + tenSachSe;
+
         Files.copy(file.getInputStream(), uploadPath.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
         return fileName;
+    }
+
+    private String boDauTiengViet(String input) {
+        String normalized = java.text.Normalizer.normalize(input, java.text.Normalizer.Form.NFD);
+        return normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+                .replace('đ', 'd').replace('Đ', 'D');
     }
 
     @Transactional

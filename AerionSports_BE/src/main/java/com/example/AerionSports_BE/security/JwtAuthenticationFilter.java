@@ -26,18 +26,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 1. Cho phép các request OPTIONS (Preflight) phản hồi OK 200 và kết thúc sớm tại đây
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_OK);
+            filterChain.doFilter(request, response);
             return;
         }
 
         String requestURI = request.getRequestURI();
-
-        // 🌟 GIẢI PHÁP SỬA DỨT ĐIỂM:
-        // Cho qua cửa tự do nếu gọi luồng auth chung (như /login),
-        // NHƯNG nếu là luồng đổi mật khẩu (/api/auth/doi-mat-khau) thì KHÔNG return mà giữ lại để quét Token ở dưới.
-        if (requestURI.contains("/api/auth/") && !requestURI.contains("/api/auth/doi-mat-khau")) {
+        if (requestURI.contains("/api/auth/login")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -50,13 +46,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Claims claims = tokenProvider.getClaimsFromToken(jwt);
                 String vaiTro = claims.get("vai_tro", String.class);
 
-                // Đăng ký quyền với Spring Security (Thêm tiền tố ROLE_)
                 SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + vaiTro);
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(username, null, Collections.singletonList(authority));
 
-                // Đóng dấu xác thực thành công vào hệ thống Context
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception ex) {

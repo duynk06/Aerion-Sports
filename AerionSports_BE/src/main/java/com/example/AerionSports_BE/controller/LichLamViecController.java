@@ -49,9 +49,11 @@ public class LichLamViecController {
             LichLamViec result = lichLamViecService.xepLichMoi(lichMoi);
             return ResponseEntity.ok(result);
 
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body(Map.of("message", "Nhân viên đã được xếp ca này trong ngày rồi hoặc sai định dạng dữ liệu!"));
+            return ResponseEntity.badRequest().body(Map.of("message", "Sai định dạng dữ liệu đầu vào hoặc lỗi hệ thống!"));
         }
     }
 

@@ -1,5 +1,6 @@
 package com.example.AerionSports_BE.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -8,11 +9,13 @@ import org.springframework.http.CacheControl;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
+    @Value("${app.upload.dir}")
+    private String uploadDir;
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Giữ nguyên khai báo bốc file tĩnh từ ổ đĩa cứng không dính lỗi đỏ
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:C:/Users/ADMIN/OneDrive/Desktop/Tong-hop-fe/Aerion-Sports/public/uploads/")
+                .addResourceLocations("file:" + uploadDir)
                 .setCacheControl(CacheControl.noStore());
     }
 

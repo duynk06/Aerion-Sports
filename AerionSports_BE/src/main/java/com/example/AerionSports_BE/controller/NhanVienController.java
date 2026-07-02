@@ -3,11 +3,18 @@ package com.example.AerionSports_BE.controller;
 import com.example.AerionSports_BE.entity.NhanVien;
 import com.example.AerionSports_BE.repository.NhanVienRepository;
 import com.example.AerionSports_BE.service.NhanVienService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/nhan-vien")
@@ -18,6 +25,16 @@ public class NhanVienController {
     private NhanVienService nhanVienService;
     @Autowired
     private NhanVienRepository NhanVienRepository;
+
+    private static final String UPLOAD_DIR = "C:/Users/ADMIN/OneDrive/Desktop/17/Aerion-Sports/public/uploads/";
+
+    private String luuFileAnh(MultipartFile file) throws Exception {
+        String tenFileMoi = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Path duongDan = Paths.get(UPLOAD_DIR + tenFileMoi);
+        Files.createDirectories(duongDan.getParent());
+        Files.write(duongDan, file.getBytes());
+        return tenFileMoi;
+    }
 
     @GetMapping("/hien-thi")
     public ResponseEntity<List<NhanVien>> getAll() {
@@ -34,9 +51,23 @@ public class NhanVienController {
         return ResponseEntity.ok(nhanVienService.findById(id));
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<NhanVien> add(@RequestBody NhanVien nhanVien) {
-        return ResponseEntity.ok(nhanVienService.add(nhanVien));
+    @PostMapping(value = "/add", consumes = {"multipart/form-data"})
+    public ResponseEntity<?> add(
+            @RequestParam("data") String data,
+            @RequestParam(value = "avatar", required = false) MultipartFile avatarFile) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            NhanVien nhanVien = mapper.readValue(data, NhanVien.class);
+
+            if (avatarFile != null && !avatarFile.isEmpty()) {
+                String tenFileMoi = luuFileAnh(avatarFile);
+                nhanVien.setAvatar("/uploads/" + tenFileMoi);
+            }
+
+            return ResponseEntity.ok(nhanVienService.add(nhanVien));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     @PutMapping("/update/{id}")

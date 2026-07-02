@@ -23,4 +23,6 @@ public interface LichLamViecRepository extends JpaRepository<LichLamViec, Intege
 
     @Query("SELECT COUNT(l) FROM LichLamViec l WHERE l.idNhanVien = :idNhanVien AND l.ngayLamViec = :ngayHienTai")
     long countLichCheckMoCa(@Param("idNhanVien") Integer idNhanVien, @Param("ngayHienTai") LocalDate ngayHienTai);
+    boolean existsByIdNhanVienAndCaLamViecIdAndNgayLamViec(Integer idNhanVien, Integer idCaLamViec, LocalDate ngayLamViec);
+    List<LichLamViec> findByNgayLamViecBetweenAndTrangThai(LocalDate tuNgay, LocalDate denNgay, Integer trangThai);
 }

