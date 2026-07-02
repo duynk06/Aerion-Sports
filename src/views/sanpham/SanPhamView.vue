@@ -175,7 +175,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'; 
-import axios from 'axios';
+import myAxios from '../../api/axios';
 import { useRouter } from 'vue-router'; 
 import MainLayout from '@/layouts/MainLayout.vue';
 import * as XLSX from 'xlsx';
@@ -248,7 +248,7 @@ const filteredDanhSachSanPham = computed(() => {
 const loadToanBoDuLieu = async () => {
   try {
     const [sp, th, xx] = await Promise.all([
-      axios.get('http://localhost:8080/api/san-pham/search', {
+      myAxios.get('/api/san-pham/search', {
         params: {
           page: currentPage.value,
           size: pageSize.value,
@@ -258,8 +258,8 @@ const loadToanBoDuLieu = async () => {
           trangThai: filterForm.value.trangThai !== '' ? filterForm.value.trangThai : null
         }
       }), 
-      axios.get('http://localhost:8080/api/thuong-hieu/all'),   
-      axios.get('http://localhost:8080/api/xuat-xu/all')
+      myAxios.get('/api/thuong-hieu/all'),   
+      myAxios.get('/api/xuat-xu/all')
     ]);
 
     if (sp.data && sp.data.content !== undefined) {
@@ -299,15 +299,15 @@ const toggleXoaMemSanPham = async (sp) => {
   danhSachSanPham.value[indexGoc].trangThai = trangThaiMoi;
 
   try {
-    await axios.put(`http://localhost:8080/api/san-pham/${productId}/trang-thai`, null, {
+    await myAxios.put(`/api/san-pham/${productId}/trang-thai`, null, {
       params: { trangThai: trangThaiMoi }
     });
 
-    // 🌟 ĐÃ SỬA: Đồng bộ cập nhật trạng thái các biến thể quét theo mảng `sp.bienThes`
+    // 🌟 ĐÃ SỬA: Đồng bộ cập nhật trạng thái các biến thể quét theo mảng `sp.bienThes`
     const danhSachCon = sp.bienThes || sp.chiTietSanPhams || [];
     if (danhSachCon.length > 0) {
       await Promise.all(danhSachCon.map(variant => 
-        axios.put(`http://localhost:8080/api/chi-tiet-san-pham/${variant.id}/trang-thai`, null, {
+        myAxios.put(`/api/chi-tiet-san-pham/${variant.id}/trang-thai`, null, {
           params: { trangThai: trangThaiMoi }
         })
       ));

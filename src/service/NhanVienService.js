@@ -1,69 +1,64 @@
-const baseUrl = "http://localhost:8080";
+import myAxios from '../api/axios';
+// ⚡ LƯU Ý: Nếu file này không nằm trực tiếp trong src/views/ (ví dụ nằm trong src/service/),
+// hãy kiểm tra lại số cấp "../" cho đúng vị trí thực tế của file api/axios.js trong dự án.
+// An toàn nhất có thể đổi thành: import myAxios from '@/api/axios';
+
+const baseUrl = '/nhan-vien';
 
 /**
  * 1. Lấy toàn bộ danh sách nhân viên từ SQL Server
  */
 export const fetchAllNhanVien = async () => {
   try {
-    const response = await fetch(`${baseUrl}/nhan-vien/hien-thi`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Lỗi ${response.status}: ${errorText || 'Không thể tải dữ liệu'}`);
-    }
-
-    const data = await response.json();
+    const response = await myAxios.get(`${baseUrl}/hien-thi`);
+    const data = response.data;
     return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Lỗi khi gọi API fetchAllNhanVien:", error);
-    throw error;
+    throw new Error(error?.response?.data?.message || error?.response?.data || 'Không thể tải dữ liệu nhân viên');
   }
 };
-// Thêm đoạn này vào file NhanVienService.js
+
+/**
+ * Kiểm tra trùng SĐT / Email khi thêm mới
+ */
 export const checkDuplicate = async (sdt, email) => {
   try {
-    // Đảm bảo baseUrl đã được định nghĩa ở trên trong file này
-    const response = await fetch(`${baseUrl}/nhan-vien/check-duplicate?sdt=${sdt}&email=${email}`);
-    if (!response.ok) throw new Error("Lỗi kết nối");
-    return await response.json(); 
+    const response = await myAxios.get(`${baseUrl}/check-duplicate`, {
+      params: { sdt, email }
+    });
+    return response.data;
   } catch (error) {
     console.error("Lỗi kiểm tra trùng:", error);
     return false;
   }
 };
+
+/**
+ * Kiểm tra trùng SĐT / Email khi cập nhật (loại trừ chính bản ghi đang sửa)
+ */
 export const checkDuplicateUpdate = async (sdt, email, id) => {
   try {
-    const res = await fetch(`${baseUrl}/nhan-vien/check-duplicate-update?sdt=${sdt}&email=${email}&id=${id}`);
-    return await res.json();
-  } catch (e) { return false; }
+    const response = await myAxios.get(`${baseUrl}/check-duplicate-update`, {
+      params: { sdt, email, id }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi kiểm tra trùng (update):", error);
+    return false;
+  }
 };
+
 /**
- * 2. ⚡ THÊM MỚI: Gọi API thêm nhân viên để kích hoạt luồng tự cấp mật khẩu và gửi Email ngầm
+ * 2. Gọi API thêm nhân viên để kích hoạt luồng tự cấp mật khẩu và gửi Email ngầm
  */
 export const addNhanVien = async (nhanVienData) => {
   try {
-    const response = await fetch(`${baseUrl}/nhan-vien/add`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(nhanVienData)
-});
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Lỗi ${response.status}: ${errorText || 'Không thể thêm mới nhân viên'}`);
-    }
-
-    return await response.json();
+    const response = await myAxios.post(`${baseUrl}/add`, nhanVienData);
+    return response.data;
   } catch (error) {
     console.error("Lỗi khi gọi API addNhanVien:", error);
-    throw error;
+    throw new Error(error?.response?.data?.message || error?.response?.data || 'Không thể thêm mới nhân viên');
   }
 };
 
@@ -72,46 +67,26 @@ export const addNhanVien = async (nhanVienData) => {
  */
 export const updateNhanVien = async (id, nhanVienData) => {
   try {
-    const response = await fetch(`${baseUrl}/nhan-vien/update/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(nhanVienData)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Lỗi ${response.status}: ${errorText || 'Không thể cập nhật nhân viên'}`);
-    }
-
-    return await response.json();
+    const response = await myAxios.put(`${baseUrl}/update/${id}`, nhanVienData);
+    return response.data;
   } catch (error) {
     console.error(`Lỗi khi gọi API updateNhanVien (ID: ${id}):`, error);
-    throw error;
+    throw new Error(error?.response?.data?.message || error?.response?.data || 'Không thể cập nhật nhân viên');
   }
 };
 
 /**
  * 4. Thay đổi trạng thái hoạt động nhanh của nhân viên
- */export const changeStatusNhanVien = async (id, trangThai) => {
+ */
+export const changeStatusNhanVien = async (id, trangThai) => {
   try {
-    const response = await fetch(`${baseUrl}/nhan-vien/doi-trang-thai/${id}?trangThai=${trangThai}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      }
+    await myAxios.put(`${baseUrl}/doi-trang-thai/${id}`, null, {
+      params: { trangThai }
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Lỗi ${response.status}: ${errorText || 'Không thể đổi trạng thái'}`);
-    }
-
     return true;
   } catch (error) {
     console.error(`Lỗi khi gọi API changeStatusNhanVien (ID: ${id}):`, error);
-    throw error;
+    throw new Error(error?.response?.data?.message || error?.response?.data || 'Không thể đổi trạng thái');
   }
 };
 
@@ -123,7 +98,7 @@ export const addAddressByNhanVienId = async (nhanVienId, addressPayload) => {
   try {
     const allNhanVien = await fetchAllNhanVien();
     const currentNv = allNhanVien.find(item => (item.id || item.idNhanVien) === nhanVienId);
-    
+
     if (!currentNv) {
       throw new Error("Không tìm thấy thông tin nhân viên để thêm địa chỉ!");
     }
@@ -134,7 +109,7 @@ export const addAddressByNhanVienId = async (nhanVienId, addressPayload) => {
 
     const newAddr = {
       ...addressPayload,
-      id: addressPayload.id || Date.now() 
+      id: addressPayload.id || Date.now()
     };
 
     if (newAddr.isDefault) {
@@ -199,7 +174,8 @@ export const updateAddress = async (addressId, addressPayload) => {
     }
 
     const updatedPayload = {
-      ...targetNv,vaiTro: { id: Number(roleId) }
+      ...targetNv,
+      vaiTro: { id: Number(roleId) }
     };
 
     return await updateNhanVien(targetNv.id || targetNv.idNhanVien, updatedPayload);

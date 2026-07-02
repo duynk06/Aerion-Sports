@@ -301,7 +301,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'; 
-import axios from 'axios';
+import myAxios from '../../api/axios';
 import { useRouter } from 'vue-router'; 
 import MainLayout from '@/layouts/MainLayout.vue';
 
@@ -467,16 +467,16 @@ const xoaTagThuocTinh = (key, index) => {
 const loadToanBoDuLieuThuocTinh = async () => {
   try {
     const [th, xx, ms, tl, dc, clt, clk, dm, dcb, cvc] = await Promise.all([
-      axios.get('http://localhost:8080/api/thuong-hieu/all'),   
-      axios.get('http://localhost:8080/api/xuat-xu/all'), 
-      axios.get('http://localhost:8080/api/mau-sac/all'),      
-      axios.get('http://localhost:8080/api/trong-luong/all'), 
-      axios.get('http://localhost:8080/api/do-cung/all'),      
-      axios.get('http://localhost:8080/api/chat-lieu-than-vot/all'), 
-      axios.get('http://localhost:8080/api/chat-lieu-khung-vot/all'),    
-      axios.get('http://localhost:8080/api/danh-muc/all'), 
-      axios.get('http://localhost:8080/api/diem-can-bang/all'),
-      axios.get('http://localhost:8080/api/chu-vi-can-vot/active') 
+      myAxios.get('/api/thuong-hieu/all'),   
+      myAxios.get('/api/xuat-xu/all'), 
+      myAxios.get('/api/mau-sac/all'),      
+      myAxios.get('/api/trong-luong/all'), 
+      myAxios.get('/api/do-cung/all'),      
+      myAxios.get('/api/chat-lieu-than-vot/all'), 
+      myAxios.get('/api/chat-lieu-khung-vot/all'),    
+      myAxios.get('/api/danh-muc/all'), 
+      myAxios.get('/api/diem-can-bang/all'),
+      myAxios.get('/api/chu-vi-can-vot/active') 
     ]);
     danhSachThuocTinhMaster.value.thuongHieu = safeExtractArray(th); 
     danhSachThuocTinhMaster.value.xuatXu = safeExtractArray(xx);
@@ -493,7 +493,7 @@ const loadToanBoDuLieuThuocTinh = async () => {
 
 const khoiTaoMaSanPhamTuDong = async () => {
   try {
-    const res = await axios.get('http://localhost:8080/api/san-pham/search', { params: { page: 0, size: 9999 } });
+    const res = await myAxios.get('/api/san-pham/search', { params: { page: 0, size: 9999 } });
     const danhSach = safeExtractArray(res);
     let soTiepTheo = 1;
     if (danhSach.length > 0) {
@@ -567,14 +567,14 @@ const submitLuuToanBoSanPham = async () => {
 
   try {
     // 1. Quét tìm kiếm check trùng trực tiếp thông qua 6 ID số phẳng của cây Sản phẩm cha
-    const resAll = await axios.get('http://localhost:8080/api/chi-tiet-san-pham/all-for-check');
+    const resAll = await myAxios.get('/api/chi-tiet-san-pham/all-for-check');
     const danhSachSPhamHeThong = resAll.data || [];
 
     let sanPhamBiTrungGốc = null;
 
     if (Array.isArray(danhSachSPhamHeThong) && danhSachSPhamHeThong.length > 0) {
       for (const spCha of danhSachSPhamHeThong) {
-        // ⚡ ĐÃ SỬA: So sánh trực tiếp ID số ở cấp Sản phẩm cha, tối ưu hiệu năng
+        // ⚡ ĐÃ SỬA: So sánh trực tiếp ID số ở cấp Sản phẩm cha, tối ưu hiệu năng
         const matchMasterData = 
           Number(spCha.idThuongHieu) === Number(productForm.value.idThuongHieu) &&
           Number(spCha.idXuatXu) === Number(productForm.value.idXuatXu) &&
@@ -654,7 +654,7 @@ const submitLuuToanBoSanPham = async () => {
       }
     });
     
-    await axios.post("http://localhost:8080/api/san-pham/create-variants", formData, { 
+    await myAxios.post("/api/san-pham/create-variants", formData, { 
         headers: { "Content-Type": "multipart/form-data" } 
     });
     

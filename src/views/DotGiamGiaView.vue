@@ -254,7 +254,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
-import axios from 'axios' // ⚡ Import axios để bốc API trực tiếp diện rộng
+import myAxios from '../api/axios'
 import MainLayout from '../layouts/MainLayout.vue'
 import DotGiamGiaCreateModal from '../components/modals/DotGiamGiaCreateModal.vue'
 import DotGiamGiaDetailModal from '../components/modals/DotGiamGiaDetailModal.vue'
@@ -335,8 +335,8 @@ const isEditStartDateLocked = computed(() => Number(editForm.trangThai) === STAT
 const productKeyword = ref('')
 const productLoading = ref(false)
 const productError = ref('')
-const visibleProducts = ref([]) // ⚡ ĐÃ ĐỔI: Chứa cấu trúc mảng cây gộp nhóm từ BE truyền xuống
-const selectedProductDetails = ref([]) // ⚡ ĐÃ ĐỔI: Phục vụ bốc thông số phẳng dẹt hiển thị bảng dưới cùng
+const visibleProducts = ref([]) // ⚡ Chứa cấu trúc mảng cây gộp nhóm từ BE truyền xuống
+const selectedProductDetails = ref([]) // ⚡ Phục vụ bốc thông số phẳng dẹt hiển thị bảng dưới cùng
 const selectedProductIds = ref([])
 
 const productPage = ref(0)
@@ -494,12 +494,12 @@ const loadData = async () => {
   }
 }
 
-// ⚡ ĐÃ CẢI TIẾN TOÀN DIỆN: Hàm nạp API gộp nhóm theo cây sản phẩm cha cho khung bên phải
+// ⚡ ĐÃ SỬA: Đổi sang myAxios (tự gắn token) + path tương đối để đi qua đúng interceptor
 const loadProducts = async () => {
   productLoading.value = true
   productError.value = ''
   try {
-    const response = await axios.get('http://localhost:8080/api/dot-giam-gia/grouped-products', {
+    const response = await myAxios.get('/api/dot-giam-gia/grouped-products', {
       params: { keyword: productKeyword.value || null }
     })
     
@@ -555,7 +555,7 @@ const nextPage = async () => { if (page.value + 1 >= totalPages.value) return; p
 const prevProductPage = () => {}
 const nextProductPage = () => {}
 
-// ⚡ ĐÃ CẢI TIẾN: Hàm xóa/chọn hàng loạt mảng client-side bộ lọc phía dưới cùng
+// ⚡ Hàm xóa/chọn hàng loạt mảng client-side bộ lọc phía dưới cùng
 const toggleSelectAllSelected = (ids = []) => {
   if (isAllSelected.value) {
     selectedProductIds.value = []
@@ -659,7 +659,7 @@ const markDiscountEnded = async (item) => {
   }
 }
 
-// ⚡ ĐÃ CẢI TIẾN: Sửa đổi hàm tiếp nhận tích chọn đơn lẻ từ khối cây truyền lên
+// ⚡ Sửa đổi hàm tiếp nhận tích chọn đơn lẻ từ khối cây truyền lên
 const toggleProductSelection = (product) => {
   const productId = product.idChiTietSanPham
   const indexId = selectedProductIds.value.indexOf(productId)
@@ -673,7 +673,7 @@ const toggleProductSelection = (product) => {
   }
 }
 
-// ⚡ ĐÃ CẢI TIẾN: Toggle chọn sạch sẽ toàn bộ cây hiển thị
+// ⚡ Toggle chọn sạch sẽ toàn bộ cây hiển thị
 const toggleSelectAllVisible = () => {
   if (isAllVisibleSelected.value) {
     selectedProductIds.value = []

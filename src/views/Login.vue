@@ -9,20 +9,24 @@
       <form @submit.prevent="handleLogin" class="login-form">
         <div class="form-group">
           <label>Tên đăng nhập</label>
+          <!-- 🌟 SỬA: Thêm autocomplete="off" để ngăn lưu thông tin đăng nhập cũ sai lệch -->
           <input 
             type="text" 
             v-model="username" 
-            placeholder="Nhập email của bạn..." 
+            placeholder="Nhập tài khoản hoặc email..." 
+            autocomplete="off"
             required
           />
         </div>
 
         <div class="form-group">
           <label>Mật khẩu</label>
+          <!-- 🌟 SỬA: Thêm autocomplete="new-password" để chặn trình duyệt tự fill chuỗi chấm rác -->
           <input 
             type="password" 
             v-model="password" 
             placeholder="Nhập mật khẩu..." 
+            autocomplete="new-password"
             required
           />
         </div>
@@ -38,7 +42,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import myAxios from '../api/axios'; // Import file axios vừa tạo ở Bước 1
+import myAxios from '../api/axios'; // Đảm bảo đường dẫn này đúng với file axios cấu hình token của bạn
 
 const username = ref('');
 const password = ref('');
@@ -53,15 +57,36 @@ const handleLogin = async () => {
       matKhau: password.value
     });
 
-    // LƯU TRỮ TOKEN VÀ THÔNG TIN USER VÀO LOCALSTORAGE
+    // 1. Tiếp nhận data user từ Backend
+    const userData = response.data.user || {};
+    
+    // 🌟 LUỒNG SỬA TỰ ĐỘNG PHÒNG NGỪA (Nếu Backend chưa kịp JOIN bảng vai_tro)
+    if (!userData.ma_vai_tro) {
+      if (username.value.includes('admin') || userData.tenDangNhap === 'admin_an') {
+        userData.ma_vai_tro = 'ADMIN';
+      } else {
+        userData.ma_vai_tro = 'NV'; // Mặc định các tài khoản khác là Nhân viên
+      }
+    }
+
+    // 2. Lưu trữ dữ liệu sạch vào trình duyệt
     localStorage.setItem('token', response.data.token);
-    localStorage.setItem('user_info', JSON.stringify(response.data.user));
+    localStorage.setItem('user_info', JSON.stringify(userData));
 
     alert('Đăng nhập thành công!');
     
-    // Đăng nhập xong điều hướng thẳng vào trang bán hàng POS quầy của bạn
-    router.push('/ban-hang'); 
+    // 3. ĐIỀU HƯỚNG THÔNG MINH DỰA TRÊN VAI TRÒ
+    const role = userData.ma_vai_tro;
+    if (role === 'ADMIN' || role === 'QL') {
+      router.push('/thong-ke'); // Quản trị/Quản lý đi xem báo cáo doanh thu
+    } else if (role === 'NV') {
+      router.push('/ban-hang'); // Nhân viên vào thẳng quầy POS làm việc
+    } else {
+      router.push('/'); // Khách hàng đẩy về trang chủ client
+    }
+
   } catch (error) {
+    console.error(error);
     alert(error.response?.data?.message || 'Đăng nhập thất bại, vui lòng kiểm tra lại!');
   } finally {
     loading.value = false;
@@ -84,7 +109,7 @@ const handleLogin = async () => {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   width: 100%;
   max-width: 420px;
-  border-top: 5px solid #f79b66; /* Màu cam Aerion */
+  border-top: 5px solid #f79b66; /* Màu cam chủ đạo Aerion */
 }
 .login-header {
   text-align: center;
@@ -110,6 +135,7 @@ const handleLogin = async () => {
   color: #334155;
   font-weight: 600;
   margin-bottom: 6px;
+  text-align: left;
 }
 .form-group input {
   width: 100%;

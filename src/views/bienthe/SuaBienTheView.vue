@@ -126,7 +126,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import axios from 'axios';
+import myAxios from '../../api/axios';
 import MainLayout from '@/layouts/MainLayout.vue';
 
 const route = useRoute();
@@ -166,7 +166,7 @@ const onImageLoadError = (e) => {
 const loadChiTietBienTheHienTai = async () => {
   try {
     // 🚀 1. GỌI API lấy thông tin chi tiết từ cây sản phẩm cha (Chứa toàn bộ 6 thuộc tính nền)
-    const resProduct = await axios.get(`http://localhost:8080/api/san-pham/search`, {
+    const resProduct = await myAxios.get('/api/san-pham/search', {
       params: { keyword: productInfo.value.ma, page: 0, size: 10 }
     });
     
@@ -221,8 +221,8 @@ const safeExtractArray = (res) => {
 const loadMasterData = async () => {
   try {
     const [ms, tl] = await Promise.all([
-      axios.get('http://localhost:8080/api/mau-sac/all'),
-      axios.get('http://localhost:8080/api/trong-luong/all')
+      myAxios.get('/api/mau-sac/all'),
+      myAxios.get('/api/trong-luong/all')
     ]);
     masterData.value.mauSac = safeExtractArray(ms);
     masterData.value.trongLuong = safeExtractArray(tl);
@@ -279,7 +279,7 @@ const submitCapNhat = async () => {
     }
 
     // Gửi put cập nhật thông tin đơn lẻ lên Controller
-    await axios.put(`http://localhost:8080/api/san-pham/bien-the/update/${editingForm.value.id}`, formData, {
+    await myAxios.put(`/api/san-pham/bien-the/update/${editingForm.value.id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" }
     });
 

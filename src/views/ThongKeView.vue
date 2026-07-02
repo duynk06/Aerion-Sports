@@ -85,7 +85,7 @@
       <div class="chart-header-row">
         <div class="chart-title-left"><i class="fa-solid fa-wallet"></i> Doanh thu cửa hàng</div>
         <div class="chart-filter-right-inputs">
-          
+
           <template v-if="!isCompareMode">
             <select v-model="selectedPeriodType" @change="loadBieuDoDataFromServer" class="minimal-select">
               <option value="ngay">Theo ngày</option>
@@ -99,7 +99,7 @@
               <option value="quy">So sánh Quý (Trong Năm)</option>
               <option value="thang">So sánh Năm (Các Tháng)</option>
             </select>
-            
+
             <div style="display: flex; gap: 4px; align-items: center;">
               <template v-if="compareType === 'ngay'">
                 <select v-model="filterCompare.thangGoc" @change="loadBieuDoDataFromServer" class="minimal-select">
@@ -113,29 +113,26 @@
 
               <template v-else>
                 <select v-model="filterCompare.namGoc" @change="loadBieuDoDataFromServer" class="minimal-select">
-                  <option value="2026">Năm 2026</option>
-                  <option value="2025">Năm 2025</option>
+                  <option v-for="n in danhSachNam" :key="n" :value="n">Năm {{ n }}</option>
                 </select>
                 <span style="font-size: 11px; color: #94a3b8;">với</span>
                 <select v-model="filterCompare.namSoSanh" @change="loadBieuDoDataFromServer" class="minimal-select">
-                  <option value="2026">Năm 2026</option>
-                  <option value="2025">Năm 2025</option>
-                  <option value="2024">Năm 2024</option>
+                  <option v-for="n in danhSachNam" :key="n" :value="n">Năm {{ n }}</option>
                 </select>
               </template>
             </div>
           </template>
 
-          <button 
-            :class="['btn-compare', { 'active-compare-mode': isCompareMode }]" 
+          <button
+            :class="['btn-compare', { 'active-compare-mode': isCompareMode }]"
             @click="toggleCompareMode"
           >
-            <i class="fa-solid fa-scale-balanced"></i> 
+            <i class="fa-solid fa-scale-balanced"></i>
             {{ isCompareMode ? 'Tắt so sánh' : 'So sánh' }}
           </button>
         </div>
       </div>
-      
+
       <div class="chart-canvas-container">
         <canvas ref="revenueChartRef"></canvas>
       </div>
@@ -158,7 +155,7 @@
       <div class="filter-buttons-action-flex">
         <button class="btn-submit-filter" @click="load4TablesDataWithFilter"><i class="fa-solid fa-filter"></i> Lọc dữ liệu</button>
         <button class="btn-reset-filter" @click="resetDateFilter">Đặt lại</button>
-        
+
         <button class="btn-download-excel" @click="handleXuatExcelTaiCho">
           <i class="fa-solid fa-file-excel"></i> Xuất file Excel
         </button>
@@ -299,28 +296,64 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import axios from 'axios'; 
+import myAxios from '../api/axios';
 import MainLayout from '../layouts/MainLayout.vue';
 import { Chart, registerables } from 'chart.js';
 import * as XLSX from 'xlsx';
 
 Chart.register(...registerables);
 
-const getNgayDauThangMoi = () => "2026-06-01";
-const getNgayCuoiThangMoi = () => "2026-06-29";
-const getThangNamMoi = () => "2026-06";
+// 🌟 ĐÃ SỬA: Không còn hardcode ngày/tháng/năm, luôn lấy theo thời điểm hiện tại của hệ thống
+const getNgayDauThangMoi = () => {
+  const now = new Date();
+  const nam = now.getFullYear();
+  const thang = String(now.getMonth() + 1).padStart(2, '0');
+  return `${nam}-${thang}-01`;
+};
+
+const getNgayCuoiThangMoi = () => {
+  const now = new Date();
+  const nam = now.getFullYear();
+  const thang = now.getMonth() + 1;
+  // Ngày 0 của tháng sau = ngày cuối cùng của tháng hiện tại (tự đúng cho tháng 28/29/30/31 ngày)
+  const ngayCuoi = new Date(nam, thang, 0).getDate();
+  return `${nam}-${String(thang).padStart(2, '0')}-${String(ngayCuoi).padStart(2, '0')}`;
+};
+
+const getThangNamMoi = () => {
+  const now = new Date();
+  const nam = now.getFullYear();
+  const thang = String(now.getMonth() + 1).padStart(2, '0');
+  return `${nam}-${thang}`;
+};
 
 // 🌟 BIẾN ĐIỀU KHIỂN CÔNG TẮC BẬT/TẮT CHẾ ĐỘ SO SÁNH
-const isCompareMode = ref(false); 
+const isCompareMode = ref(false);
 
-const selectedPeriodType = ref('ngay'); 
+const selectedPeriodType = ref('ngay');
 const compareType = ref('ngay'); // Phân loại so sánh: ngay, quy, thang
-const selectedMonthYear = ref(getThangNamMoi()); 
+const selectedMonthYear = ref(getThangNamMoi());
 const revenueChartRef = ref(null);
 let lineChartInstance = null;
 const isSendingMail = ref(false);
 
-const filterCompare = ref({ thangGoc: 6, thangSoSanh: 5, namGoc: 2026, namSoSanh: 2025 });
+// 🌟 ĐÃ SỬA: Tính mặc định so sánh động theo thời gian thực (tháng hiện tại vs tháng trước, năm hiện tại vs năm trước)
+const namHienTai = new Date().getFullYear();
+const thangHienTai = new Date().getMonth() + 1; // getMonth() trả 0-11 nên +1
+
+// Danh sách 5 năm gần nhất tính từ năm hiện tại, dùng để render dropdown chọn năm động trong template
+const danhSachNam = Array.from({ length: 5 }, (_, i) => namHienTai - i);
+
+// Xử lý luôn trường hợp tháng hiện tại là tháng 1 -> tháng trước phải lùi về tháng 12 năm trước
+const thangTruoc = thangHienTai === 1 ? 12 : thangHienTai - 1;
+
+const filterCompare = ref({
+  thangGoc: thangHienTai,
+  thangSoSanh: thangTruoc,
+  namGoc: namHienTai,
+  namSoSanh: namHienTai - 1
+});
+
 const dateFilter = ref({ tuNgay: getNgayDauThangMoi(), denNgay: getNgayCuoiThangMoi() });
 
 const cardsData = ref({
@@ -371,7 +404,7 @@ const toggleCompareMode = () => {
 const renderWaveLineChartGraphic = () => {
   if (lineChartInstance) lineChartInstance.destroy();
   const ctx = revenueChartRef.value.getContext('2d');
-  
+
   const gradientFill = ctx.createLinearGradient(0, 0, 0, 260);
   gradientFill.addColorStop(0, 'rgba(37, 99, 235, 0.22)');
   gradientFill.addColorStop(1, 'rgba(255, 255, 255, 0.01)');
@@ -411,7 +444,7 @@ const renderWaveLineChartGraphic = () => {
     // Biểu đồ so sánh đối chiếu (2 đường Xanh và Cam chạy song song)
     const dataGoc = labelsX.map(k => Number(bieuDoCompositeData.value.gocData[k] || 0));
     const dataSoSanh = labelsX.map(k => Number(bieuDoCompositeData.value.ssData[k] || 0));
-    
+
     datasetsConfig.push(
       {
         label: bieuDoCompositeData.value.gocLabel || 'Kỳ gốc',
@@ -470,13 +503,13 @@ const loadBieuDoDataFromServer = async () => {
   try {
     if (!isCompareMode.value) {
       const [nam, thang] = selectedMonthYear.value.split('-');
-      const res = await axios.get('http://localhost:8080/api/thong-ke/bieu-do-line', {
+      const res = await myAxios.get('/api/thong-ke/bieu-do-line', {
         params: { loai: 'ngay', thang: parseInt(thang, 10), nam: parseInt(nam, 10), isCompare: false }
       });
       mapDoanhThuBieuDoFromServer.value = res.data;
     } else {
       // Bắt buộc thêm isCompare: true để backend trả dữ liệu so sánh
-      const res = await axios.get('http://localhost:8080/api/thong-ke/bieu-do-line', {
+      const res = await myAxios.get('/api/thong-ke/bieu-do-line', {
         params: {
           loai: compareType.value,
           isCompare: true,
@@ -526,7 +559,7 @@ const handleXuatExcelTaiCho = () => {
 const handleGuiEmailThuCong = async () => {
   isSendingMail.value = true;
   try {
-    const res = await axios.post('http://localhost:8080/api/thong-ke/gui-email-thu-cong');
+    const res = await myAxios.post('/api/thong-ke/gui-email-thu-cong');
     if (res.data.status === 'success') {
       alert("Thành công! Hệ thống đã gửi đính kèm file báo cáo Excel về hòm thư Gmail của bạn.");
     }
@@ -540,14 +573,14 @@ const handleGuiEmailThuCong = async () => {
 
 const loadAllCardsData = async () => {
   try {
-    const res = await axios.get('http://localhost:8080/api/thong-ke/dashboard-cards');
+    const res = await myAxios.get('/api/thong-ke/dashboard-cards');
     cardsData.value = res.data;
   } catch (e) { console.error(e); }
 };
 
 const load4TablesDataWithFilter = async () => {
   try {
-    const res = await axios.get('http://localhost:8080/api/thong-ke/chi-tiet-tables', {
+    const res = await myAxios.get('/api/thong-ke/chi-tiet-tables', {
       params: { tuNgay: dateFilter.value.tuNgay || null, denNgay: dateFilter.value.denNgay || null }
     });
     tableData.value = res.data;

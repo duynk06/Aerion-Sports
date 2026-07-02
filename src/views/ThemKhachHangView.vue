@@ -17,6 +17,21 @@
       </div>
 
       <form @submit.prevent="saveKhachHang">
+        <!-- 🌟 THÊM MỚI: Khối upload ảnh đại diện -->
+        <div class="avatar-upload-section">
+          <div class="avatar-preview-box">
+            <img :src="avatarPreviewUrl" alt="Ảnh đại diện khách hàng" @error="onAvatarLoadError" />
+          </div>
+          <div class="avatar-upload-controls">
+            <label class="avatar-label">Ảnh đại diện khách hàng</label>
+            <input type="file" accept="image/*" @change="onAvatarFileChange" />
+            <span class="avatar-hint">Chọn ảnh JPG/PNG, tối đa 5MB (không bắt buộc)</span>
+            <button v-if="avatarPreviewUrl !== defaultAvatarUrl" type="button" class="btn-remove-avatar" @click="clearAvatar">
+              ✕ Bỏ ảnh đã chọn
+            </button>
+          </div>
+        </div>
+
         <div class="info-section">
           <div class="form-content">
             <h3>Thông tin cá nhân</h3>
@@ -141,6 +156,39 @@ const listTinhThanh = ref([])
 
 const isScanning = ref(false)
 let qrScanner = null
+
+// 🌟 THÊM MỚI: State quản lý ảnh đại diện
+const defaultAvatarUrl = 'https://placehold.co/120x120?text=Avatar'
+const avatarFile = ref(null)
+const avatarPreviewUrl = ref(defaultAvatarUrl)
+
+const onAvatarFileChange = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  if (!file.type.startsWith('image/')) {
+    alert('Vui lòng chọn đúng định dạng file ảnh!')
+    event.target.value = ''
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    alert('Kích thước ảnh không được vượt quá 5MB!')
+    event.target.value = ''
+    return
+  }
+
+  avatarFile.value = file
+  avatarPreviewUrl.value = URL.createObjectURL(file)
+}
+
+const clearAvatar = () => {
+  avatarFile.value = null
+  avatarPreviewUrl.value = defaultAvatarUrl
+}
+
+const onAvatarLoadError = (e) => {
+  e.target.src = defaultAvatarUrl
+}
 
 const khachHang = reactive({
   tenKh: '', sdt: '', email: '', ngaySinh: '', gioiTinh: 1,
@@ -310,13 +358,20 @@ const saveKhachHang = async () => {
       addresses: addressesPayload
     }
 
-    const response = await axios.post('http://localhost:8080/public/khach-hang/add', payload)
+    // 🌟 ĐÃ SỬA: Đóng gói FormData thay vì gửi JSON thuần, để đính kèm được file ảnh nhị phân thật
+    const formData = new FormData()
+    formData.append('data', JSON.stringify(payload))
+    if (avatarFile.value) {
+      formData.append('avatar', avatarFile.value)
+    }
+
+    const response = await axios.post('http://localhost:8080/public/khach-hang/add', formData)
     if (response.status === 200 || response.status === 201) { 
       alert('🎉 Thêm khách hàng và sổ địa chỉ thành công!')
       router.push('/khach-hang') 
     }
   } catch (error) { 
-    alert('Thất bại: ' + (error.response?.data?.message || error.message)) 
+    alert('Thất bại: ' + (error.response?.data?.message || error.response?.data || error.message)) 
   }
 }
 </script>
@@ -334,6 +389,16 @@ const saveKhachHang = async () => {
 .page-header { margin-bottom: 20px; }
 .back-link { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 14px; padding: 0; margin-bottom: 6px; }
 .page-header p { font-size: 18px; font-weight: 600; color: #1e293b; margin: 0; }
+
+/* 🌟 THÊM MỚI: Style khối upload avatar */
+.avatar-upload-section { display: flex; gap: 20px; align-items: center; background-color: #fff7ed; padding: 16px; border-radius: 8px; border: 1px dashed #f79b66; margin-bottom: 24px; }
+.avatar-preview-box { width: 100px; height: 100px; border-radius: 50%; overflow: hidden; border: 2px solid #f79b66; flex-shrink: 0; background: #fff; display: flex; align-items: center; justify-content: center; }
+.avatar-preview-box img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-upload-controls { display: flex; flex-direction: column; gap: 6px; }
+.avatar-label { font-size: 13px; font-weight: 600; color: #374151; }
+.avatar-hint { font-size: 12px; color: #94a3b8; }
+.btn-remove-avatar { align-self: flex-start; background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-top: 4px; }
+
 .info-section { display: flex; gap: 24px; margin-bottom: 24px; }
 .form-content { flex: 1; }
 .form-content h3, .address-section-header h3 { font-size: 15px; font-weight: 600; color: #1e293b; margin: 0 0 16px 0; }

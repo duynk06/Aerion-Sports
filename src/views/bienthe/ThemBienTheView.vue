@@ -124,7 +124,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import axios from 'axios';
+import myAxios from '../../api/axios';
 import MainLayout from '@/layouts/MainLayout.vue';
 
 const route = useRoute();
@@ -158,7 +158,7 @@ const safeExtractArray = (res) => {
 
 const tuDongNapThongSoTuDatabase = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/san-pham/search', {
+    const response = await myAxios.get('/api/san-pham/search', {
       params: { keyword: productInfo.value.ma, page: 0, size: 10 }
     });
     const danhSach = response.data.content || [];
@@ -180,7 +180,7 @@ const tuDongNapThongSoTuDatabase = async () => {
 const khoiTaoMaSKUBienTheTuDong = async () => {
   try {
     const maCha = productInfo.value.ma || 'SP';
-    const response = await axios.get('http://localhost:8080/api/san-pham/search', {
+    const response = await myAxios.get('/api/san-pham/search', {
       params: { keyword: productInfo.value.ma, page: 0, size: 10 }
     });
     const list = response.data.content || [];
@@ -207,8 +207,8 @@ const khoiTaoMaSKUBienTheTuDong = async () => {
 const loadMasterDataCombobox = async () => {
   try {
     const [ms, tl] = await Promise.all([
-      axios.get('http://localhost:8080/api/mau-sac/all'),
-      axios.get('http://localhost:8080/api/trong-luong/all')
+      myAxios.get('/api/mau-sac/all'),
+      myAxios.get('/api/trong-luong/all')
     ]);
     masterData.value.mauSac = safeExtractArray(ms);
     masterData.value.trongLuong = safeExtractArray(tl);
@@ -244,7 +244,7 @@ const submitLuuDuLieuConfirm = async () => {
       hinhAnh: editingForm.value.hinhAnh
     };
 
-    const resCTSP = await axios.post('http://localhost:8080/api/chi-tiet-san-pham', cleanPayload);
+    const resCTSP = await myAxios.post('/api/chi-tiet-san-pham', cleanPayload);
     const idChiTiet = resCTSP.data.id; 
 
     if (fileUploadData.value && idChiTiet) {
@@ -254,7 +254,7 @@ const submitLuuDuLieuConfirm = async () => {
         duongDanAnh: "/uploads/" + fileUploadData.value.name, 
         trangThai: 1 
       };
-      await axios.post('http://localhost:8080/api/hinh-anh-sp', hinhAnhPayload);
+      await myAxios.post('/api/hinh-anh-sp', hinhAnhPayload);
     }
 
     alert("Thêm mới biến thể thành công! 🎉");

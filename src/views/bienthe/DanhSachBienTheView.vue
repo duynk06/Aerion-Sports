@@ -226,7 +226,7 @@
 
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue';
-import axios from 'axios';
+import myAxios from '../../api/axios';
 import { useRouter } from 'vue-router';
 import MainLayout from '@/layouts/MainLayout.vue';
 import * as XLSX from 'xlsx';
@@ -319,11 +319,11 @@ const loadToanBoDuLieu = async () => {
     if (filterForm.value.idTrongLuong !== '') paramsPayload.idTrongLuong = parseInt(filterForm.value.idTrongLuong, 10);
 
     const [ctsp, ms, tl] = await Promise.all([
-      axios.get('http://localhost:8080/api/chi-tiet-san-pham/search', {
+      myAxios.get('/api/chi-tiet-san-pham/search', {
         params: paramsPayload
       }),
-      axios.get('http://localhost:8080/api/mau-sac/all'),   
-      axios.get('http://localhost:8080/api/trong-luong/all')
+      myAxios.get('/api/mau-sac/all'),   
+      myAxios.get('/api/trong-luong/all')
     ]);
 
     let rawData = [];
@@ -366,7 +366,7 @@ const toggleTrangThaiBienTheNhanh = async (item) => {
   const trangThaiMoi = item.trangThai === 1 ? 0 : 1;
   if (!confirm("Thay đổi trạng thái hoạt động biến thể?")) return;
   try {
-    await axios.put(`http://localhost:8080/api/chi-tiet-san-pham/${item.id}/trang-thai`, null, { params: { trangThai: trangThaiMoi } });
+    await myAxios.put(`/api/chi-tiet-san-pham/${item.id}/trang-thai`, null, { params: { trangThai: trangThaiMoi } });
     loadToanBoDuLieu();
   } catch (error) { alert("Lỗi cập nhật!"); }
 };

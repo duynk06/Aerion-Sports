@@ -213,7 +213,7 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import axios from 'axios';
+import myAxios from '../../api/axios';
 import MainLayout from '@/layouts/MainLayout.vue';
 import * as XLSX from 'xlsx';
 import QRCode from 'qrcode'; 
@@ -291,7 +291,7 @@ const fetchDataBienThe = async () => {
     if (!productInfo.value.id) return;
 
     // 🚀 1. Gọi API lấy thông tin chi tiết từ sản phẩm cha trước để bốc sạch 6 thuộc tính nền cố định
-    const resProduct = await axios.get('http://localhost:8080/api/san-pham/search', {
+    const resProduct = await myAxios.get('/api/san-pham/search', {
       params: { keyword: productInfo.value.ma, page: 0, size: 10 }
     });
     
@@ -317,7 +317,7 @@ const fetchDataBienThe = async () => {
     if (filter.value.keyword.trim() !== '') paramsPayload.keyword = filter.value.keyword.trim();
     if (filter.value.trangThai !== '') paramsPayload.trangThai = parseInt(filter.value.trangThai, 10);
 
-    const response = await axios.get('http://localhost:8080/api/chi-tiet-san-pham/search', {
+    const response = await myAxios.get('/api/chi-tiet-san-pham/search', {
       params: paramsPayload
     });
     
@@ -348,7 +348,7 @@ const toggleTrangThaiNhanhCucBo = async (bt) => {
   danhSachBienThe.value[indexGoc].trangThai = trangThaiMoi;
 
   try {
-    await axios.put(`http://localhost:8080/api/chi-tiet-san-pham/${productId}/trang-thai`, null, {
+    await myAxios.put(`/api/chi-tiet-san-pham/${productId}/trang-thai`, null, {
       params: { trangThai: trangThaiMoi }
     });
   } catch (error) {
